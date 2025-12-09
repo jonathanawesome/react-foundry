@@ -1,0 +1,31 @@
+{
+  "name": "@react-foundry/cli",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "foundry": "./bin/foundry.js"
+  },
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-foundry/core": "workspace:*",
+    "@react-foundry/eslint-config": "workspace:*",
+    "@react-foundry/style": "workspace:*",
+    "@react-foundry/ui": "workspace:*",
+    "@tanstack/react-router": "^1.131.36",
+    "@tanstack/router-plugin": "^1.131.36",
+    "@vanilla-extract/vite-plugin": "^5.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "cac": "^6.7.14",
+    "picocolors": "^1.1.1",
+    "tsx": "^4.21.0",
+    "vite": "^6.0.0"
+  }
+}

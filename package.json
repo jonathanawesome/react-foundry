@@ -1,0 +1,39 @@
+{
+  "name": "react-foundry",
+  "version": "0.0.1",
+  "private": true,
+  "description": "A lightweight, Ladle-like component development environment for React",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "types": "turbo run types",
+    "demo": "pnpm --filter demo dev",
+    "prettier:check": "pnpm prettier --check ./",
+    "prettier:write": "pnpm prettier --write ./"
+  },
+  "keywords": [
+    "react",
+    "components",
+    "development",
+    "storybook",
+    "ladle",
+    "preview"
+  ],
+  "packageManager": "pnpm@10.11.0",
+  "engines": {
+    "node": "22.x",
+    "pnpm": "10.x"
+  },
+  "dependencies": {
+    "@types/node": "^24.3.1",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "eslint": "^9.15.0",
+    "prettier": "^3.6.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "turbo": "^2.5.6",
+    "typescript": "^5.9.2"
+  }
+}
