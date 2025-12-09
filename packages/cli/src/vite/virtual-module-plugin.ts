@@ -1,4 +1,5 @@
-import { relative, resolve, join } from 'node:path'
+import { resolve } from 'node:path'
+import { glob } from 'glob'
 import type { Plugin } from 'vite'
 
 const VIRTUAL_MODULE_ID = 'virtual:react-foundry-previews'
@@ -10,19 +11,16 @@ export function createVirtualModulePlugin(
   viteRoot: string
 ): Plugin {
   // Construct the absolute path to the user's root directory and append the pattern
-  // For virtual modules, we need to use an absolute path with the glob pattern
   const absoluteUserRoot = userRoot.split('\\').join('/')
 
   // Ensure pattern doesn't start with / or ./
   const cleanPattern = previewsPattern.replace(/^\.?\//, '')
 
-  const finalPattern = `${absoluteUserRoot}/${cleanPattern}`
+  const searchPattern = resolve(userRoot, cleanPattern)
 
-  console.log('[React Foundry] Virtual module glob pattern:', finalPattern)
+  console.log('[React Foundry] Searching for preview files:', searchPattern)
   console.log('[React Foundry] User root:', userRoot)
   console.log('[React Foundry] Vite root:', viteRoot)
-  console.log('[React Foundry] Previews pattern:', previewsPattern)
-  console.log('[React Foundry] Clean pattern:', cleanPattern)
 
   return {
     name: 'react-foundry:virtual-previews',
@@ -31,14 +29,31 @@ export function createVirtualModulePlugin(
         return RESOLVED_VIRTUAL_MODULE_ID
       }
     },
-    load(id) {
+    async load(id) {
       if (id === RESOLVED_VIRTUAL_MODULE_ID) {
-        const code = `
-const previewModules = import.meta.glob('${finalPattern}', {
-  eager: true,
-})
+        // Find all preview files using Node's glob
+        const files = await glob(searchPattern, { absolute: true })
 
-export default previewModules
+        console.log('[React Foundry] Found preview files:', files)
+
+        // Generate explicit imports for each file
+        const imports = files.map((file, index) => {
+          const normalizedPath = file.split('\\').join('/')
+          return `import * as module${index} from '${normalizedPath}';`
+        }).join('\n')
+
+        const moduleObject = files.map((file, index) => {
+          const normalizedPath = file.split('\\').join('/')
+          return `  '${normalizedPath}': module${index},`
+        }).join('\n')
+
+        const code = `${imports}
+
+const previewModules = {
+${moduleObject}
+};
+
+export default previewModules;
 `
         console.log('[React Foundry] Generated virtual module code:', code)
         return code
