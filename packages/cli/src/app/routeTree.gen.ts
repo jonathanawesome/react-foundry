@@ -10,12 +10,18 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ComponentIdIndexRouteImport } from './routes/$componentId.index'
 import { Route as ComponentIdVariantVariantNameRouteImport } from './routes/$componentId.variant.$variantName'
 import { Route as ComponentIdDemoDemoNameRouteImport } from './routes/$componentId.demo.$demoName'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ComponentIdIndexRoute = ComponentIdIndexRouteImport.update({
+  id: '/$componentId/',
+  path: '/$componentId/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ComponentIdVariantVariantNameRoute =
@@ -32,17 +38,20 @@ const ComponentIdDemoDemoNameRoute = ComponentIdDemoDemoNameRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/$componentId': typeof ComponentIdIndexRoute
   '/$componentId/demo/$demoName': typeof ComponentIdDemoDemoNameRoute
   '/$componentId/variant/$variantName': typeof ComponentIdVariantVariantNameRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/$componentId': typeof ComponentIdIndexRoute
   '/$componentId/demo/$demoName': typeof ComponentIdDemoDemoNameRoute
   '/$componentId/variant/$variantName': typeof ComponentIdVariantVariantNameRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/$componentId/': typeof ComponentIdIndexRoute
   '/$componentId/demo/$demoName': typeof ComponentIdDemoDemoNameRoute
   '/$componentId/variant/$variantName': typeof ComponentIdVariantVariantNameRoute
 }
@@ -50,22 +59,26 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/$componentId'
     | '/$componentId/demo/$demoName'
     | '/$componentId/variant/$variantName'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/$componentId'
     | '/$componentId/demo/$demoName'
     | '/$componentId/variant/$variantName'
   id:
     | '__root__'
     | '/'
+    | '/$componentId/'
     | '/$componentId/demo/$demoName'
     | '/$componentId/variant/$variantName'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ComponentIdIndexRoute: typeof ComponentIdIndexRoute
   ComponentIdDemoDemoNameRoute: typeof ComponentIdDemoDemoNameRoute
   ComponentIdVariantVariantNameRoute: typeof ComponentIdVariantVariantNameRoute
 }
@@ -77,6 +90,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$componentId/': {
+      id: '/$componentId/'
+      path: '/$componentId'
+      fullPath: '/$componentId'
+      preLoaderRoute: typeof ComponentIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$componentId/variant/$variantName': {
@@ -98,6 +118,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ComponentIdIndexRoute: ComponentIdIndexRoute,
   ComponentIdDemoDemoNameRoute: ComponentIdDemoDemoNameRoute,
   ComponentIdVariantVariantNameRoute: ComponentIdVariantVariantNameRoute,
 }
