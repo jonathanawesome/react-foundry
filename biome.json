@@ -10,7 +10,7 @@
     "enabled": true,
     "indentStyle": "space",
     "indentWidth": 2,
-    "lineWidth": 80
+    "lineWidth": 90
   },
   "javascript": {
     "formatter": {
@@ -35,6 +35,18 @@
       }
     }
   },
+  "overrides": [
+    {
+      "includes": ["packages/cli/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            "noConsole": "off"
+          }
+        }
+      }
+    }
+  ],
   "files": {
     "includes": ["**", "!**/*.gen.ts"]
   }

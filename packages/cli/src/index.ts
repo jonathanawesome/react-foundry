@@ -1,6 +1,6 @@
 import cac from 'cac'
-import { dev } from './commands/dev'
 import { build } from './commands/build'
+import { dev } from './commands/dev'
 import { preview } from './commands/preview'
 
 const cli = cac('foundry')
@@ -13,11 +13,9 @@ cli
     await dev(root)
   })
 
-cli
-  .command('build [root]', 'Build for production')
-  .action(async (root?: string) => {
-    await build(root)
-  })
+cli.command('build [root]', 'Build for production').action(async (root?: string) => {
+  await build(root)
+})
 
 cli
   .command('preview [root]', 'Preview production build')

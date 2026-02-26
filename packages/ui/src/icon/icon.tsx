@@ -1,7 +1,6 @@
-import { RecipeVariants } from '@react-foundry/style'
-
-import { IconMap } from './icon-map'
+import type { RecipeVariants } from '@react-foundry/style'
 import { iconClass } from './icon.css'
+import { IconMap } from './icon-map'
 
 type IconVariants = RecipeVariants<typeof iconClass>
 

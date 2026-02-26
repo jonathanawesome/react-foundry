@@ -1,9 +1,9 @@
-import { resolve, dirname } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { InlineConfig } from 'vite'
-import react from '@vitejs/plugin-react'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin'
+import react from '@vitejs/plugin-react'
+import type { InlineConfig } from 'vite'
 import type { ResolvedFoundryConfig } from '../types'
 import { createVirtualModulePlugin } from './virtual-module-plugin'
 

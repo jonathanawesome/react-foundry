@@ -57,14 +57,11 @@ globalStyle('input, textarea, select', {
   margin: 0,
 })
 
-globalStyle(
-  'input[type="text"], input[type="email"], input[type="password"], textarea',
-  {
-    WebkitAppearance: 'none',
-    MozAppearance: 'none',
-    appearance: 'none',
-  }
-)
+globalStyle('input[type="text"], input[type="email"], input[type="password"], textarea', {
+  WebkitAppearance: 'none',
+  MozAppearance: 'none',
+  appearance: 'none',
+})
 
 // Focus styles
 globalStyle('*:focus-visible', {

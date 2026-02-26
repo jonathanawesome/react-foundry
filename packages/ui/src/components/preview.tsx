@@ -1,6 +1,5 @@
-import { useRef } from 'react'
-
 import type { ComponentPreview } from '@react-foundry/core'
+import { useRef } from 'react'
 
 import { useUIStore } from '../state'
 
@@ -51,7 +50,7 @@ export function Preview({ preview, selectedItem, selectedType }: PreviewProps) {
 
   // Render based on selection type
   if (selectedType === 'demo' && preview.demos) {
-    const currentDemo = preview.demos.find(d => d.name === selectedItem)
+    const currentDemo = preview.demos.find((d) => d.name === selectedItem)
     if (currentDemo) {
       // Wrap render function as a component to properly handle hooks
       const DemoComponent = currentDemo.render
@@ -69,7 +68,7 @@ export function Preview({ preview, selectedItem, selectedType }: PreviewProps) {
       )
     }
   } else if (selectedType === 'variant' && preview.variants) {
-    const currentVariant = preview.variants.find(v => v.name === selectedItem)
+    const currentVariant = preview.variants.find((v) => v.name === selectedItem)
     if (currentVariant) {
       const Component = preview.component
       return (

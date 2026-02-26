@@ -1,5 +1,5 @@
-import { createServer } from 'vite'
 import pc from 'picocolors'
+import { createServer } from 'vite'
 import { loadConfig } from '../config/load-config'
 import { createViteConfig } from '../vite/create-config'
 

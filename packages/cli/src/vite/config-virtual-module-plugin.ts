@@ -3,11 +3,9 @@ import type { Plugin } from 'vite'
 import type { FoundryConfig } from '../types'
 
 const VIRTUAL_ID = 'virtual:react-foundry-config'
-const RESOLVED_ID = '\0' + VIRTUAL_ID
+const RESOLVED_ID = `\0${VIRTUAL_ID}`
 
-export function createConfigVirtualModulePlugin(
-  theme: FoundryConfig['theme']
-): Plugin {
+export function createConfigVirtualModulePlugin(theme: FoundryConfig['theme']): Plugin {
   const themeColors = {
     dark: theme?.colors?.dark ?? {},
     light: theme?.colors?.light ?? {},

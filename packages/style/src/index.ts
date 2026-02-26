@@ -1,6 +1,7 @@
 // import and reexport VE bits (we'll manage all VE bits here in style)
-export { recipe, type RecipeVariants } from '@vanilla-extract/recipes'
+
 export { globalStyle, keyframes, style } from '@vanilla-extract/css'
+export { type RecipeVariants, recipe } from '@vanilla-extract/recipes'
 
 // Global styles
 import './global-styles.css'
@@ -10,9 +11,9 @@ import './fonts.css'
 
 // Theme contract and implementations
 export { themeContract } from './theme-contract.css'
-export { lightTheme, darkTheme } from './themes.css'
+export type { Theme, ThemeContextValue } from './theme-provider'
 
 // Theme provider and hook
-export { ThemeProvider, ThemeContext } from './theme-provider'
-export type { Theme, ThemeContextValue } from './theme-provider'
+export { ThemeContext, ThemeProvider } from './theme-provider'
+export { darkTheme, lightTheme } from './themes.css'
 export { useTheme } from './use-theme'

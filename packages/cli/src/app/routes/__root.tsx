@@ -1,7 +1,6 @@
-import { Outlet, createRootRoute } from '@tanstack/react-router'
-
 import { ThemeProvider } from '@react-foundry/style'
 import { Layout, Navigation, Shelf } from '@react-foundry/ui'
+import { createRootRoute, Outlet } from '@tanstack/react-router'
 
 import { discoverComponents } from '../utils/discovery'
 

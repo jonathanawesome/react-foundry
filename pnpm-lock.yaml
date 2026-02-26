@@ -122,46 +122,6 @@ importers:
         specifier: ^6.0.0
         version: 6.4.1(@types/node@24.10.1)(tsx@4.21.0)
 
-  packages/components:
-    dependencies:
-      '@react-foundry/core':
-        specifier: workspace:*
-        version: link:../core
-      '@react-foundry/style':
-        specifier: workspace:*
-        version: link:../style
-      '@tanstack/react-router':
-        specifier: ^1.131.36
-        version: 1.140.0(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
-      '@vanilla-extract/css':
-        specifier: ^1.17.0
-        version: 1.17.5
-      '@vanilla-extract/recipes':
-        specifier: ^0.5.0
-        version: 0.5.7(@vanilla-extract/css@1.17.5)
-      axe-core:
-        specifier: ^4.10.3
-        version: 4.11.0
-      lucide-react:
-        specifier: latest
-        version: 0.575.0(react@19.2.1)
-      react:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.1
-      react-dom:
-        specifier: ^18.0.0 || ^19.0.0
-        version: 19.2.1(react@19.2.1)
-      zustand:
-        specifier: ^5.0.8
-        version: 5.0.9(@types/react@19.2.7)(react@19.2.1)(use-sync-external-store@1.6.0(react@19.2.1))
-    devDependencies:
-      '@types/react':
-        specifier: ^19.1.12
-        version: 19.2.7
-      '@types/react-dom':
-        specifier: ^19.1.9
-        version: 19.2.3(@types/react@19.2.7)
-
   packages/core:
     dependencies:
       react:
@@ -1219,11 +1179,6 @@ packages:
 
   lru-cache@5.1.1:
     resolution: {integrity: sha512-KpNARQA3Iwv+jTA0utUVVbrh+Jlrr1Fv0e56GGzAFOXN7dk/FviaDW8LHmK52DlcH4WP2n6gI8vN1aesBFgo9w==}
-
-  lucide-react@0.575.0:
-    resolution: {integrity: sha512-VuXgKZrk0uiDlWjGGXmKV6MSk9Yy4l10qgVvzGn2AWBx1Ylt0iBexKOAoA6I7JO3m+M9oeovJd3yYENfkUbOeg==}
-    peerDependencies:
-      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
   media-query-parser@2.0.2:
     resolution: {integrity: sha512-1N4qp+jE0pL5Xv4uEcwVUhIkwdUO3S/9gML90nqKA7v7FcOS5vUtatfzok9S9U1EJU8dHWlcv95WLnKmmxZI9w==}
@@ -2443,10 +2398,6 @@ snapshots:
   lru-cache@5.1.1:
     dependencies:
       yallist: 3.1.1
-
-  lucide-react@0.575.0(react@19.2.1):
-    dependencies:
-      react: 19.2.1
 
   media-query-parser@2.0.2:
     dependencies:

@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 import { buttonStyles } from './button.css'
 
@@ -19,6 +19,7 @@ export const Button = ({
 }: ButtonProps) => {
   return (
     <button
+      type="button"
       className={buttonStyles({ variant, size })}
       onClick={onClick}
       disabled={disabled}

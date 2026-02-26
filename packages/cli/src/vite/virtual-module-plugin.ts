@@ -3,7 +3,7 @@ import { glob } from 'glob'
 import type { Plugin } from 'vite'
 
 const VIRTUAL_MODULE_ID = 'virtual:react-foundry-previews'
-const RESOLVED_VIRTUAL_MODULE_ID = '\0' + VIRTUAL_MODULE_ID
+const RESOLVED_VIRTUAL_MODULE_ID = `\0${VIRTUAL_MODULE_ID}`
 
 export function createVirtualModulePlugin(
   previewsPattern: string,
@@ -11,7 +11,7 @@ export function createVirtualModulePlugin(
   viteRoot: string
 ): Plugin {
   // Construct the absolute path to the user's root directory and append the pattern
-  const absoluteUserRoot = userRoot.split('\\').join('/')
+  const _absoluteUserRoot = userRoot.split('\\').join('/')
 
   // Ensure pattern doesn't start with / or ./
   const cleanPattern = previewsPattern.replace(/^\.?\//, '')
@@ -37,15 +37,19 @@ export function createVirtualModulePlugin(
         console.log('[React Foundry] Found preview files:', files)
 
         // Generate explicit imports for each file
-        const imports = files.map((file, index) => {
-          const normalizedPath = file.split('\\').join('/')
-          return `import * as module${index} from '${normalizedPath}';`
-        }).join('\n')
+        const imports = files
+          .map((file, index) => {
+            const normalizedPath = file.split('\\').join('/')
+            return `import * as module${index} from '${normalizedPath}';`
+          })
+          .join('\n')
 
-        const moduleObject = files.map((file, index) => {
-          const normalizedPath = file.split('\\').join('/')
-          return `  '${normalizedPath}': module${index},`
-        }).join('\n')
+        const moduleObject = files
+          .map((file, index) => {
+            const normalizedPath = file.split('\\').join('/')
+            return `  '${normalizedPath}': module${index},`
+          })
+          .join('\n')
 
         const code = `${imports}
 

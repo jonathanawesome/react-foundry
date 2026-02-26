@@ -43,8 +43,8 @@ export default createPreview({
           <Card>
             <h3 style={{ marginBottom: '8px' }}>Card Title</h3>
             <p>
-              This is a card with some content. Cards are great for grouping
-              related information together.
+              This is a card with some content. Cards are great for grouping related
+              information together.
             </p>
           </Card>
           <Card elevated>

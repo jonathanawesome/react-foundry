@@ -1,4 +1,4 @@
-import { ComponentType, ReactElement } from 'react'
+import type { ComponentType, ReactElement } from 'react'
 
 export interface ComponentVariant {
   name: string

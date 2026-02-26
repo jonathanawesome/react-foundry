@@ -24,7 +24,7 @@ const uiStore = create<UIStore>()((set, get) => ({
     return set({ isAccessibilityEnabled: !isAccessibilityEnabled })
   },
 
-  setIsShelfPinned: bool => {
+  setIsShelfPinned: (bool) => {
     return set({ isShelfPinned: bool })
   },
 

@@ -1,5 +1,5 @@
-import { preview as vitePreview } from 'vite'
 import pc from 'picocolors'
+import { preview as vitePreview } from 'vite'
 import { loadConfig } from '../config/load-config'
 import { createViteConfig } from '../vite/create-config'
 

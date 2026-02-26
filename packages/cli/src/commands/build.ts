@@ -1,5 +1,5 @@
-import { build as viteBuild } from 'vite'
 import pc from 'picocolors'
+import { build as viteBuild } from 'vite'
 import { loadConfig } from '../config/load-config'
 import { createViteConfig } from '../vite/create-config'
 

@@ -1,6 +1,6 @@
 import { useTheme } from '@react-foundry/style'
 
-import { Icon, IconNames } from '../icon/icon'
+import { Icon, type IconNames } from '../icon/icon'
 import { useUIStore } from '../state'
 
 import { navigationStyles } from './navigation.css'
@@ -13,7 +13,12 @@ type NavigationItemProps = {
 
 const NavigationItem = ({ icon, onClick, title }: NavigationItemProps) => {
   return (
-    <button className={navigationStyles.item} onClick={onClick} title={title}>
+    <button
+      type="button"
+      className={navigationStyles.item}
+      onClick={onClick}
+      title={title}
+    >
       <Icon name={icon} size="medium" />
     </button>
   )

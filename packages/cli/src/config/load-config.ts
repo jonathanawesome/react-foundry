@@ -1,6 +1,6 @@
-import { pathToFileURL } from 'node:url'
-import { resolve } from 'node:path'
 import { existsSync } from 'node:fs'
+import { resolve } from 'node:path'
+import { pathToFileURL } from 'node:url'
 import type { FoundryConfig, ResolvedFoundryConfig } from '../types'
 import { DEFAULT_CONFIG } from './defaults'
 

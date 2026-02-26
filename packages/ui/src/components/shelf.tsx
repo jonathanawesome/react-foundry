@@ -1,7 +1,6 @@
-import { Link, useParams } from '@tanstack/react-router'
-import { useState, useEffect, ReactElement } from 'react'
-
 import type { DiscoveredComponent } from '@react-foundry/core'
+import { Link, useParams } from '@tanstack/react-router'
+import { type ReactElement, useEffect, useState } from 'react'
 
 import { Icon } from '../icon/icon'
 import { useUIStore } from '../state'
@@ -18,14 +17,12 @@ function useExpandState(
   routeVariantName: string | null,
   routeDemoName: string | null
 ) {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set()
-  )
+  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
 
   // Auto-expand sections based on current route
   useEffect(() => {
     if (routeComponentId) {
-      setExpandedSections(prev => {
+      setExpandedSections((prev) => {
         const newSet = new Set(prev)
         // Expand the component section
         newSet.add(`${routeComponentId}-component`)
@@ -46,7 +43,7 @@ function useExpandState(
   }, [routeComponentId, routeVariantName, routeDemoName])
 
   const toggleExpanded = (sectionId: string) => {
-    setExpandedSections(prev => {
+    setExpandedSections((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(sectionId)) {
         newSet.delete(sectionId)
@@ -73,6 +70,7 @@ const SectionHeader = ({
   isExpanded: boolean
 }) => (
   <button
+    type="button"
     className={shelfStyles.sectionHeader}
     onClick={action}
     data-active={isExpanded}
@@ -110,7 +108,6 @@ const CollapsibleSection = ({
       <ul
         className={shelfStyles.sectionList}
         id={`${title.toLowerCase()}-list-${componentId}`}
-        role="group"
       >
         {children}
       </ul>
@@ -169,6 +166,7 @@ const ComponentItem = ({
   return (
     <li className={shelfStyles.componentItem}>
       <button
+        type="button"
         className={shelfStyles.componentTitle}
         onClick={() => toggleExpanded(componentId)}
         data-expanded={isComponentExpanded}
@@ -184,23 +182,20 @@ const ComponentItem = ({
           isExpanded={isExpanded(variantsSectionId)}
           toggleExpanded={toggleExpanded}
         >
-          <>
-            {component.variants?.map(variant => (
-              <SectionItem
-                key={variant.name}
-                to="/$componentId/variant/$variantName"
-                params={{
-                  componentId: component.id,
-                  variantName: variant.name,
-                }}
-                isActive={
-                  routeComponentId === component.id &&
-                  routeVariantName === variant.name
-                }
-                name={variant.name}
-              />
-            ))}
-          </>
+          {component.variants?.map((variant) => (
+            <SectionItem
+              key={variant.name}
+              to="/$componentId/variant/$variantName"
+              params={{
+                componentId: component.id,
+                variantName: variant.name,
+              }}
+              isActive={
+                routeComponentId === component.id && routeVariantName === variant.name
+              }
+              name={variant.name}
+            />
+          ))}
         </CollapsibleSection>
       )}
 
@@ -212,23 +207,18 @@ const ComponentItem = ({
           isExpanded={isExpanded(demosSectionId)}
           toggleExpanded={toggleExpanded}
         >
-          <>
-            {component.demos?.map(demo => (
-              <SectionItem
-                key={demo.name}
-                to="/$componentId/demo/$demoName"
-                params={{
-                  componentId: component.id,
-                  demoName: demo.name,
-                }}
-                isActive={
-                  routeComponentId === component.id &&
-                  routeDemoName === demo.name
-                }
-                name={demo.name}
-              />
-            ))}
-          </>
+          {component.demos?.map((demo) => (
+            <SectionItem
+              key={demo.name}
+              to="/$componentId/demo/$demoName"
+              params={{
+                componentId: component.id,
+                demoName: demo.name,
+              }}
+              isActive={routeComponentId === component.id && routeDemoName === demo.name}
+              name={demo.name}
+            />
+          ))}
         </CollapsibleSection>
       )}
     </li>
@@ -241,12 +231,9 @@ export const Shelf = ({ components }: ShelfProps) => {
   const params = useParams({ strict: false })
 
   // Extract route params more cleanly
-  const routeComponentId =
-    'componentId' in params ? (params.componentId as string) : null
-  const routeVariantName =
-    'variantName' in params ? (params.variantName as string) : null
-  const routeDemoName =
-    'demoName' in params ? (params.demoName as string) : null
+  const routeComponentId = 'componentId' in params ? (params.componentId as string) : null
+  const routeVariantName = 'variantName' in params ? (params.variantName as string) : null
+  const routeDemoName = 'demoName' in params ? (params.demoName as string) : null
 
   const { isExpanded, toggleExpanded } = useExpandState(
     routeComponentId,
@@ -278,13 +265,11 @@ export const Shelf = ({ components }: ShelfProps) => {
             <div key={category} className={shelfStyles.category}>
               <h2 className={shelfStyles.categoryTitle}>{category}</h2>
               <ul className={shelfStyles.componentList}>
-                {discoveredComponents.map(component => (
+                {discoveredComponents.map((component) => (
                   <ComponentItem
                     key={component.id}
                     component={component}
-                    isComponentExpanded={isExpanded(
-                      `${component.id}-component`
-                    )}
+                    isComponentExpanded={isExpanded(`${component.id}-component`)}
                     toggleExpanded={toggleExpanded}
                     isExpanded={isExpanded}
                     routeComponentId={routeComponentId}

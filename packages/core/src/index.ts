@@ -1,9 +1,9 @@
 export { createPreview } from './create-preview'
 export { createDiscovery } from './discovery'
 export type {
+  ComponentDemo,
   ComponentPreview,
   ComponentVariant,
-  ComponentDemo,
   DiscoveredComponent,
   PreviewModule,
 } from './types'

@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import { createConfigVirtualModulePlugin } from '../src/vite/config-virtual-module-plugin'
 
@@ -7,7 +7,9 @@ const RESOLVED_ID = '\0virtual:react-foundry-config'
 describe('createConfigVirtualModulePlugin', () => {
   it('resolves the virtual module ID', () => {
     const plugin = createConfigVirtualModulePlugin(undefined)
-    expect(plugin.resolveId?.('virtual:react-foundry-config', undefined, {})).toBe(RESOLVED_ID)
+    expect(plugin.resolveId?.('virtual:react-foundry-config', undefined, {})).toBe(
+      RESOLVED_ID
+    )
     expect(plugin.resolveId?.('something-else', undefined, {})).toBeUndefined()
   })
 

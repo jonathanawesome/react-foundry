@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import type { ReactNode } from 'react'
 
 import { cardStyles } from './card.css'
 
@@ -8,12 +8,6 @@ export interface CardProps {
   elevated?: boolean
 }
 
-export const Card = ({
-  children,
-  padding = 'medium',
-  elevated = false,
-}: CardProps) => {
-  return (
-    <div className={cardStyles({ padding, elevated })}>{children}</div>
-  )
+export const Card = ({ children, padding = 'medium', elevated = false }: CardProps) => {
+  return <div className={cardStyles({ padding, elevated })}>{children}</div>
 }

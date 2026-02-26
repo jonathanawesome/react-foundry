@@ -60,9 +60,7 @@ export default createPreview({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             <div>
               <p style={{ marginBottom: '8px' }}>Click count: {count}</p>
-              <Button onClick={() => setCount(count + 1)}>
-                Increment Counter
-              </Button>
+              <Button onClick={() => setCount(count + 1)}>Increment Counter</Button>
             </div>
           </div>
         )

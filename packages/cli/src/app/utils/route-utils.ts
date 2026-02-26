@@ -4,6 +4,6 @@ import { discoverComponents } from './discovery'
 
 export function getComponentById(id: string): ComponentPreview | null {
   const components = discoverComponents()
-  const component = components.find(c => c.id === id)
+  const component = components.find((c) => c.id === id)
   return component || null
 }

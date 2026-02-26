@@ -1,6 +1,5 @@
-import { createFileRoute } from '@tanstack/react-router'
-
 import { Preview } from '@react-foundry/ui'
+import { createFileRoute } from '@tanstack/react-router'
 
 import { getComponentById } from '../utils/route-utils'
 
@@ -17,7 +16,5 @@ function DemoComponent() {
   const { preview } = Route.useLoaderData()
   const { demoName } = Route.useParams()
 
-  return (
-    <Preview preview={preview} selectedItem={demoName} selectedType="demo" />
-  )
+  return <Preview preview={preview} selectedItem={demoName} selectedType="demo" />
 }

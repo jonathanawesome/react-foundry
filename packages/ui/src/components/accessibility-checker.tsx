@@ -1,6 +1,6 @@
 import { useLocation } from '@tanstack/react-router'
-import axe, { NodeResult } from 'axe-core'
-import { useEffect, useState, useRef, useCallback } from 'react'
+import axe, { type NodeResult } from 'axe-core'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { Icon } from '../icon/icon'
 
@@ -30,10 +30,8 @@ export function AccessibilityChecker({
   const [isExpanded, setIsExpanded] = useState(true)
   const [isScanning, setIsScanning] = useState(false)
   const [lastScanTime, setLastScanTime] = useState<Date | null>(null)
-  const scanTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(
-    undefined
-  )
-  const location = useLocation()
+  const scanTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const _location = useLocation()
 
   const runAccessibilityCheck = useCallback(async () => {
     if (!targetRef.current || !isEnabled) return
@@ -73,7 +71,7 @@ export function AccessibilityChecker({
         clearTimeout(scanTimeoutRef.current)
       }
     }
-  }, [targetRef, isEnabled, runAccessibilityCheck, location.pathname])
+  }, [isEnabled, runAccessibilityCheck])
 
   if (!isEnabled) return null
 
@@ -103,17 +101,13 @@ export function AccessibilityChecker({
     >
       <div className={accessibilityCheckerStyles.header}>
         <button
+          type="button"
           className={accessibilityCheckerStyles.toggleButton}
           onClick={() => setIsExpanded(!isExpanded)}
           aria-expanded={isExpanded}
         >
-          <Icon
-            name="Chevron"
-            rotate={isExpanded ? undefined : '270'}
-          />
-          <span className={accessibilityCheckerStyles.title}>
-            Accessibility Check
-          </span>
+          <Icon name="Chevron" rotate={isExpanded ? undefined : '270'} />
+          <span className={accessibilityCheckerStyles.title}>Accessibility Check</span>
           {isScanning ? (
             <span className={accessibilityCheckerStyles.scanningIndicator}>
               Scanning...
@@ -122,8 +116,8 @@ export function AccessibilityChecker({
             <>
               {violations.length > 0 && (
                 <span className={accessibilityCheckerStyles.violationCount}>
-                  {violations.length} issue{violations.length !== 1 ? 's' : ''}{' '}
-                  ({totalViolations} instance
+                  {violations.length} issue{violations.length !== 1 ? 's' : ''} (
+                  {totalViolations} instance
                   {totalViolations !== 1 ? 's' : ''})
                 </span>
               )}
@@ -137,6 +131,7 @@ export function AccessibilityChecker({
           )}
         </button>
         <button
+          type="button"
           className={accessibilityCheckerStyles.rescanButton}
           onClick={() => void runAccessibilityCheck()}
           disabled={isScanning}
@@ -155,11 +150,8 @@ export function AccessibilityChecker({
             </div>
           )}
 
-          {violations.map(violation => (
-            <details
-              key={violation.id}
-              className={accessibilityCheckerStyles.violation}
-            >
+          {violations.map((violation) => (
+            <details key={violation.id} className={accessibilityCheckerStyles.violation}>
               <summary className={accessibilityCheckerStyles.violationSummary}>
                 <div className={accessibilityCheckerStyles.violationHeader}>
                   <span className={getImpactColor(violation.impact)}>
@@ -186,9 +178,9 @@ export function AccessibilityChecker({
                   {violation.description}
                 </p>
                 <div className={accessibilityCheckerStyles.nodes}>
-                  {violation.nodes.map((node, index) => (
+                  {violation.nodes.map((node) => (
                     <div
-                      key={index}
+                      key={node.target.join('>')}
                       className={accessibilityCheckerStyles.node}
                     >
                       <div className={accessibilityCheckerStyles.nodeSelector}>

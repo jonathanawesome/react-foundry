@@ -1,17 +1,12 @@
 import type { DiscoveredComponent, PreviewModule } from './types'
 
-export function createDiscovery(
-  previewModules: Record<string, PreviewModule>
-) {
+export function createDiscovery(previewModules: Record<string, PreviewModule>) {
   return function discoverComponents(): DiscoveredComponent[] {
     const components: DiscoveredComponent[] = []
 
     for (const [path, previewModule] of Object.entries(previewModules)) {
       const pathParts = path.split('/')
-      const fileName = pathParts[pathParts.length - 1].replace(
-        '.preview.tsx',
-        ''
-      )
+      const fileName = pathParts[pathParts.length - 1].replace('.preview.tsx', '')
 
       components.push({
         id: fileName,
