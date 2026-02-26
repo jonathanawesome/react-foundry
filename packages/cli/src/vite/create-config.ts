@@ -22,7 +22,11 @@ export function createViteConfig(
   const cacheDir = resolve(root, 'node_modules', '.cache', 'react-foundry')
   const themeConfigPath = writeThemeConfig(config.theme, cacheDir)
 
-  const { plugins: userPlugins, resolve: userResolve, ...userViteConfig } = config.viteConfig || {}
+  const {
+    plugins: userPlugins,
+    resolve: userResolve,
+    ...userViteConfig
+  } = config.viteConfig || {}
 
   return {
     root: cliAppDir, // Use CLI app dir as Vite root

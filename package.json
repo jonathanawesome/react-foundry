@@ -12,6 +12,7 @@
     "format:fix": "biome format . --write",
     "check": "biome check .",
     "check:fix": "biome check . --write",
+    "test": "turbo run test",
     "types": "turbo run types",
     "demo": "pnpm --filter demo dev"
   },

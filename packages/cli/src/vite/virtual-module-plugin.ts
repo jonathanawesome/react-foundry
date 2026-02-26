@@ -27,7 +27,11 @@ export function createVirtualModulePlugin(
         const files = await glob(searchPattern, { absolute: true })
 
         if (!logged) {
-          console.log(pc.green(`  Found ${files.length} preview file${files.length === 1 ? '' : 's'}`))
+          console.log(
+            pc.green(
+              `  Found ${files.length} preview file${files.length === 1 ? '' : 's'}`
+            )
+          )
           logged = true
         }
 

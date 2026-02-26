@@ -54,7 +54,10 @@ describe('writeThemeConfig', () => {
 
   it('overwrites existing file on subsequent calls', () => {
     writeThemeConfig({ colors: { dark: { brand: 'old' } } }, testCacheDir)
-    const filePath = writeThemeConfig({ colors: { dark: { brand: 'new' } } }, testCacheDir)
+    const filePath = writeThemeConfig(
+      { colors: { dark: { brand: 'new' } } },
+      testCacheDir
+    )
     const content = readFileSync(filePath, 'utf-8')
     expect(content).toContain('"brand":"new"')
     expect(content).not.toContain('"brand":"old"')
