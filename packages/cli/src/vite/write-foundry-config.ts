@@ -3,8 +3,9 @@ import { resolve } from 'node:path'
 
 import type { ThemeConfig } from '../types'
 
-export function writeThemeConfig(
+export function writeFoundryConfig(
   theme: ThemeConfig | undefined,
+  title: string | undefined,
   cacheDir: string
 ): string {
   const themeColors = {
@@ -17,7 +18,11 @@ export function writeThemeConfig(
   }
 
   const filePath = resolve(cacheDir, 'react-foundry-config.js')
-  const content = `export const themeColors = ${JSON.stringify(themeColors)};\n`
+  const content = [
+    `export const themeColors = ${JSON.stringify(themeColors)};`,
+    `export const foundryTitle = ${JSON.stringify(title ?? '')};`,
+    '',
+  ].join('\n')
 
   writeFileSync(filePath, content, 'utf-8')
   return filePath

@@ -14,31 +14,35 @@ export interface ThemeConfig {
 
 export interface FoundryConfig {
   /**
-   * Glob pattern for preview files
+   * Glob pattern for preview files.
+   * Requires server restart.
    * @default 'src/components/**\/*.preview.tsx'
    */
   previews?: string
 
   /**
-   * Port for dev server
+   * Port for dev server.
+   * Requires server restart.
    * @default 5173
    */
   port?: number
 
   /**
-   * Host for dev server
+   * Host for dev server.
+   * Requires server restart.
    * @default 'localhost'
    */
   host?: string
 
-  /** Display title for the Foundry instance */
+  /** Display title for the Foundry instance. Hot-reloadable. */
   title?: string
 
-  /** Theme customization */
+  /** Theme customization. Hot-reloadable. */
   theme?: ThemeConfig
 
   /**
-   * Custom Vite config overrides
+   * Custom Vite config overrides.
+   * Requires server restart.
    */
   viteConfig?: ViteUserConfig
 }

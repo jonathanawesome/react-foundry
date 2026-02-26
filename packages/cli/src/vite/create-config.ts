@@ -5,8 +5,9 @@ import { vanillaExtractPlugin } from '@vanilla-extract/vite-plugin'
 import react from '@vitejs/plugin-react'
 import type { InlineConfig } from 'vite'
 import type { ResolvedFoundryConfig } from '../types'
+import { createConfigHmrPlugin } from './config-hmr-plugin'
 import { createVirtualModulePlugin } from './virtual-module-plugin'
-import { writeThemeConfig } from './write-theme-config'
+import { writeFoundryConfig } from './write-foundry-config'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const cliAppDir = resolve(__dirname, '../../src/app')
@@ -18,9 +19,9 @@ export function createViteConfig(
   // Find the monorepo root (go up from CLI package to root)
   const monorepoRoot = resolve(__dirname, '../../../../')
 
-  // Write theme config to a real file so vanilla-extract's child compiler can resolve it
+  // Write config to a real file so vanilla-extract's child compiler can resolve it
   const cacheDir = resolve(root, 'node_modules', '.cache', 'react-foundry')
-  const themeConfigPath = writeThemeConfig(config.theme, cacheDir)
+  const configFilePath = writeFoundryConfig(config.theme, config.title, cacheDir)
 
   const {
     plugins: userPlugins,
@@ -31,6 +32,7 @@ export function createViteConfig(
   return {
     root: cliAppDir, // Use CLI app dir as Vite root
     plugins: [
+      createConfigHmrPlugin(root, cacheDir),
       createVirtualModulePlugin(config.previews, root),
       react(),
       tanstackRouter({
@@ -46,7 +48,7 @@ export function createViteConfig(
         ...(typeof userResolve?.alias === 'object' && !Array.isArray(userResolve.alias)
           ? userResolve.alias
           : {}),
-        'virtual:react-foundry-config': themeConfigPath,
+        'virtual:react-foundry-config': configFilePath,
       },
     },
     server: {

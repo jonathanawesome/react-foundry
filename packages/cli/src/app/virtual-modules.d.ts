@@ -11,4 +11,5 @@ declare module 'virtual:react-foundry-config' {
     dark: Partial<Record<ColorToken, string>>
     light: Partial<Record<ColorToken, string>>
   }
+  export const foundryTitle: string
 }

@@ -13,19 +13,17 @@ const CONFIG_FILE_NAMES = [
   '.foundry/config.ts',
 ]
 
+export function findConfigPath(root: string): string | undefined {
+  for (const fileName of CONFIG_FILE_NAMES) {
+    const fullPath = resolve(root, fileName)
+    if (existsSync(fullPath)) return fullPath
+  }
+}
+
 export async function loadConfig(
   root: string = process.cwd()
 ): Promise<ResolvedFoundryConfig> {
-  // Find config file
-  let configPath: string | undefined
-
-  for (const fileName of CONFIG_FILE_NAMES) {
-    const fullPath = resolve(root, fileName)
-    if (existsSync(fullPath)) {
-      configPath = fullPath
-      break
-    }
-  }
+  const configPath = findConfigPath(root)
 
   let userConfig: FoundryConfig = {}
 

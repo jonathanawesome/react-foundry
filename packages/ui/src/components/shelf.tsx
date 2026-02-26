@@ -1,9 +1,8 @@
 import type { DiscoveredComponent } from '@react-foundry/core'
 import { Link, useParams } from '@tanstack/react-router'
 import { type ReactNode, useEffect, useState } from 'react'
-
-import { Icon } from '../icon/icon'
 import { useUIStore } from '../state'
+import { Icon } from './icon/icon'
 
 import { shelfStyles } from './shelf.css'
 

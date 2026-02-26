@@ -1,7 +1,6 @@
 import { useTheme } from '@react-foundry/style'
-
-import { Icon, type IconNames } from '../icon/icon'
 import { useUIStore } from '../state'
+import { Icon, type IconNames } from './icon/icon'
 
 import { navigationStyles } from './navigation.css'
 

@@ -1,9 +1,7 @@
 import axe, { type NodeResult } from 'axe-core'
 import { useCallback, useEffect, useRef, useState } from 'react'
-
-import { Icon } from '../icon/icon'
-
 import { accessibilityCheckerStyles } from './accessibility-checker.css'
+import { Icon } from './icon/icon'
 
 interface AccessibilityCheckerProps {
   targetRef: React.RefObject<HTMLDivElement | null>
