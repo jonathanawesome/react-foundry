@@ -6,11 +6,14 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "lint": "turbo run lint",
+    "lint": "biome lint .",
+    "lint:fix": "biome lint . --write",
+    "format": "biome format .",
+    "format:fix": "biome format . --write",
+    "check": "biome check .",
+    "check:fix": "biome check . --write",
     "types": "turbo run types",
-    "demo": "pnpm --filter demo dev",
-    "prettier:check": "pnpm prettier --check ./",
-    "prettier:write": "pnpm prettier --write ./"
+    "demo": "pnpm --filter demo dev"
   },
   "keywords": [
     "react",
@@ -29,11 +32,12 @@
     "@types/node": "^24.3.1",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9",
-    "eslint": "^9.15.0",
-    "prettier": "^3.6.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "turbo": "^2.5.6",
     "typescript": "^5.9.2"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.4"
   }
 }

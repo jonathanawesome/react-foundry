@@ -10,13 +10,10 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
     "types": "tsc --noEmit"
   },
   "dependencies": {
     "@react-foundry/core": "workspace:*",
-    "@react-foundry/eslint-config": "workspace:*",
     "@react-foundry/style": "workspace:*",
     "@react-foundry/ui": "workspace:*",
     "@tanstack/react-router": "^1.131.36",

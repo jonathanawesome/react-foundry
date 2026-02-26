@@ -9,16 +9,12 @@
     "./discovery": "./src/discovery.ts"
   },
   "scripts": {
-    "lint": "eslint src --ext .ts,.tsx",
-    "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "types": "tsc --noEmit"
   },
   "peerDependencies": {
     "react": "^18.0.0 || ^19.0.0"
   },
-  "dependencies": {
-    "@react-foundry/eslint-config": "workspace:*"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@types/react": "^19.1.12"
   }

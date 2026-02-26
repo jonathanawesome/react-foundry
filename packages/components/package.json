@@ -8,8 +8,6 @@
     "./icon": "./src/icon/icon.tsx"
   },
   "scripts": {
-    "lint": "eslint src",
-    "lint:fix": "eslint src --fix",
     "types": "tsc --noEmit"
   },
   "peerDependencies": {
@@ -27,7 +25,6 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
-    "@react-foundry/eslint-config": "workspace:*",
     "@types/react": "^19.1.12",
     "@types/react-dom": "^19.1.9"
   }
