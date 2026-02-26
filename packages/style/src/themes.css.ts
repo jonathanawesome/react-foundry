@@ -1,3 +1,5 @@
+/// <reference path="./virtual-modules.d.ts" />
+import { themeColors } from 'virtual:react-foundry-config'
 import { createTheme } from '@vanilla-extract/css'
 
 import { themeContract } from './theme-contract.css'
@@ -30,27 +32,12 @@ const colorTokens = {
 
 const colors = {
   dark: {
-    neutral1: colorTokens.dark.neutral1,
-    neutral2: colorTokens.dark.neutral2,
-    neutral3: colorTokens.dark.neutral3,
-    neutral4: colorTokens.dark.neutral4,
-    neutral5: colorTokens.dark.neutral5,
-    neutral6: colorTokens.dark.neutral6,
-    neutral7: colorTokens.dark.neutral7,
-    neutral8: colorTokens.dark.neutral8,
-
-    brand: colorTokens.dark.brand,
+    ...colorTokens.dark,
+    ...themeColors.dark,
   },
   light: {
-    neutral1: colorTokens.light.neutral1,
-    neutral2: colorTokens.light.neutral2,
-    neutral3: colorTokens.light.neutral3,
-    neutral4: colorTokens.light.neutral4,
-    neutral5: colorTokens.light.neutral5,
-    neutral6: colorTokens.light.neutral6,
-    neutral7: colorTokens.light.neutral7,
-    neutral8: colorTokens.light.neutral8,
-    brand: colorTokens.light.brand,
+    ...colorTokens.light,
+    ...themeColors.light,
   },
 }
 

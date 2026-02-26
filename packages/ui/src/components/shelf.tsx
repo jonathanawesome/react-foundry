@@ -1,6 +1,6 @@
 import type { DiscoveredComponent } from '@react-foundry/core'
 import { Link, useParams } from '@tanstack/react-router'
-import { type ReactElement, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 
 import { Icon } from '../icon/icon'
 import { useUIStore } from '../state'
@@ -87,7 +87,7 @@ interface CollapsibleSectionProps {
   componentId: string
   isExpanded: boolean
   toggleExpanded: (id: string) => void
-  children: ReactElement
+  children: ReactNode
 }
 
 const CollapsibleSection = ({

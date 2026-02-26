@@ -6,6 +6,7 @@ import react from '@vitejs/plugin-react'
 import type { InlineConfig } from 'vite'
 import type { ResolvedFoundryConfig } from '../types'
 import { createVirtualModulePlugin } from './virtual-module-plugin'
+import { writeThemeConfig } from './write-theme-config'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const cliAppDir = resolve(__dirname, '../../src/app')
@@ -17,28 +18,39 @@ export function createViteConfig(
   // Find the monorepo root (go up from CLI package to root)
   const monorepoRoot = resolve(__dirname, '../../../../')
 
-  console.log('[React Foundry] Monorepo root:', monorepoRoot)
-  console.log('[React Foundry] CLI app dir:', cliAppDir)
-  console.log('[React Foundry] User project root:', root)
+  // Write theme config to a real file so vanilla-extract's child compiler can resolve it
+  const cacheDir = resolve(root, 'node_modules', '.cache', 'react-foundry')
+  const themeConfigPath = writeThemeConfig(config.theme, cacheDir)
+
+  const { plugins: userPlugins, resolve: userResolve, ...userViteConfig } = config.viteConfig || {}
 
   return {
     root: cliAppDir, // Use CLI app dir as Vite root
     plugins: [
-      createVirtualModulePlugin(config.previews, root, cliAppDir),
+      createVirtualModulePlugin(config.previews, root),
       react(),
       tanstackRouter({
         routesDirectory: resolve(cliAppDir, 'routes'),
         generatedRouteTree: resolve(cliAppDir, 'routeTree.gen.ts'),
       }),
       vanillaExtractPlugin(),
-      ...(config.viteConfig?.plugins || []),
+      ...(userPlugins || []),
     ],
+    resolve: {
+      ...userResolve,
+      alias: {
+        ...(typeof userResolve?.alias === 'object' && !Array.isArray(userResolve.alias)
+          ? userResolve.alias
+          : {}),
+        'virtual:react-foundry-config': themeConfigPath,
+      },
+    },
     server: {
       port: config.port,
       host: config.host,
       fs: {
-        // Allow serving files from the entire monorepo
-        allow: [monorepoRoot],
+        // Allow serving files from the entire monorepo and cache dir
+        allow: [monorepoRoot, cacheDir],
         strict: false,
       },
       watch: {
@@ -54,6 +66,6 @@ export function createViteConfig(
       outDir: resolve(root, 'dist'),
     },
     publicDir: resolve(cliAppDir, 'public'),
-    ...config.viteConfig,
+    ...userViteConfig,
   }
 }

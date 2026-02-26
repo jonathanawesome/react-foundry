@@ -1,4 +1,3 @@
-import { useLocation } from '@tanstack/react-router'
 import axe, { type NodeResult } from 'axe-core'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -31,7 +30,6 @@ export function AccessibilityChecker({
   const [isScanning, setIsScanning] = useState(false)
   const [lastScanTime, setLastScanTime] = useState<Date | null>(null)
   const scanTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
-  const _location = useLocation()
 
   const runAccessibilityCheck = useCallback(async () => {
     if (!targetRef.current || !isEnabled) return

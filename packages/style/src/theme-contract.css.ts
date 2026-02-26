@@ -71,3 +71,5 @@ export const themeContract = createGlobalThemeContract(
   },
   (_value, path) => `foundry${arrayToKebabString(path)}`
 )
+
+export type ColorToken = keyof typeof themeContract.colors

@@ -10,7 +10,7 @@ import './global-styles.css'
 import './fonts.css'
 
 // Theme contract and implementations
-export { themeContract } from './theme-contract.css'
+export { type ColorToken, themeContract } from './theme-contract.css'
 export type { Theme, ThemeContextValue } from './theme-provider'
 
 // Theme provider and hook

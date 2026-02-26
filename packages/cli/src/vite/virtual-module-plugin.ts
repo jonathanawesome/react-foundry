@@ -1,5 +1,6 @@
 import { resolve } from 'node:path'
 import { glob } from 'glob'
+import pc from 'picocolors'
 import type { Plugin } from 'vite'
 
 const VIRTUAL_MODULE_ID = 'virtual:react-foundry-previews'
@@ -7,20 +8,12 @@ const RESOLVED_VIRTUAL_MODULE_ID = `\0${VIRTUAL_MODULE_ID}`
 
 export function createVirtualModulePlugin(
   previewsPattern: string,
-  userRoot: string,
-  viteRoot: string
+  userRoot: string
 ): Plugin {
-  // Construct the absolute path to the user's root directory and append the pattern
-  const _absoluteUserRoot = userRoot.split('\\').join('/')
-
   // Ensure pattern doesn't start with / or ./
   const cleanPattern = previewsPattern.replace(/^\.?\//, '')
-
   const searchPattern = resolve(userRoot, cleanPattern)
-
-  console.log('[React Foundry] Searching for preview files:', searchPattern)
-  console.log('[React Foundry] User root:', userRoot)
-  console.log('[React Foundry] Vite root:', viteRoot)
+  let logged = false
 
   return {
     name: 'react-foundry:virtual-previews',
@@ -31,12 +24,13 @@ export function createVirtualModulePlugin(
     },
     async load(id) {
       if (id === RESOLVED_VIRTUAL_MODULE_ID) {
-        // Find all preview files using Node's glob
         const files = await glob(searchPattern, { absolute: true })
 
-        console.log('[React Foundry] Found preview files:', files)
+        if (!logged) {
+          console.log(pc.green(`  Found ${files.length} preview file${files.length === 1 ? '' : 's'}`))
+          logged = true
+        }
 
-        // Generate explicit imports for each file
         const imports = files
           .map((file, index) => {
             const normalizedPath = file.split('\\').join('/')
@@ -51,7 +45,7 @@ export function createVirtualModulePlugin(
           })
           .join('\n')
 
-        const code = `${imports}
+        return `${imports}
 
 const previewModules = {
 ${moduleObject}
@@ -59,8 +53,6 @@ ${moduleObject}
 
 export default previewModules;
 `
-        console.log('[React Foundry] Generated virtual module code:', code)
-        return code
       }
     },
   }
