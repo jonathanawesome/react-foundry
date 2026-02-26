@@ -2,9 +2,9 @@ import type { ColorToken } from '@react-foundry/style'
 import type { UserConfig as ViteUserConfig } from 'vite'
 
 export interface ThemeColors {
-  /** OKLCH color triplets, e.g. '62.1% 0.289482 350.9' */
+  /** Any valid CSS color: hex (#ff0000), rgb(), hsl(), oklch(), named (red), or raw OKLCH triplets (62.1% 0.289482 350.9) */
   dark?: Partial<Record<ColorToken, string>>
-  /** OKLCH color triplets, e.g. '62.1% 0.289482 350.9' */
+  /** Any valid CSS color: hex (#ff0000), rgb(), hsl(), oklch(), named (red), or raw OKLCH triplets (62.1% 0.289482 350.9) */
   light?: Partial<Record<ColorToken, string>>
 }
 

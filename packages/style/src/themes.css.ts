@@ -3,7 +3,7 @@ import { themeColors } from 'virtual:react-foundry-config'
 import { createTheme } from '@vanilla-extract/css'
 
 import { themeContract } from './theme-contract.css'
-import { transformColors } from './utils'
+import { colorWithAlpha, transformColors } from './utils'
 
 const colorTokens = {
   dark: {
@@ -93,8 +93,8 @@ export const darkTheme = createTheme(themeContract, {
   ...sharedTokens,
 
   shadows: {
-    tight: `oklch(${colors.dark.neutral5} / 0.45) 0px 1px 5px 1px`,
-    wide: `oklch(${colors.dark.neutral5} / 0.35) 0px 10px 38px -10px, oklch(${colors.dark.neutral5} / 0.2) 0px 10px 20px -15px`,
+    tight: `${colorWithAlpha(colors.dark.neutral5, 0.45)} 0px 1px 5px 1px`,
+    wide: `${colorWithAlpha(colors.dark.neutral5, 0.35)} 0px 10px 38px -10px, ${colorWithAlpha(colors.dark.neutral5, 0.2)} 0px 10px 20px -15px`,
   },
 })
 
@@ -104,7 +104,7 @@ export const lightTheme = createTheme(themeContract, {
   ...sharedTokens,
 
   shadows: {
-    tight: `oklch(${colors.light.neutral5} / 0.75) 0px 1px 5px 1px`,
-    wide: `oklch(${colors.light.neutral7} / 0.35) 0px 10px 38px -10px, oklch(${colors.light.neutral7} / 0.2) 0px 10px 20px -15px`,
+    tight: `${colorWithAlpha(colors.light.neutral5, 0.75)} 0px 1px 5px 1px`,
+    wide: `${colorWithAlpha(colors.light.neutral7, 0.35)} 0px 10px 38px -10px, ${colorWithAlpha(colors.light.neutral7, 0.2)} 0px 10px 20px -15px`,
   },
 })
