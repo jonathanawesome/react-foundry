@@ -9,23 +9,14 @@
       "cache": false,
       "persistent": true
     },
-    "lint": {
-      "cache": false,
-      "commandOptions": {
-        "cwd": "root"
-      }
+    "//#lint": {
+      "cache": false
     },
-    "lint:fix": {
-      "cache": false,
-      "commandOptions": {
-        "cwd": "root"
-      }
+    "//#lint:fix": {
+      "cache": false
     },
-    "format": {
-      "cache": false,
-      "commandOptions": {
-        "cwd": "root"
-      }
+    "//#format": {
+      "cache": false
     },
     "types": {},
     "test": {},
