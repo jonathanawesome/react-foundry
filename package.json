@@ -14,7 +14,8 @@
     "check:fix": "biome check . --write",
     "test": "turbo run test",
     "types": "turbo run types",
-    "demo": "pnpm --filter demo dev"
+    "demo": "pnpm --filter demo dev",
+    "validate": "pnpm run types && pnpm run check"
   },
   "keywords": [
     "react",

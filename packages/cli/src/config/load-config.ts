@@ -30,7 +30,7 @@ export async function loadConfig(
   if (configPath) {
     try {
       const configUrl = pathToFileURL(configPath).href
-      const configModule = await import(configUrl)
+      const configModule = await import(/* @vite-ignore */ configUrl)
       userConfig = configModule.default || {}
     } catch (error) {
       console.error(`Failed to load config from ${configPath}:`, error)

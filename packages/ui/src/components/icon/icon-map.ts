@@ -1,17 +1,19 @@
-import { Accessibility } from './icons/accessibility'
-import { Chevron } from './icons/chevron'
-import { CircleFill } from './icons/circle-fill'
-import { Moon } from './icons/moon'
-import { Pin } from './icons/pin'
-import { Settings2 } from './icons/settings-2'
-import { Sun } from './icons/sun'
+import {
+  CaretRightIcon as CaretRight,
+  CircleIcon as Circle,
+  MoonIcon as Moon,
+  NotebookIcon as Notebook,
+  PushPinIcon as PushPin,
+  SunIcon as Sun,
+  WheelchairIcon as Wheelchair,
+} from '@phosphor-icons/react'
 
 export const IconMap = {
-  Accessibility,
-  Chevron,
-  CircleFill,
+  CaretRight,
+  Circle,
+  Notebook,
   Moon,
-  Pin,
-  Settings2,
+  PushPin,
   Sun,
-}
+  Wheelchair,
+} as const

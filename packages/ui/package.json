@@ -5,7 +5,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./icon": "./src/icon/icon.tsx"
+    "./icon": "./src/components/icon/icon.tsx"
   },
   "scripts": {
     "types": "tsc --noEmit"
@@ -15,6 +15,7 @@
     "react-dom": "^18.0.0 || ^19.0.0"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
     "@react-foundry/core": "workspace:*",
     "@react-foundry/style": "workspace:*",
     "@tanstack/react-router": "^1.131.36",

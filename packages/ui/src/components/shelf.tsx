@@ -74,7 +74,7 @@ const SectionHeader = ({
     onClick={action}
     data-active={isExpanded}
   >
-    <Icon name="Chevron" rotate={isExpanded ? '90' : undefined} size="small" />
+    <Icon name="CaretRight" rotate={isExpanded ? '90' : undefined} size={'sm'} />
     {title}
   </button>
 )

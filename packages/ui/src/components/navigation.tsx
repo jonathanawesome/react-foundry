@@ -1,11 +1,11 @@
 import { useTheme } from '@react-foundry/style'
 import { useUIStore } from '../state'
-import { Icon, type IconNames } from './icon/icon'
+import { Icon, type IconName } from './icon/icon'
 
 import { navigationStyles } from './navigation.css'
 
 type NavigationItemProps = {
-  icon: IconNames
+  icon: IconName
   onClick: () => void
   title: string
 }
@@ -18,7 +18,7 @@ const NavigationItem = ({ icon, onClick, title }: NavigationItemProps) => {
       onClick={onClick}
       title={title}
     >
-      <Icon name={icon} size="medium" />
+      <Icon name={icon} size={'md'} />
     </button>
   )
 }
@@ -46,14 +46,14 @@ export const Navigation = () => {
     <div className={navigationStyles.container}>
       {isShelfOpen && !isShelfPinned && (
         <NavigationItem
-          icon="Pin"
+          icon="PushPin"
           onClick={() => setIsShelfPinned(true)}
           title={isShelfPinned ? 'Unpin and close shelf' : 'Pin shelf'}
         />
       )}
 
       <NavigationItem
-        icon="Settings2"
+        icon="Notebook"
         onClick={() => {
           if (isShelfPinned) {
             setIsShelfPinned(false)
@@ -72,7 +72,7 @@ export const Navigation = () => {
       />
 
       <NavigationItem
-        icon="Accessibility"
+        icon="Wheelchair"
         onClick={toggleAccessibility}
         title={
           isAccessibilityEnabled

@@ -1,8 +1,11 @@
-import { globalStyle, recipe, themeContract } from '@react-foundry/style'
+import { recipe, themeContract } from '@react-foundry/style'
 
 export const iconClass = recipe({
   base: {
     display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    color: themeContract.colors.neutral6,
     transform: 'rotate(0deg)',
     transition: `all .15s ${themeContract.motion.authentic}`,
   },
@@ -20,23 +23,14 @@ export const iconClass = recipe({
       },
     },
     size: {
-      small: {
+      sm: {
         height: themeContract.px[12],
         width: themeContract.px[12],
       },
-      medium: {
+      md: {
         height: themeContract.px[16],
         width: themeContract.px[16],
       },
-      large: {
-        height: themeContract.px[20],
-        width: themeContract.px[20],
-      },
     },
   },
-})
-
-globalStyle(`${iconClass()} svg path`, {
-  fill: themeContract.colors.neutral6,
-  transition: `all .15s ${themeContract.motion.authentic}`,
 })

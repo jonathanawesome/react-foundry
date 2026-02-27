@@ -102,7 +102,7 @@ export function AccessibilityChecker({
           onClick={() => setIsExpanded(!isExpanded)}
           aria-expanded={isExpanded}
         >
-          <Icon name="Chevron" rotate={isExpanded ? undefined : '270'} />
+          <Icon name="CaretRight" rotate={isExpanded ? undefined : '270'} size={'sm'} />
           <span className={accessibilityCheckerStyles.title}>Accessibility Check</span>
           {isScanning ? (
             <span className={accessibilityCheckerStyles.scanningIndicator}>
@@ -119,7 +119,7 @@ export function AccessibilityChecker({
               )}
               {violations.length === 0 && lastScanTime && (
                 <span className={accessibilityCheckerStyles.passedIndicator}>
-                  <Icon name="CircleFill" />
+                  <Icon name="Circle" weight="fill" size={'sm'} />
                   Passed
                 </span>
               )}
@@ -141,7 +141,7 @@ export function AccessibilityChecker({
         <div className={accessibilityCheckerStyles.content}>
           {violations.length === 0 && !isScanning && lastScanTime && (
             <div className={accessibilityCheckerStyles.noViolations}>
-              <Icon name="CircleFill" />
+              <Icon name="Circle" weight="fill" size={'sm'} />
               <span>No accessibility violations detected!</span>
             </div>
           )}
@@ -151,7 +151,7 @@ export function AccessibilityChecker({
               <summary className={accessibilityCheckerStyles.violationSummary}>
                 <div className={accessibilityCheckerStyles.violationHeader}>
                   <span className={getImpactColor(violation.impact)}>
-                    <Icon name="CircleFill" />
+                    <Icon name="Circle" weight="fill" size={'sm'} />
                   </span>
                   <span className={accessibilityCheckerStyles.violationTitle}>
                     {violation.help}
