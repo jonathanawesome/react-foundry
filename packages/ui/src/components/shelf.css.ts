@@ -1,5 +1,7 @@
 import { style, themeContract } from '@react-foundry/style'
 
+import { SHELF_WIDTH } from '../constants'
+
 export const shelfStyles = {
   overlay: style({
     position: 'fixed',
@@ -17,7 +19,7 @@ export const shelfStyles = {
     top: 0,
     right: 0,
     bottom: 0,
-    width: '320px',
+    width: SHELF_WIDTH,
     maxWidth: '90vw',
     display: 'flex',
     flexDirection: 'column',

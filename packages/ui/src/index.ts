@@ -1,4 +1,5 @@
 export { AccessibilityChecker } from './components/accessibility-checker'
+export { ComponentLanding } from './components/component-landing'
 
 // Components
 export { Icon, type IconName, type IconProps } from './components/icon/icon'

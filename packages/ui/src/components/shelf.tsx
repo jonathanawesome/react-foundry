@@ -225,7 +225,8 @@ const ComponentItem = ({
 }
 
 export const Shelf = ({ components }: ShelfProps) => {
-  const { isShelfPinned, isShelfOpen } = useUIStore()
+  const isShelfPinned = useUIStore.use.isShelfPinned()
+  const isShelfOpen = useUIStore.use.isShelfOpen()
 
   const params = useParams({ strict: false })
 

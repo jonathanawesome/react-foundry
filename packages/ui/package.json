@@ -8,6 +8,7 @@
     "./icon": "./src/components/icon/icon.tsx"
   },
   "scripts": {
+    "test": "vitest run",
     "types": "tsc --noEmit"
   },
   "peerDependencies": {
@@ -25,8 +26,16 @@
     "zustand": "^5.0.8"
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/axe-core": "^3.0.6",
     "@types/react": "^19.1.12",
-    "@types/react-dom": "^19.1.9"
+    "@types/react-dom": "^19.1.9",
+    "@vanilla-extract/vite-plugin": "^5.1.3",
+    "jsdom": "^29.1.1",
+    "vite": "^6.4.1",
+    "vitest": "^4.0.18"
   }
 }

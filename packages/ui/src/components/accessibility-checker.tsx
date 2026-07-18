@@ -9,6 +9,21 @@ interface AccessibilityCheckerProps {
   isShelfOpen?: boolean
 }
 
+export function getImpactColor(impact: string | null) {
+  switch (impact) {
+    case 'critical':
+      return accessibilityCheckerStyles.impactCritical
+    case 'serious':
+      return accessibilityCheckerStyles.impactSerious
+    case 'moderate':
+      return accessibilityCheckerStyles.impactModerate
+    case 'minor':
+      return accessibilityCheckerStyles.impactMinor
+    default:
+      return ''
+  }
+}
+
 interface Violation {
   id: string
   impact: 'critical' | 'serious' | 'moderate' | 'minor' | null
@@ -70,21 +85,6 @@ export function AccessibilityChecker({
   }, [isEnabled, runAccessibilityCheck])
 
   if (!isEnabled) return null
-
-  const getImpactColor = (impact: string | null) => {
-    switch (impact) {
-      case 'critical':
-        return accessibilityCheckerStyles.impactCritical
-      case 'serious':
-        return accessibilityCheckerStyles.impactSerious
-      case 'moderate':
-        return accessibilityCheckerStyles.impactModerate
-      case 'minor':
-        return accessibilityCheckerStyles.impactMinor
-      default:
-        return ''
-    }
-  }
 
   const totalViolations = violations.reduce(
     (sum, violation) => sum + violation.nodes.length,
