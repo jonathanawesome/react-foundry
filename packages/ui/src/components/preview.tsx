@@ -15,7 +15,8 @@ interface PreviewProps {
 export function Preview({ preview, selectedItem, selectedType }: PreviewProps) {
   const previewPaneRef = useRef<HTMLDivElement>(null)
 
-  const { isAccessibilityEnabled, isShelfOpen } = useUIStore()
+  const isAccessibilityEnabled = useUIStore.use.isAccessibilityEnabled()
+  const isShelfOpen = useUIStore.use.isShelfOpen()
 
   if (!preview) {
     return (

@@ -9,6 +9,7 @@
     "./discovery": "./src/discovery.ts"
   },
   "scripts": {
+    "test": "vitest run",
     "types": "tsc --noEmit"
   },
   "peerDependencies": {
@@ -16,6 +17,7 @@
   },
   "dependencies": {},
   "devDependencies": {
-    "@types/react": "^19.1.12"
+    "@types/react": "^19.1.12",
+    "vitest": "^4.0.18"
   }
 }

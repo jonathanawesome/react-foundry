@@ -24,14 +24,12 @@ const NavigationItem = ({ icon, onClick, title }: NavigationItemProps) => {
 }
 
 export const Navigation = () => {
-  const {
-    isAccessibilityEnabled,
-    isShelfPinned,
-    isShelfOpen,
-    setIsShelfPinned,
-    toggleAccessibility,
-    toggleShelf,
-  } = useUIStore()
+  const isAccessibilityEnabled = useUIStore.use.isAccessibilityEnabled()
+  const isShelfPinned = useUIStore.use.isShelfPinned()
+  const isShelfOpen = useUIStore.use.isShelfOpen()
+  const setIsShelfPinned = useUIStore.use.setIsShelfPinned()
+  const toggleAccessibility = useUIStore.use.toggleAccessibility()
+  const toggleShelf = useUIStore.use.toggleShelf()
   const { theme, setTheme, resolvedTheme } = useTheme()
 
   const handleToggleTheme = () => {

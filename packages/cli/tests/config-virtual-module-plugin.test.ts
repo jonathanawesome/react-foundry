@@ -29,23 +29,23 @@ describe('writeFoundryConfig', () => {
 
   it('serializes dark color overrides', () => {
     const filePath = writeFoundryConfig(
-      { colors: { dark: { brand: '#0ea5e9', bg: 'oklch(10% 0 0)' } } },
+      { colors: { dark: { brand: '#0ea5e9', neutral1: 'oklch(10% 0 0)' } } },
       undefined,
       testCacheDir
     )
     const content = readFileSync(filePath, 'utf-8')
-    expect(content).toContain('"dark":{"brand":"#0ea5e9","bg":"oklch(10% 0 0)"}')
+    expect(content).toContain('"dark":{"brand":"#0ea5e9","neutral1":"oklch(10% 0 0)"}')
     expect(content).toContain('"light":{}')
   })
 
   it('serializes light color overrides', () => {
     const filePath = writeFoundryConfig(
-      { colors: { light: { surface: 'oklch(99% 0 0)' } } },
+      { colors: { light: { neutral1: 'oklch(99% 0 0)' } } },
       undefined,
       testCacheDir
     )
     const content = readFileSync(filePath, 'utf-8')
-    expect(content).toContain('"light":{"surface":"oklch(99% 0 0)"}')
+    expect(content).toContain('"light":{"neutral1":"oklch(99% 0 0)"}')
     expect(content).toContain('"dark":{}')
   })
 
