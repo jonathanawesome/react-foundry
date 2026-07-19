@@ -10,12 +10,12 @@ export const layout = style({
   display: 'flex',
 
   selectors: {
-    // Pinned shelf and panel are position: fixed, so padding reserves their
-    // gutters and keeps the canvas from sliding underneath them.
-    '&[data-shelf-pinned="true"]': {
+    // Shelf and panel are position: fixed, so padding reserves their gutters
+    // and keeps the canvas from sliding underneath them.
+    '&[data-shelf-open="true"]': {
       paddingLeft: SHELF_WIDTH,
     },
-    '&[data-panel-pinned="true"]': {
+    '&[data-panel-open="true"]': {
       paddingRight: PANEL_WIDTH,
     },
   },

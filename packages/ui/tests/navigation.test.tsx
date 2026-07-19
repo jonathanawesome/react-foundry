@@ -22,18 +22,31 @@ describe('Navigation', () => {
     useUIStore.setState({
       isAccessibilityEnabled: false,
       isShelfOpen: true,
-      isShelfPinned: true,
       isPanelOpen: true,
-      isPanelPinned: true,
       expandedNodes: [],
     })
   })
 
-  it('toggles the controls panel', async () => {
+  it('toggles the shelf open and closed', async () => {
     render(<Navigation />)
-    await userEvent.click(screen.getByTitle('Toggle Controls Panel'))
+    const toggle = screen.getByTitle('Toggle Component List')
 
+    await userEvent.click(toggle)
+    expect(useUIStore.getState().isShelfOpen).toBe(false)
+
+    await userEvent.click(toggle)
+    expect(useUIStore.getState().isShelfOpen).toBe(true)
+  })
+
+  it('toggles the controls panel open and closed', async () => {
+    render(<Navigation />)
+    const toggle = screen.getByTitle('Toggle Controls Panel')
+
+    await userEvent.click(toggle)
     expect(useUIStore.getState().isPanelOpen).toBe(false)
+
+    await userEvent.click(toggle)
+    expect(useUIStore.getState().isPanelOpen).toBe(true)
   })
 
   it('toggles accessibility', async () => {
@@ -85,54 +98,6 @@ describe('Navigation', () => {
       await userEvent.click(screen.getByTitle('Toggle Theme'))
 
       expect(setTheme).toHaveBeenCalledWith('dark')
-    })
-  })
-
-  describe('pin button', () => {
-    it('is hidden while the shelf is pinned', () => {
-      useUIStore.setState({ isShelfOpen: true, isShelfPinned: true })
-      render(<Navigation />)
-
-      expect(screen.queryByTitle('Pin shelf')).not.toBeInTheDocument()
-    })
-
-    it('is hidden while the shelf is closed', () => {
-      useUIStore.setState({ isShelfOpen: false, isShelfPinned: false })
-      render(<Navigation />)
-
-      expect(screen.queryByTitle('Pin shelf')).not.toBeInTheDocument()
-    })
-
-    it('appears when the shelf is open but unpinned, and pins it', async () => {
-      useUIStore.setState({ isShelfOpen: true, isShelfPinned: false })
-      render(<Navigation />)
-
-      await userEvent.click(screen.getByTitle('Pin shelf'))
-
-      expect(useUIStore.getState().isShelfPinned).toBe(true)
-    })
-  })
-
-  describe('shelf button', () => {
-    // Pinned means visible, so the same button has to unpin and close.
-    it('unpins and closes when the shelf is pinned', async () => {
-      useUIStore.setState({ isShelfOpen: true, isShelfPinned: true })
-      render(<Navigation />)
-
-      await userEvent.click(screen.getByTitle('Open Component List'))
-
-      expect(useUIStore.getState().isShelfPinned).toBe(false)
-      expect(useUIStore.getState().isShelfOpen).toBe(false)
-    })
-
-    it('only toggles openness when the shelf is unpinned', async () => {
-      useUIStore.setState({ isShelfOpen: false, isShelfPinned: false })
-      render(<Navigation />)
-
-      await userEvent.click(screen.getByTitle('Open Component List'))
-
-      expect(useUIStore.getState().isShelfOpen).toBe(true)
-      expect(useUIStore.getState().isShelfPinned).toBe(false)
     })
   })
 })

@@ -8,37 +8,35 @@ describe('Layout', () => {
   beforeEach(() => {
     useUIStore.setState({
       isShelfOpen: true,
-      isShelfPinned: true,
       isPanelOpen: true,
-      isPanelPinned: true,
     })
   })
 
-  it('marks itself pinned so the stylesheet can reserve room for the shelf', () => {
+  it('marks the shelf open so the stylesheet can reserve room for it', () => {
     const { container } = render(<Layout>content</Layout>)
 
-    expect(container.firstElementChild).toHaveAttribute('data-shelf-pinned', 'true')
+    expect(container.firstElementChild).toHaveAttribute('data-shelf-open', 'true')
   })
 
-  it('drops the shelf marker when the shelf is unpinned', () => {
-    useUIStore.setState({ isShelfPinned: false })
+  it('drops the shelf marker when the shelf is closed', () => {
+    useUIStore.setState({ isShelfOpen: false })
 
     const { container } = render(<Layout>content</Layout>)
 
-    expect(container.firstElementChild).toHaveAttribute('data-shelf-pinned', 'false')
+    expect(container.firstElementChild).toHaveAttribute('data-shelf-open', 'false')
   })
 
-  it('marks itself panel-pinned so the stylesheet can reserve room for the panel', () => {
+  it('marks the panel open so the stylesheet can reserve room for it', () => {
     const { container } = render(<Layout>content</Layout>)
 
-    expect(container.firstElementChild).toHaveAttribute('data-panel-pinned', 'true')
+    expect(container.firstElementChild).toHaveAttribute('data-panel-open', 'true')
   })
 
-  it('drops the panel marker when the panel is unpinned', () => {
-    useUIStore.setState({ isPanelPinned: false })
+  it('drops the panel marker when the panel is closed', () => {
+    useUIStore.setState({ isPanelOpen: false })
 
     const { container } = render(<Layout>content</Layout>)
 
-    expect(container.firstElementChild).toHaveAttribute('data-panel-pinned', 'false')
+    expect(container.firstElementChild).toHaveAttribute('data-panel-open', 'false')
   })
 })

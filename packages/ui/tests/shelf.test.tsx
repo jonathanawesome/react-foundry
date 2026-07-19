@@ -35,7 +35,6 @@ describe('Shelf', () => {
     useUIStore.setState({
       isAccessibilityEnabled: false,
       isShelfOpen: true,
-      isShelfPinned: true,
       // Expansion is persisted now, so it survives between tests unless reset.
       expandedNodes: [],
     })
@@ -205,13 +204,12 @@ describe('Shelf', () => {
     expect(screen.getByRole('button', { name: /Button/ })).toBeInTheDocument()
   })
 
-  it('reflects open and pinned store state on the shelf element', async () => {
-    useUIStore.setState({ isShelfOpen: false, isShelfPinned: false })
+  it('reflects open state on the shelf element', async () => {
+    useUIStore.setState({ isShelfOpen: false })
 
     const { container } = await renderWithRouter(<Shelf nav={[node('Forms')]} />)
     const shelf = container.querySelector('aside')
 
     expect(shelf).toHaveAttribute('data-open', 'false')
-    expect(shelf).toHaveAttribute('data-pinned', 'false')
   })
 })

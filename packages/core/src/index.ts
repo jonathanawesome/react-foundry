@@ -3,7 +3,7 @@ export {
   defaultValues,
   encodeControlValues,
 } from './controls'
-export { createPreview, isPreview } from './create-preview'
+export { createPreview, defineControls, isPreview } from './create-preview'
 export { createDiscovery, deCamelCase, navPathFromFilename } from './discovery'
 export { findLeaf, findNode } from './nav'
 export type {

@@ -28,10 +28,6 @@ export const propsPanelStyles = {
       '&[data-open="true"]': {
         transform: 'translateX(0)',
       },
-      '&[data-pinned="true"]': {
-        transform: 'translateX(0)',
-        transition: 'none',
-      },
     },
   }),
 

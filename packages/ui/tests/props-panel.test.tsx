@@ -14,17 +14,16 @@ const controls: ControlSchema = {
 
 describe('PropsPanel', () => {
   beforeEach(() => {
-    useUIStore.setState({ isPanelOpen: true, isPanelPinned: true })
+    useUIStore.setState({ isPanelOpen: true })
   })
 
-  it('reflects open and pinned store state on the aside', async () => {
-    useUIStore.setState({ isPanelOpen: false, isPanelPinned: false })
+  it('reflects open state on the aside', async () => {
+    useUIStore.setState({ isPanelOpen: false })
 
     const { container } = await renderWithRouter(<PropsPanel />)
     const panel = container.querySelector('aside')
 
     expect(panel).toHaveAttribute('data-open', 'false')
-    expect(panel).toHaveAttribute('data-pinned', 'false')
   })
 
   it('shows an empty state when the preview has no controls', async () => {

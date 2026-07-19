@@ -1,9 +1,47 @@
-import { createPreview, type NavPath } from '@react-foundry/core'
+import { createPreview, defineControls, type NavPath } from '@react-foundry/core'
 import { useState } from 'react'
 
 import { Button } from './button'
 
 export const nav: NavPath = 'Components/Actions'
+
+// Extracted so it can be reused across previews. defineControls keeps the literal
+// option types, so `v.variant`/`v.size` narrow to their unions with no casts.
+const buttonControls = defineControls({
+  children: { type: 'text', default: 'Click me' },
+  variant: {
+    type: 'select',
+    options: ['primary', 'secondary', 'danger'],
+    default: 'primary',
+  },
+  size: { type: 'radio', options: ['small', 'medium', 'large'], default: 'medium' },
+  disabled: { type: 'boolean', default: false },
+})
+
+// Controlled: every prop is a control, tweakable live from the panel. `children`
+// as a control name is fine — it is a key in the values object, not JSX children.
+export const Playground = createPreview({
+  controls: buttonControls,
+  render: (v) => (
+    <Button variant={v.variant} size={v.size} disabled={v.disabled}>
+      {v.children}
+    </Button>
+  ),
+})
+
+// The same schema reused, showing controls are not one-per-preview.
+export const DangerPlayground = createPreview({
+  label: 'Danger Playground',
+  controls: {
+    ...buttonControls,
+    variant: { ...buttonControls.variant, default: 'danger' },
+  },
+  render: (v) => (
+    <Button variant={v.variant} size={v.size} disabled={v.disabled}>
+      {v.children}
+    </Button>
+  ),
+})
 
 export const Primary = createPreview(() => (
   <Button variant="primary">Primary Button</Button>
@@ -23,6 +61,7 @@ export const Disabled = createPreview(() => <Button disabled>Disabled Button</Bu
 
 // A stateful preview is the same primitive as the ones above.
 export const Interactive = createPreview({
+  controls: buttonControls,
   label: 'Interactive Example',
   render: () => {
     const [count, setCount] = useState(0)

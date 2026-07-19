@@ -25,9 +25,6 @@ const NavigationItem = ({ icon, onClick, title }: NavigationItemProps) => {
 
 export const Navigation = () => {
   const isAccessibilityEnabled = useUIStore.use.isAccessibilityEnabled()
-  const isShelfPinned = useUIStore.use.isShelfPinned()
-  const isShelfOpen = useUIStore.use.isShelfOpen()
-  const setIsShelfPinned = useUIStore.use.setIsShelfPinned()
   const toggleAccessibility = useUIStore.use.toggleAccessibility()
   const toggleShelf = useUIStore.use.toggleShelf()
   const togglePanel = useUIStore.use.togglePanel()
@@ -43,25 +40,10 @@ export const Navigation = () => {
 
   return (
     <div className={navigationStyles.container}>
-      {isShelfOpen && !isShelfPinned && (
-        <NavigationItem
-          icon="PushPin"
-          onClick={() => setIsShelfPinned(true)}
-          title="Pin shelf"
-        />
-      )}
-
       <NavigationItem
         icon="Notebook"
-        onClick={() => {
-          if (isShelfPinned) {
-            setIsShelfPinned(false)
-            toggleShelf()
-          } else {
-            toggleShelf()
-          }
-        }}
-        title="Open Component List"
+        onClick={toggleShelf}
+        title="Toggle Component List"
       />
 
       <NavigationItem
@@ -69,6 +51,8 @@ export const Navigation = () => {
         onClick={togglePanel}
         title="Toggle Controls Panel"
       />
+
+      <div className={navigationStyles.separator} aria-hidden />
 
       <NavigationItem
         icon={theme === 'dark' ? 'Sun' : 'Moon'}

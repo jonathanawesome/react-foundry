@@ -1,6 +1,6 @@
 import { style, themeContract } from '@react-foundry/style'
 
-import { SHELF_WIDTH } from '../constants'
+import { NAV_HEIGHT, SHELF_WIDTH } from '../constants'
 
 export const shelfStyles = {
   overlay: style({
@@ -36,11 +36,6 @@ export const shelfStyles = {
       '&[data-open="true"]': {
         transform: 'translateX(0)',
       },
-      '&[data-pinned="true"]': {
-        transform: 'translateX(0)',
-        transition: 'none',
-        borderRight: `1px solid ${themeContract.colors.neutral4}`,
-      },
     },
   }),
 
@@ -48,6 +43,8 @@ export const shelfStyles = {
     flex: 1,
     overflow: 'auto',
     padding: themeContract.px[20],
+    // Clear the fixed navigation bar so the tree does not scroll under it.
+    paddingBottom: NAV_HEIGHT,
   }),
 
   sidebar: style({

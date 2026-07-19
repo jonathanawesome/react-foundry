@@ -110,7 +110,6 @@ const NavTree = ({ nodes, activeLeafId, isExpanded, toggle, depth }: NavTreeProp
 )
 
 export const Shelf = ({ nav }: ShelfProps) => {
-  const isShelfPinned = useUIStore.use.isShelfPinned()
   const isShelfOpen = useUIStore.use.isShelfOpen()
 
   const params = useParams({ strict: false })
@@ -119,11 +118,7 @@ export const Shelf = ({ nav }: ShelfProps) => {
   const { isExpanded, toggle } = useExpandState(activeLeafId)
 
   return (
-    <aside
-      className={shelfStyles.shelf}
-      data-open={isShelfOpen}
-      data-pinned={isShelfPinned}
-    >
+    <aside className={shelfStyles.shelf} data-open={isShelfOpen}>
       <div className={shelfStyles.content}>
         <nav className={shelfStyles.sidebar}>
           <NavTree

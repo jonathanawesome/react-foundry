@@ -5,7 +5,7 @@ import { useUIStore } from '../src/state'
 const initialState = {
   isAccessibilityEnabled: false,
   isShelfOpen: true,
-  isShelfPinned: true,
+  isPanelOpen: true,
   expandedNodes: [],
 }
 
@@ -14,11 +14,11 @@ describe('useUIStore', () => {
     useUIStore.setState(initialState)
   })
 
-  it('starts with the shelf open and pinned and accessibility off', () => {
+  it('starts with the shelf and panel open and accessibility off', () => {
     const state = useUIStore.getState()
 
     expect(state.isShelfOpen).toBe(true)
-    expect(state.isShelfPinned).toBe(true)
+    expect(state.isPanelOpen).toBe(true)
     expect(state.isAccessibilityEnabled).toBe(false)
   })
 
@@ -38,15 +38,12 @@ describe('useUIStore', () => {
     expect(useUIStore.getState().isShelfOpen).toBe(true)
   })
 
-  it('sets the pinned state to exactly the value given', () => {
-    useUIStore.getState().setIsShelfPinned(false)
-    expect(useUIStore.getState().isShelfPinned).toBe(false)
+  it('toggles the panel in both directions', () => {
+    useUIStore.getState().togglePanel()
+    expect(useUIStore.getState().isPanelOpen).toBe(false)
 
-    useUIStore.getState().setIsShelfPinned(false)
-    expect(useUIStore.getState().isShelfPinned).toBe(false)
-
-    useUIStore.getState().setIsShelfPinned(true)
-    expect(useUIStore.getState().isShelfPinned).toBe(true)
+    useUIStore.getState().togglePanel()
+    expect(useUIStore.getState().isPanelOpen).toBe(true)
   })
 
   it('exposes a selector hook for every state key, including actions', () => {

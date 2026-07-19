@@ -3,3 +3,6 @@ export const SHELF_WIDTH = '320px'
 
 /** Width of the props panel; consumed by layout, panel, and a11y-checker styles. */
 export const PANEL_WIDTH = '300px'
+
+/** Height of the bottom navigation bar; consumed by navigation and shelf styles. */
+export const NAV_HEIGHT = '48px'

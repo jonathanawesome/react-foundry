@@ -13,7 +13,6 @@ describe('Preview', () => {
     useUIStore.setState({
       isAccessibilityEnabled: false,
       isShelfOpen: true,
-      isShelfPinned: true,
     })
   })
 

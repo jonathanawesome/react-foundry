@@ -1,5 +1,6 @@
 import { describe, expectTypeOf, it } from 'vitest'
 
+import { createPreview, defineControls } from '../src/create-preview'
 import type { ControlValues, NavPath, Preview, ResolveNavPath } from '../src/types'
 
 describe('ResolveNavPath', () => {
@@ -77,5 +78,55 @@ describe('ControlValues', () => {
     // @ts-expect-error `varinat` is a typo, not a declared control
     const typo: string = ({} as Values).varinat
     void typo
+  })
+
+  it('narrows a select value to the union of its literal options', () => {
+    const controls = defineControls({
+      variant: { type: 'select', options: ['primary', 'danger'] },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['variant']>().toEqualTypeOf<
+      'primary' | 'danger'
+    >()
+  })
+})
+
+describe('createPreview typing', () => {
+  it('types render values from an inline schema, narrowing select options', () => {
+    createPreview({
+      controls: {
+        variant: { type: 'select', options: ['primary', 'danger'] },
+        count: { type: 'number' },
+      },
+      render: (v) => {
+        expectTypeOf(v.variant).toEqualTypeOf<'primary' | 'danger'>()
+        expectTypeOf(v.count).toEqualTypeOf<number>()
+        return null
+      },
+    })
+  })
+
+  it('types render values from a schema extracted via defineControls', () => {
+    const controls = defineControls({
+      size: { type: 'radio', options: ['sm', 'lg'] },
+      on: { type: 'boolean' },
+    })
+
+    createPreview({
+      controls,
+      render: (v) => {
+        expectTypeOf(v.size).toEqualTypeOf<'sm' | 'lg'>()
+        expectTypeOf(v.on).toEqualTypeOf<boolean>()
+        return null
+      },
+    })
+  })
+
+  it('rejects reading a control the schema does not declare', () => {
+    createPreview({
+      controls: { variant: { type: 'text' } },
+      // @ts-expect-error `size` is not a declared control
+      render: (v) => v.size,
+    })
   })
 })

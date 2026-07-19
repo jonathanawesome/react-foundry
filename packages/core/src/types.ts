@@ -37,24 +37,35 @@ export type NavPath = ResolveNavPath<Register>
  */
 export const PREVIEW: unique symbol = Symbol.for('react-foundry.preview')
 
-/** One editable control on a preview, drawn as an input in the props panel. */
+/**
+ * One editable control on a preview, drawn as an input in the props panel.
+ *
+ * `options` is `readonly` so a schema declared `as const` or through
+ * {@link defineControls} keeps its literal option types, which lets a select's
+ * value narrow to the union of its options rather than plain `string`.
+ */
 export type ControlDef =
   | { type: 'text'; default?: string }
   | { type: 'boolean'; default?: boolean }
-  | { type: 'select'; options: string[]; default?: string }
-  | { type: 'radio'; options: string[]; default?: string }
+  | { type: 'select'; options: readonly string[]; default?: string }
+  | { type: 'radio'; options: readonly string[]; default?: string }
   | { type: 'number'; default?: number; min?: number; max?: number; step?: number }
   | { type: 'range'; default?: number; min?: number; max?: number; step?: number }
   | { type: 'color'; default?: string }
 
 export type ControlSchema = Record<string, ControlDef>
 
-/** The value type a single control resolves to. */
+/**
+ * The value type a single control resolves to. A select/radio narrows to the
+ * union of its options when those options are literal, else `string`.
+ */
 export type ControlValue<D extends ControlDef> = D extends { type: 'boolean' }
   ? boolean
   : D extends { type: 'number' | 'range' }
     ? number
-    : string
+    : D extends { type: 'select' | 'radio'; options: readonly (infer O)[] }
+      ? O
+      : string
 
 /**
  * The values object a controlled preview's `render` receives, typed from its

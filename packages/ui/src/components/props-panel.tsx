@@ -85,7 +85,6 @@ interface PropsPanelProps {
  */
 export function PropsPanel({ controls }: PropsPanelProps) {
   const isPanelOpen = useUIStore.use.isPanelOpen()
-  const isPanelPinned = useUIStore.use.isPanelPinned()
 
   const params = useParams({ strict: false })
   const splat = '_splat' in params ? ((params._splat as string) ?? '') : ''
@@ -93,11 +92,7 @@ export function PropsPanel({ controls }: PropsPanelProps) {
   const hasControls = controls && Object.keys(controls).length > 0
 
   return (
-    <aside
-      className={propsPanelStyles.panel}
-      data-open={isPanelOpen}
-      data-pinned={isPanelPinned}
-    >
+    <aside className={propsPanelStyles.panel} data-open={isPanelOpen}>
       <div className={propsPanelStyles.header}>Controls</div>
       <div className={propsPanelStyles.content}>
         {hasControls ? (
