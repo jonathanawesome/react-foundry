@@ -9,82 +9,55 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as SplatRouteImport } from './routes/$'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as ComponentIdIndexRouteImport } from './routes/$componentId.index'
-import { Route as ComponentIdVariantVariantNameRouteImport } from './routes/$componentId.variant.$variantName'
-import { Route as ComponentIdDemoDemoNameRouteImport } from './routes/$componentId.demo.$demoName'
 
+const SplatRoute = SplatRouteImport.update({
+  id: '/$',
+  path: '/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ComponentIdIndexRoute = ComponentIdIndexRouteImport.update({
-  id: '/$componentId/',
-  path: '/$componentId/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ComponentIdVariantVariantNameRoute =
-  ComponentIdVariantVariantNameRouteImport.update({
-    id: '/$componentId/variant/$variantName',
-    path: '/$componentId/variant/$variantName',
-    getParentRoute: () => rootRouteImport,
-  } as any)
-const ComponentIdDemoDemoNameRoute = ComponentIdDemoDemoNameRouteImport.update({
-  id: '/$componentId/demo/$demoName',
-  path: '/$componentId/demo/$demoName',
-  getParentRoute: () => rootRouteImport,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/$componentId': typeof ComponentIdIndexRoute
-  '/$componentId/demo/$demoName': typeof ComponentIdDemoDemoNameRoute
-  '/$componentId/variant/$variantName': typeof ComponentIdVariantVariantNameRoute
+  '/$': typeof SplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/$componentId': typeof ComponentIdIndexRoute
-  '/$componentId/demo/$demoName': typeof ComponentIdDemoDemoNameRoute
-  '/$componentId/variant/$variantName': typeof ComponentIdVariantVariantNameRoute
+  '/$': typeof SplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/$componentId/': typeof ComponentIdIndexRoute
-  '/$componentId/demo/$demoName': typeof ComponentIdDemoDemoNameRoute
-  '/$componentId/variant/$variantName': typeof ComponentIdVariantVariantNameRoute
+  '/$': typeof SplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/$componentId'
-    | '/$componentId/demo/$demoName'
-    | '/$componentId/variant/$variantName'
+  fullPaths: '/' | '/$'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/$componentId'
-    | '/$componentId/demo/$demoName'
-    | '/$componentId/variant/$variantName'
-  id:
-    | '__root__'
-    | '/'
-    | '/$componentId/'
-    | '/$componentId/demo/$demoName'
-    | '/$componentId/variant/$variantName'
+  to: '/' | '/$'
+  id: '__root__' | '/' | '/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  ComponentIdIndexRoute: typeof ComponentIdIndexRoute
-  ComponentIdDemoDemoNameRoute: typeof ComponentIdDemoDemoNameRoute
-  ComponentIdVariantVariantNameRoute: typeof ComponentIdVariantVariantNameRoute
+  SplatRoute: typeof SplatRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/$': {
+      id: '/$'
+      path: '/$'
+      fullPath: '/$'
+      preLoaderRoute: typeof SplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
       id: '/'
       path: '/'
@@ -92,35 +65,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/$componentId/': {
-      id: '/$componentId/'
-      path: '/$componentId'
-      fullPath: '/$componentId'
-      preLoaderRoute: typeof ComponentIdIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/$componentId/variant/$variantName': {
-      id: '/$componentId/variant/$variantName'
-      path: '/$componentId/variant/$variantName'
-      fullPath: '/$componentId/variant/$variantName'
-      preLoaderRoute: typeof ComponentIdVariantVariantNameRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/$componentId/demo/$demoName': {
-      id: '/$componentId/demo/$demoName'
-      path: '/$componentId/demo/$demoName'
-      fullPath: '/$componentId/demo/$demoName'
-      preLoaderRoute: typeof ComponentIdDemoDemoNameRouteImport
-      parentRoute: typeof rootRouteImport
-    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  ComponentIdIndexRoute: ComponentIdIndexRoute,
-  ComponentIdDemoDemoNameRoute: ComponentIdDemoDemoNameRoute,
-  ComponentIdVariantVariantNameRoute: ComponentIdVariantVariantNameRoute,
+  SplatRoute: SplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -7,7 +7,7 @@ export const navigationStyles = {
     gap: 8,
     position: 'fixed',
     bottom: 16,
-    right: 16,
+    left: 16,
     zIndex: 1000,
   }),
 

@@ -11,8 +11,8 @@ import type { ReactNode } from 'react'
 
 /**
  * Renders `ui` inside a real in-memory router. A genuine router (rather than a stub) is
- * needed because `Link` resolves param routes like `/$componentId/variant/$variantName`
- * into hrefs, and `useParams({ strict: false })` reads from the matched route.
+ * needed because `Link` resolves the `/$` splat route into hrefs, and
+ * `useParams({ strict: false })` reads the matched nav path back off it.
  *
  * Note: the router is deliberately left unregistered. A `Register` declaration would
  * narrow `Link`'s `to` prop repo-wide and break `SectionItem`'s `to: string` in shelf.tsx.
@@ -29,21 +29,9 @@ export async function renderWithRouter(ui: ReactNode, initialPath = '/') {
 
   const routes = [
     createRoute({ getParentRoute: () => rootRoute, path: '/', component: () => null }),
-    createRoute({
-      getParentRoute: () => rootRoute,
-      path: '/$componentId/',
-      component: () => null,
-    }),
-    createRoute({
-      getParentRoute: () => rootRoute,
-      path: '/$componentId/variant/$variantName',
-      component: () => null,
-    }),
-    createRoute({
-      getParentRoute: () => rootRoute,
-      path: '/$componentId/demo/$demoName',
-      component: () => null,
-    }),
+    // One splat route mirrors the real app: a nav path is arbitrarily deep, so
+    // it cannot be expressed as fixed params.
+    createRoute({ getParentRoute: () => rootRoute, path: '/$', component: () => null }),
   ]
 
   const router = createRouter({

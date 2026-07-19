@@ -6,5 +6,5 @@ export const Route = createFileRoute('/')({
 })
 
 function IndexComponent() {
-  return <Preview preview={null} selectedItem={null} selectedType={null} />
+  return <Preview preview={null} />
 }

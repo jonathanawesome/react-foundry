@@ -4,6 +4,7 @@ import pc from 'picocolors'
 import { type Plugin, transformWithEsbuild } from 'vite'
 import { findConfigPath } from '../config/load-config'
 import { writeFoundryConfig } from './write-foundry-config'
+import { writeNavTypes } from './write-nav-types'
 
 export function createConfigHmrPlugin(userRoot: string, cacheDir: string): Plugin {
   return {
@@ -44,7 +45,19 @@ export function createConfigHmrPlugin(userRoot: string, cacheDir: string): Plugi
             const configModule = await import(/* @vite-ignore */ dataUrl)
             const userConfig = configModule.default || {}
 
-            writeFoundryConfig(userConfig.theme, userConfig.title, cacheDir)
+            writeFoundryConfig(
+              {
+                theme: userConfig.theme,
+                title: userConfig.title,
+                nav: userConfig.nav,
+              },
+              cacheDir
+            )
+
+            // Regenerate the NavPath union too. The shelf picks up a nav change
+            // on the reload below, so without this the running app would offer
+            // a path that TypeScript still rejects.
+            writeNavTypes(userConfig.nav, userRoot)
 
             // Invalidate the generated cache file so Vite re-reads it on reload
             const cacheFile = resolve(cacheDir, 'react-foundry-config.js')

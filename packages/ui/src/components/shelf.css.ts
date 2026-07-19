@@ -17,7 +17,7 @@ export const shelfStyles = {
     position: 'fixed',
     zIndex: 9,
     top: 0,
-    right: 0,
+    left: 0,
     bottom: 0,
     width: SHELF_WIDTH,
     maxWidth: '90vw',
@@ -27,9 +27,9 @@ export const shelfStyles = {
     paddingTop: 48,
 
     background: themeContract.colors.neutral1,
-    borderLeft: `1px solid ${themeContract.colors.neutral4}`,
+    borderRight: `1px solid ${themeContract.colors.neutral4}`,
 
-    transform: 'translateX(100%)',
+    transform: 'translateX(-100%)',
     transition: `transform 0.3s ${themeContract.motion.authentic}`,
 
     selectors: {
@@ -39,7 +39,7 @@ export const shelfStyles = {
       '&[data-pinned="true"]': {
         transform: 'translateX(0)',
         transition: 'none',
-        borderLeft: `1px solid ${themeContract.colors.neutral4}`,
+        borderRight: `1px solid ${themeContract.colors.neutral4}`,
       },
     },
   }),
@@ -54,36 +54,33 @@ export const shelfStyles = {
     overflowY: 'auto',
   }),
 
-  category: style({
-    marginBottom: themeContract.px[24],
-  }),
-
-  categoryTitle: style({
-    fontSize: themeContract.px[10],
-    fontWeight: 600,
-    textTransform: 'uppercase',
-    color: themeContract.colors.neutral6,
-    marginBottom: themeContract.px[12],
-    letterSpacing: themeContract.px[1],
-  }),
-
-  componentList: style({
+  // The tree nests to arbitrary depth, so indentation comes from nesting the
+  // lists rather than from a per-level style. Depth 0 sits flush.
+  nodeList: style({
     listStyle: 'none',
+    margin: 0,
+    padding: 0,
+
+    selectors: {
+      '&:not([data-depth="0"])': {
+        marginLeft: themeContract.px[12],
+      },
+    },
   }),
 
-  componentItem: style({
-    marginBottom: themeContract.px[8],
+  node: style({
+    marginBottom: themeContract.px[2],
   }),
 
-  componentTitle: style({
-    display: 'block',
+  nodeHeader: style({
+    display: 'flex',
+    alignItems: 'center',
     width: '100%',
+    height: themeContract.px[24],
     textAlign: 'left',
     fontSize: themeContract.px[14],
     fontWeight: 500,
-    color: themeContract.colors.neutral7,
-    marginBottom: themeContract.px[6],
-    paddingLeft: themeContract.px[2],
+    color: themeContract.colors.neutral6,
     background: 'none',
     border: 'none',
     cursor: 'pointer',
@@ -91,50 +88,24 @@ export const shelfStyles = {
 
     ':hover': {
       color: themeContract.colors.neutral8,
+      backgroundColor: themeContract.colors.neutral3,
     },
 
     selectors: {
       '&[data-expanded="true"]': {
         color: themeContract.colors.neutral8,
-        marginBottom: themeContract.px[8],
       },
     },
   }),
 
-  section: style({
-    marginBottom: themeContract.px[2],
-    marginLeft: themeContract.px[4],
-  }),
-
-  sectionHeader: style({
-    display: 'flex',
-    alignItems: 'center',
-    width: '100%',
-    height: themeContract.px[20],
-    fontSize: themeContract.px[14],
-    fontWeight: 500,
-    color: themeContract.colors.neutral6,
-
-    ':hover': {
-      color: themeContract.colors.neutral8,
-      backgroundColor: themeContract.colors.neutral3,
-    },
-
-    selectors: {
-      '&[data-active="true"]': {
-        color: themeContract.colors.neutral8,
-      },
-    },
-  }),
-
-  sectionList: style({
+  leafList: style({
     listStyle: 'none',
     margin: 0,
     padding: 0,
     marginLeft: themeContract.px[16],
   }),
 
-  itemButton: style({
+  leafLink: style({
     display: 'flex',
     alignItems: 'center',
     height: themeContract.px[24],

@@ -1,0 +1,56 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":semanticCommits"],
+
+  "description": [
+    "Versions are pinned exactly, so every upgrade arrives as a reviewable PR",
+    "rather than resolving silently on install. Renovate updates pnpm catalog",
+    "entries in pnpm-workspace.yaml directly, which is why it is preferred here."
+  ],
+
+  "minimumReleaseAge": "7 days",
+  "internalChecksFilter": "strict",
+  "rangeStrategy": "pin",
+  "prCreation": "not-pending",
+  "dependencyDashboard": true,
+  "labels": ["dependencies"],
+
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 5am on monday"]
+  },
+
+  "packageRules": [
+    {
+      "description": "Peer ranges are deliberately wide so consumers can bring their own version.",
+      "matchDepTypes": ["peerDependencies"],
+      "enabled": false
+    },
+    {
+      "description": "vanilla-extract packages must move together. A css bump without a matching vite-plugin bump can resolve two copies, and its file-scope keying breaks the build when that happens.",
+      "matchPackageNames": ["@vanilla-extract/**"],
+      "groupName": "vanilla-extract"
+    },
+    {
+      "description": "Router and its Vite plugin are version-coupled.",
+      "matchPackageNames": ["@tanstack/**"],
+      "groupName": "tanstack"
+    },
+    {
+      "description": "React runtime and its types should not drift apart.",
+      "matchPackageNames": ["react", "react-dom", "@types/react", "@types/react-dom"],
+      "groupName": "react"
+    },
+    {
+      "description": "Longer cooldown on major bumps, which are the ones most likely to be yanked or hotfixed.",
+      "matchUpdateTypes": ["major"],
+      "minimumReleaseAge": "21 days"
+    },
+    {
+      "description": "Tooling that only affects local development can move in one batch.",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "dev tooling"
+    }
+  ]
+}

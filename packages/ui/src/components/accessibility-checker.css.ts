@@ -18,7 +18,7 @@ export const accessibilityCheckerStyles = {
   }),
 
   containerWithShelf: style({
-    right: SHELF_WIDTH,
+    left: SHELF_WIDTH,
   }),
 
   header: style({

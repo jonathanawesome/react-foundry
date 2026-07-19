@@ -1,16 +1,24 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
+import type { NavItem } from '@react-foundry/core'
+
 import type { ThemeConfig } from '../types'
 
+export interface FoundryRuntimeConfig {
+  theme?: ThemeConfig
+  title?: string
+  /** The declared nav tree, which the browser needs to order the shelf. */
+  nav?: NavItem[]
+}
+
 export function writeFoundryConfig(
-  theme: ThemeConfig | undefined,
-  title: string | undefined,
+  config: FoundryRuntimeConfig,
   cacheDir: string
 ): string {
   const themeColors = {
-    dark: theme?.colors?.dark ?? {},
-    light: theme?.colors?.light ?? {},
+    dark: config.theme?.colors?.dark ?? {},
+    light: config.theme?.colors?.light ?? {},
   }
 
   if (!existsSync(cacheDir)) {
@@ -20,7 +28,8 @@ export function writeFoundryConfig(
   const filePath = resolve(cacheDir, 'react-foundry-config.js')
   const content = [
     `export const themeColors = ${JSON.stringify(themeColors)};`,
-    `export const foundryTitle = ${JSON.stringify(title ?? '')};`,
+    `export const foundryTitle = ${JSON.stringify(config.title ?? '')};`,
+    `export const foundryNav = ${JSON.stringify(config.nav ?? [])};`,
     '',
   ].join('\n')
 

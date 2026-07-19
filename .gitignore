@@ -5,3 +5,6 @@ dist
 *.log
 .env
 .env.local
+
+# Regenerated from the `nav` tree in foundry config on every server start
+foundry-nav.gen.d.ts
