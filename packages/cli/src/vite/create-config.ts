@@ -75,6 +75,10 @@ export function createViteConfig(
     optimizeDeps: {
       // Force Vite to include user's preview files
       entries: [`${root}/${config.previews}`],
+      // The generated config lives under node_modules/.cache, so Vite would
+      // pre-bundle it as a dependency and then serve that stale copy after we
+      // regenerate it. Excluding it keeps the freshly written file authoritative.
+      exclude: ['virtual:react-foundry-config'],
     },
     build: {
       outDir: resolve(root, 'dist'),
