@@ -1,4 +1,4 @@
-import type { ReactElement } from 'react'
+import type { ReactNode } from 'react'
 
 /**
  * Augmented by the generated `foundry-nav.gen.d.ts` in the user's project to
@@ -37,7 +37,8 @@ export type NavPath = ResolveNavPath<Register>
  */
 export const PREVIEW: unique symbol = Symbol.for('react-foundry.preview')
 
-export type RenderFn = () => ReactElement
+/** `ReactNode`, not `ReactElement`, so fragments and arrays are valid previews. */
+export type RenderFn = () => ReactNode
 
 export interface PreviewOptions {
   /** Overrides the label derived from the export name. */

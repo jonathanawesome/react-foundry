@@ -53,6 +53,16 @@ describe('createPreview', () => {
 
     expect(createPreview(render)).not.toBe(render)
   })
+
+  // React components may return any ReactNode, so previews should too.
+  it.each([
+    ['an array', () => [element, element]],
+    ['a string', () => 'text'],
+    ['a number', () => 42],
+    ['null', () => null],
+  ])('accepts a render returning %s', (_label, render) => {
+    expect(isPreview(createPreview(render))).toBe(true)
+  })
 })
 
 describe('isPreview', () => {

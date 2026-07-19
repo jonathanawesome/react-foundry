@@ -6,7 +6,7 @@ import react from '@vitejs/plugin-react'
 import type { InlineConfig } from 'vite'
 import type { ResolvedFoundryConfig } from '../types'
 import { createConfigHmrPlugin } from './config-hmr-plugin'
-import { createVirtualModulePlugin } from './virtual-module-plugin'
+import { createVirtualModulePlugin, resolvePreviewsGlob } from './virtual-module-plugin'
 import { writeFoundryConfig } from './write-foundry-config'
 import { writeNavTypes } from './write-nav-types'
 
@@ -31,9 +31,15 @@ export function createViteConfig(
   // declared tree. Lands in the user's project so their editor picks it up.
   writeNavTypes(config.nav, root)
 
+  // Pulled apart so a user override merges into each section rather than
+  // replacing it. Setting `server.host` must not drop `server.watch.ignored`,
+  // which the previews and config watchers depend on.
   const {
     plugins: userPlugins,
     resolve: userResolve,
+    server: userServer,
+    optimizeDeps: userOptimizeDeps,
+    build: userBuild,
     ...userViteConfig
   } = config.viteConfig || {}
 
@@ -62,34 +68,34 @@ export function createViteConfig(
     server: {
       port: config.port,
       host: config.host,
+      ...userServer,
       fs: {
-        // Allow serving files from the entire monorepo and cache dir
         allow: [monorepoRoot, cacheDir],
         strict: false,
+        ...userServer?.fs,
       },
       watch: {
-        // Excludes the user's project from Vite's watcher. Their previews and
-        // config are watched with `fs.watch` in the previews and config-HMR
-        // plugins instead, because those need to rebuild generated artifacts
-        // rather than just trigger a module update.
+        // Excludes the user's project from Vite's watcher. Previews and config
+        // are watched with `fs.watch` in their own plugins instead, since those
+        // rebuild generated artifacts rather than just triggering an update.
         //
         // A `'!**/node_modules/**'` entry used to sit here. Leading `!` is a
         // picomatch negation, so as an ignore pattern it meant "ignore
-        // everything outside node_modules", leaving Vite watching node_modules
-        // and nothing else.
+        // everything outside node_modules", leaving Vite watching almost nothing.
         ignored: [`${root}/**/*`],
+        ...userServer?.watch,
       },
     },
     optimizeDeps: {
-      // Force Vite to include user's preview files
-      entries: [`${root}/${config.previews}`],
-      // The generated config lives under node_modules/.cache, so Vite would
-      // pre-bundle it as a dependency and then serve that stale copy after we
-      // regenerate it. Excluding it keeps the freshly written file authoritative.
+      entries: [resolvePreviewsGlob(config.previews, root)],
+      // Generated config lives under node_modules/.cache, so Vite would
+      // pre-bundle it and keep serving that copy after it is regenerated.
       exclude: ['virtual:react-foundry-config'],
+      ...userOptimizeDeps,
     },
     build: {
       outDir: resolve(root, 'dist'),
+      ...userBuild,
     },
     publicDir: resolve(cliAppDir, 'public'),
     ...userViteConfig,

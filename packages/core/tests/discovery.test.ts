@@ -188,7 +188,9 @@ describe('createDiscovery', () => {
       )()
 
       expect(findNode(tree, 'Lab/Scratch')?.leaves).toHaveLength(1)
-      expect(warn).toHaveBeenCalled()
+      // The warning is the feature here, so it has to name the offending path.
+      expect(warn.mock.calls[0][0]).toContain('Lab/Scratch')
+      expect(warn).toHaveBeenCalledTimes(1)
     })
 
     it('appends it after the declared nodes', () => {
@@ -259,7 +261,43 @@ describe('createDiscovery', () => {
 
     expect(tree[0].leaves).toHaveLength(1)
     expect(tree[0].leaves[0].label).toBe('First')
-    expect(warn).toHaveBeenCalled()
+    expect(warn.mock.calls[0][0]).toContain('Forms/Primary')
+    expect(warn.mock.calls[0][0]).toContain('/p/b.preview.tsx')
+  })
+
+  describe('malformed nav config', () => {
+    // Both would render, but only the last could receive previews, leaving the
+    // first permanently empty.
+    it('merges siblings that declare the same label', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const nav: NavItem[] = [
+        { label: 'Forms', children: [{ label: 'Button' }] },
+        { label: 'Forms', children: [{ label: 'Input' }] },
+      ]
+      const tree = createDiscovery({}, nav)()
+
+      expect(tree).toHaveLength(1)
+      expect(tree[0].children.map((c) => c.label)).toEqual(['Button', 'Input'])
+      expect(warn.mock.calls[0][0]).toContain('declared more than once')
+    })
+
+    it('routes previews into the merged node', () => {
+      vi.spyOn(console, 'warn').mockImplementation(() => {})
+      const nav: NavItem[] = [{ label: 'Forms' }, { label: 'Forms' }]
+      const tree = createDiscovery(
+        { '/p/x.preview.tsx': previewFile('Forms', { Primary: preview() }) },
+        nav
+      )()
+
+      expect(tree[0].leaves).toHaveLength(1)
+    })
+
+    it('warns about a label containing a slash', () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+      createDiscovery({}, [{ label: 'a/b' }])()
+
+      expect(warn.mock.calls[0][0]).toContain('contains a slash')
+    })
   })
 
   it('sorts alphabetically when no nav config is declared', () => {
@@ -285,16 +323,44 @@ describe('createDiscovery', () => {
       nav
     )()
 
-    expect(forward[0].leaves.map((l) => l.id)).toEqual(reverse[0].leaves.map((l) => l.id))
+    // Assert the absolute order, not just that the two agree. Comparing two runs
+    // of the same function would pass even with no sort at all.
+    const expected = ['Forms/Primary', 'Forms/Secondary']
+    expect(forward[0].leaves.map((l) => l.id)).toEqual(expected)
+    expect(reverse[0].leaves.map((l) => l.id)).toEqual(expected)
   })
 
-  // The root route calls this on every render.
-  it('memoizes, so repeated calls do not rebuild the tree', () => {
-    const discover = createDiscovery(
-      { '/p/x.preview.tsx': previewFile('Forms', { Primary: preview() }) },
-      [{ label: 'Forms' }]
-    )
+  describe('memoization', () => {
+    const files = { '/p/x.preview.tsx': previewFile('Forms', { Primary: preview() }) }
+    const nav: NavItem[] = [{ label: 'Forms' }]
 
-    expect(discover()).toBe(discover())
+    // The root route calls this on every render.
+    it('returns the same tree on repeated calls', () => {
+      const discover = createDiscovery(files, nav)
+
+      expect(discover()).toBe(discover())
+    })
+
+    it('reads the modules only once', () => {
+      let reads = 0
+      const counted = new Proxy(files, {
+        ownKeys: (target) => {
+          reads++
+          return Reflect.ownKeys(target)
+        },
+      })
+      const discover = createDiscovery(counted, nav)
+
+      discover()
+      discover()
+
+      expect(reads).toBe(1)
+    })
+
+    // Per instance, not module-global. The full-reload strategy in the previews
+    // plugin depends on a fresh instance producing a fresh tree.
+    it('does not share a cache between instances', () => {
+      expect(createDiscovery(files, nav)()).not.toBe(createDiscovery(files, nav)())
+    })
   })
 })

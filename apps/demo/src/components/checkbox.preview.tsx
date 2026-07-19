@@ -66,10 +66,8 @@ export const Disabled = createPreview(() => (
   </div>
 ))
 
-/**
- * A parent whose state derives from its children, which needs `useState` and
- * two-way control. Under the old model this could not have been a variant.
- */
+// A parent whose state derives from its children. A preview holding a hook is
+// the same primitive as one that doesn't.
 export const Indeterminate = createPreview({
   label: 'Parent and Children',
   render: () => {

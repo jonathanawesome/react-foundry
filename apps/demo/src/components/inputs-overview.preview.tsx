@@ -5,13 +5,8 @@ import { createPreview, type NavPath } from '@react-foundry/core'
 
 import { checkbox, layout, slider, switchStyles } from './base-ui.css'
 
-/**
- * Sits on `Components/Inputs`, a node that also has children.
- *
- * So this group shows its own previews *and* nests Checkbox, Switch, and Slider
- * beneath it. The old category/component/variants shape could not express that:
- * a node was either a grouping or a component, never both.
- */
+// Sits on `Components/Inputs`, which also has children: this group shows its own
+// previews and nests Checkbox, Switch, and Slider beneath it.
 export const nav: NavPath = 'Components/Inputs'
 
 export const AllInputs = createPreview({

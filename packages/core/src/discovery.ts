@@ -47,14 +47,30 @@ function buildSkeleton(
   index: Map<string, NavNode>,
   prefix = ''
 ): NavNode[] {
-  return items.map((item) => {
+  return items.flatMap((item) => {
+    if (item.label.includes('/')) {
+      warn(
+        `Nav label "${item.label}" contains a slash, which separates path segments. Use nested children instead.`
+      )
+    }
+
     const path = prefix ? `${prefix}/${item.label}` : item.label
+    const existing = index.get(path)
+
+    // Two siblings sharing a label would both render while only the last could
+    // receive previews, leaving the first permanently empty. Merge instead.
+    if (existing) {
+      warn(`Nav path "${path}" is declared more than once. Merging the duplicates.`)
+      existing.children.push(...buildSkeleton(item.children ?? [], index, path))
+      return []
+    }
+
     const node = createNode(item.label, path)
 
     index.set(path, node)
     node.children = buildSkeleton(item.children ?? [], index, path)
 
-    return node
+    return [node]
   })
 }
 

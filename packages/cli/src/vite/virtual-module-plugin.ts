@@ -57,18 +57,46 @@ export function globBaseDir(pattern: string): string {
   return staticSegments.join('/') || '.'
 }
 
+/** Absolute glob for a project's previews. Shared so callers cannot disagree. */
+export function resolvePreviewsGlob(pattern: string, userRoot: string): string {
+  return resolve(userRoot, pattern.replace(/^\.?\//, ''))
+}
+
+export interface PreviewMeta {
+  nav: string | null
+  exportOrder: string[]
+}
+
+/**
+ * Describes what changed about a preview file, for the reload log.
+ *
+ * Every case reloads. Vite does not watch the user's project, so nothing else
+ * would pick the change up.
+ */
+export function classifyChange(
+  previous: PreviewMeta | undefined,
+  next: PreviewMeta | null
+): string {
+  if (next === null) return 'preview removed'
+  if (!previous) return 'preview added'
+  if (next.nav !== previous.nav) return `moved to ${next.nav}`
+
+  const orderChanged =
+    next.exportOrder.length !== previous.exportOrder.length ||
+    next.exportOrder.some((name, index) => name !== previous.exportOrder[index])
+
+  return orderChanged ? 'previews added or reordered' : 'edited'
+}
+
 export function createVirtualModulePlugin(
   previewsPattern: string,
   userRoot: string
 ): Plugin {
-  // Ensure pattern doesn't start with / or ./
-  const cleanPattern = previewsPattern.replace(/^\.?\//, '')
-  const searchPattern = resolve(userRoot, cleanPattern)
+  const searchPattern = resolvePreviewsGlob(previewsPattern, userRoot)
   let lastCount: number | null = null
 
-  // What was baked into the module the browser currently holds, so a file change
-  // can be compared against it rather than blindly forcing a reload.
-  const fileMeta = new Map<string, { nav: string | null; exportOrder: string[] }>()
+  // What each file looked like at the last load, so a change can be described.
+  const fileMeta = new Map<string, PreviewMeta>()
 
   return {
     name: 'react-foundry:virtual-previews',
@@ -82,52 +110,34 @@ export function createVirtualModulePlugin(
       const watchDir = globBaseDir(searchPattern)
       if (!existsSync(watchDir)) return
 
-      const reload = (file: string, reason: string) => {
-        // The edited preview file has to be dropped explicitly. Vite's watcher
-        // ignores the user's project, so it never learns the file changed and
-        // otherwise keeps serving the previously transformed copy. A file's
-        // `nav` export lives in that module, not in the generated one, so
-        // invalidating only the virtual module changes nothing.
-        const dropped = invalidateFile(server, file) + invalidateVirtualModule(server)
-
-        console.log(
-          pc.green(`  Preview changed (${reason}), reloading`),
-          pc.dim(`[${dropped} module(s) invalidated]`)
-        )
-
-        // The nav tree is memoized per module instance, so a hot update alone
-        // would leave the shelf showing the previous structure.
-        server.ws.send({ type: 'full-reload' })
-      }
-
       const handle = (file: string) => {
         const normalizedPath = file.split('\\').join('/')
         const previous = fileMeta.get(normalizedPath)
 
-        if (!existsSync(file)) return reload(file, 'preview removed')
-        if (!previous) return reload(file, 'preview added')
-
-        let source: string
-        try {
-          source = readFileSync(file, 'utf-8')
-        } catch {
-          return
+        let next: PreviewMeta | null = null
+        if (existsSync(file)) {
+          try {
+            const source = readFileSync(file, 'utf-8')
+            next = { nav: parseNavPath(source), exportOrder: parseExportOrder(source) }
+          } catch {
+            // Mid-write; the next event will carry the finished file.
+            return
+          }
         }
 
-        const nav = parseNavPath(source)
-        const exportOrder = parseExportOrder(source)
+        // The edited file has to be dropped explicitly. Vite does not watch the
+        // user's project, so it would keep serving the previous transform, and
+        // a file's `nav` lives in that module rather than the generated one.
+        const dropped = invalidateFile(server, file) + invalidateVirtualModule(server)
 
-        if (nav !== previous.nav) return reload(file, `moved to ${nav}`)
+        console.log(
+          pc.green(`  Preview changed (${classifyChange(previous, next)}), reloading`),
+          pc.dim(`[${dropped} module(s) invalidated]`)
+        )
 
-        const orderChanged =
-          exportOrder.length !== previous.exportOrder.length ||
-          exportOrder.some((name, index) => name !== previous.exportOrder[index])
-
-        if (orderChanged) return reload(file, 'previews added or reordered')
-
-        // Ordinary edits to a preview's markup still need the file dropped, for
-        // the same reason: nothing else is watching it.
-        reload(file, 'edited')
+        // The tree is memoized per module instance, so a hot update alone would
+        // leave the shelf showing the previous structure.
+        server.ws.send({ type: 'full-reload' })
       }
 
       // Use fs.watch directly rather than server.watcher. The Vite config puts
@@ -166,14 +176,22 @@ export function createVirtualModulePlugin(
 
       fileMeta.clear()
 
-      const entries = files.map((file, index) => {
+      const entries = files.flatMap((file, index) => {
         const normalizedPath = file.split('\\').join('/')
-        const source = readFileSync(file, 'utf-8')
-        const exportOrder = parseExportOrder(source)
 
+        // A file deleted between the glob and this read would otherwise throw
+        // out of the hook and take the whole module with it.
+        let source: string
+        try {
+          source = readFileSync(file, 'utf-8')
+        } catch {
+          return []
+        }
+
+        const exportOrder = parseExportOrder(source)
         fileMeta.set(normalizedPath, { nav: parseNavPath(source), exportOrder })
 
-        return { normalizedPath, index, exportOrder }
+        return [{ normalizedPath, index, exportOrder }]
       })
 
       const imports = entries
@@ -205,11 +223,10 @@ export default previewModules;
 /**
  * Drops the modules Vite holds for a file on disk, returning how many.
  *
- * Needed because the user's project is excluded from Vite's watcher, so Vite
- * never invalidates preview files on its own and would serve a stale transform
- * even across a full page reload.
+ * Vite does not watch the user's project, so without this it serves a stale
+ * transform even across a full page reload.
  */
-function invalidateFile(server: ViteDevServer, file: string): number {
+export function invalidateFile(server: ViteDevServer, file: string): number {
   const mods = server.moduleGraph.getModulesByFile(file)
   if (!mods) return 0
 
@@ -219,18 +236,12 @@ function invalidateFile(server: ViteDevServer, file: string): number {
 }
 
 /**
- * Drops the generated module and everything that imports it, returning how many
- * modules were dropped.
+ * Drops the generated module and everything that imports it, returning how many.
  *
- * The importers matter: discovery reads the module once and memoizes the tree,
- * so leaving those cached serves the old structure even after a refresh.
- *
- * Looks the module up by both its resolved and unresolved id. Vite keys virtual
- * modules by the null-prefixed id, but only once something has actually
- * imported them, so a lookup that finds nothing is worth reporting rather than
- * swallowing.
+ * Importers matter: discovery reads the module once and memoizes the tree, so
+ * leaving those cached serves the old structure even after a refresh.
  */
-function invalidateVirtualModule(server: ViteDevServer): number {
+export function invalidateVirtualModule(server: ViteDevServer): number {
   const mod =
     server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_MODULE_ID) ??
     server.moduleGraph.getModuleById(VIRTUAL_MODULE_ID)

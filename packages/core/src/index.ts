@@ -1,5 +1,6 @@
 export { createPreview, isPreview } from './create-preview'
 export { createDiscovery, deCamelCase, navPathFromFilename } from './discovery'
+export { findLeaf, findNode } from './nav'
 export type {
   NavItem,
   NavNode,

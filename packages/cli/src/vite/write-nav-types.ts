@@ -41,8 +41,8 @@ export function flattenNavPaths(nav: NavItem[] | undefined, prefix = ''): string
  * paths declared in the user's config.
  *
  * Written into the user's project rather than the cache directory so their
- * editor and `tsc` both pick it up without extra configuration. The file is
- * regenerated on every server start and is meant to be gitignored.
+ * editor and `tsc` both pick it up without extra configuration. Regenerated on
+ * every server start and whenever the config changes; meant to be gitignored.
  */
 export function writeNavTypes(nav: NavItem[] | undefined, userRoot: string): string {
   const paths = flattenNavPaths(nav)

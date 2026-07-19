@@ -21,11 +21,7 @@ export const Large = createPreview(() => <Button size="large">Large Button</Butt
 
 export const Disabled = createPreview(() => <Button disabled>Disabled Button</Button>)
 
-/**
- * Stateful previews are the same primitive as the ones above. Under the old
- * model this had to be a `demo` rather than a `variant` purely because it holds
- * a hook.
- */
+// A stateful preview is the same primitive as the ones above.
 export const Interactive = createPreview({
   label: 'Interactive Example',
   render: () => {

@@ -41,9 +41,11 @@ describe('Shelf', () => {
     })
   })
 
-  it('renders nothing but the shell when the tree is empty', async () => {
-    await renderWithRouter(<Shelf nav={[]} />)
+  it('renders the shell but no entries when the tree is empty', async () => {
+    const { container } = await renderWithRouter(<Shelf nav={[]} />)
 
+    // Assert the shell survives, or this passes when Shelf renders nothing.
+    expect(container.querySelector('aside')).toBeInTheDocument()
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
     expect(screen.queryByRole('link')).not.toBeInTheDocument()
   })

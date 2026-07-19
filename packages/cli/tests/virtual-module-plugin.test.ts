@@ -1,9 +1,15 @@
+import type { ViteDevServer } from 'vite'
 import { describe, expect, it } from 'vitest'
 
 import {
+  classifyChange,
   globBaseDir,
+  invalidateFile,
+  invalidateVirtualModule,
+  type PreviewMeta,
   parseExportOrder,
   parseNavPath,
+  resolvePreviewsGlob,
 } from '../src/vite/virtual-module-plugin'
 
 describe('parseExportOrder', () => {
@@ -107,9 +113,6 @@ describe('parseExportOrder', () => {
   })
 })
 
-// A file's nav path is baked into the emitted module, so the watcher has to
-// read it back to know whether an edit moved the file in the tree. Without
-// that, changing `nav` leaves the shelf showing the old position.
 describe('parseNavPath', () => {
   it('reads a nav path declared with a type annotation', () => {
     const source = "export const nav: NavPath = 'Forms/Button'\n"
@@ -143,6 +146,175 @@ describe('parseNavPath', () => {
     ].join('\n')
 
     expect(parseNavPath(source)).toBe('Components/Inputs/Checkbox')
+  })
+})
+
+// The reason each branch exists is the log line a user reads when a reload
+// happens. Without these, the whole diff could return the wrong branch silently.
+describe('classifyChange', () => {
+  const meta = (nav: string | null, exportOrder: string[]): PreviewMeta => ({
+    nav,
+    exportOrder,
+  })
+
+  it('reports a removed file', () => {
+    expect(classifyChange(meta('Forms', ['Primary']), null)).toBe('preview removed')
+  })
+
+  it('reports a file it has not seen before', () => {
+    expect(classifyChange(undefined, meta('Forms', ['Primary']))).toBe('preview added')
+  })
+
+  it('reports a moved nav path, naming the destination', () => {
+    expect(classifyChange(meta('Forms', ['Primary']), meta('Layout', ['Primary']))).toBe(
+      'moved to Layout'
+    )
+  })
+
+  it('treats gaining a nav path as a move', () => {
+    expect(classifyChange(meta(null, ['Primary']), meta('Forms', ['Primary']))).toBe(
+      'moved to Forms'
+    )
+  })
+
+  it('reports an added preview', () => {
+    expect(
+      classifyChange(meta('Forms', ['Primary']), meta('Forms', ['Primary', 'Danger']))
+    ).toBe('previews added or reordered')
+  })
+
+  it('reports a removed preview', () => {
+    expect(
+      classifyChange(meta('Forms', ['Primary', 'Danger']), meta('Forms', ['Primary']))
+    ).toBe('previews added or reordered')
+  })
+
+  // Same set, different order: the tree order changes even though nothing else did.
+  it('reports a reorder', () => {
+    expect(
+      classifyChange(
+        meta('Forms', ['Primary', 'Danger']),
+        meta('Forms', ['Danger', 'Primary'])
+      )
+    ).toBe('previews added or reordered')
+  })
+
+  it('reports an ordinary edit when nothing structural changed', () => {
+    expect(classifyChange(meta('Forms', ['Primary']), meta('Forms', ['Primary']))).toBe(
+      'edited'
+    )
+  })
+})
+
+describe('invalidation', () => {
+  function fakeServer(modules: Record<string, { importers?: string[] }>) {
+    const invalidated: string[] = []
+    const byId = new Map<string, { id: string; importers: Set<unknown> }>()
+
+    for (const id of Object.keys(modules)) {
+      byId.set(id, { id, importers: new Set() })
+    }
+    for (const [id, { importers = [] }] of Object.entries(modules)) {
+      for (const importer of importers) {
+        byId.get(id)?.importers.add(byId.get(importer))
+      }
+    }
+
+    const server = {
+      moduleGraph: {
+        getModuleById: (id: string) => byId.get(id),
+        getModulesByFile: (file: string) => {
+          const mod = byId.get(file)
+          return mod ? new Set([mod]) : undefined
+        },
+        invalidateModule: (mod: { id: string }) => invalidated.push(mod.id),
+      },
+    } as unknown as ViteDevServer
+
+    return { server, invalidated }
+  }
+
+  describe('invalidateFile', () => {
+    it('drops the modules Vite holds for a file', () => {
+      const { server, invalidated } = fakeServer({ '/p/a.preview.tsx': {} })
+
+      expect(invalidateFile(server, '/p/a.preview.tsx')).toBe(1)
+      expect(invalidated).toEqual(['/p/a.preview.tsx'])
+    })
+
+    it('reports zero for a file Vite never loaded', () => {
+      const { server, invalidated } = fakeServer({})
+
+      expect(invalidateFile(server, '/p/missing.preview.tsx')).toBe(0)
+      expect(invalidated).toEqual([])
+    })
+  })
+
+  describe('invalidateVirtualModule', () => {
+    const RESOLVED = '\0virtual:react-foundry-previews'
+
+    it('drops the generated module', () => {
+      const { server, invalidated } = fakeServer({ [RESOLVED]: {} })
+
+      expect(invalidateVirtualModule(server)).toBe(1)
+      expect(invalidated).toEqual([RESOLVED])
+    })
+
+    // Discovery memoizes the tree, so its module has to go too.
+    it('drops importers as well', () => {
+      const { server, invalidated } = fakeServer({
+        [RESOLVED]: { importers: ['/app/discovery.ts'] },
+        '/app/discovery.ts': { importers: ['/app/root.tsx'] },
+        '/app/root.tsx': {},
+      })
+
+      expect(invalidateVirtualModule(server)).toBe(3)
+      expect(invalidated).toContain('/app/discovery.ts')
+      expect(invalidated).toContain('/app/root.tsx')
+    })
+
+    it('does not loop forever on a circular importer graph', () => {
+      const { server } = fakeServer({
+        [RESOLVED]: { importers: ['/app/a.ts'] },
+        '/app/a.ts': { importers: ['/app/b.ts'] },
+        '/app/b.ts': { importers: ['/app/a.ts'] },
+      })
+
+      expect(invalidateVirtualModule(server)).toBe(3)
+    })
+
+    it('falls back to the unresolved id', () => {
+      const { server } = fakeServer({ 'virtual:react-foundry-previews': {} })
+
+      expect(invalidateVirtualModule(server)).toBe(1)
+    })
+
+    // Nothing has imported it yet, which is worth reporting rather than hiding.
+    it('reports zero when the module is not in the graph', () => {
+      const { server } = fakeServer({})
+
+      expect(invalidateVirtualModule(server)).toBe(0)
+    })
+  })
+})
+
+describe('resolvePreviewsGlob', () => {
+  it('strips a leading ./', () => {
+    expect(resolvePreviewsGlob('./src/**/*.preview.tsx', '/proj')).toBe(
+      '/proj/src/**/*.preview.tsx'
+    )
+  })
+
+  it('strips a leading /', () => {
+    expect(resolvePreviewsGlob('/src/**/*.preview.tsx', '/proj')).toBe(
+      '/proj/src/**/*.preview.tsx'
+    )
+  })
+
+  it('leaves a bare relative pattern alone', () => {
+    expect(resolvePreviewsGlob('src/**/*.preview.tsx', '/proj')).toBe(
+      '/proj/src/**/*.preview.tsx'
+    )
   })
 })
 
