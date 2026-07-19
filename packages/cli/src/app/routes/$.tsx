@@ -12,6 +12,11 @@ import { discoverNav } from '../nav'
  */
 export const Route = createFileRoute('/$')({
   component: NavPathRoute,
+  // Permissive: the valid params depend on which preview is loaded, so search
+  // can't be a fixed schema. Coercion happens per-preview against its controls.
+  // (A `retainSearchParams`/search middleware here would break the reset that
+  // clears controls when you switch previews — see the panel's navigation.)
+  validateSearch: (search: Record<string, unknown>) => search,
   loader: ({ params }) => {
     const path = params._splat ?? ''
     const nav = discoverNav()

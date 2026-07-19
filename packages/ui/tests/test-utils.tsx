@@ -45,5 +45,8 @@ export async function renderWithRouter(ui: ReactNode, initialPath = '/') {
   await router.load()
 
   // biome-ignore lint/suspicious/noExplicitAny: the router is intentionally unregistered
-  return render(<RouterProvider router={router as any} />)
+  const result = render(<RouterProvider router={router as any} />)
+
+  // Return the router too, so tests can assert on the location a component wrote.
+  return { ...result, router }
 }
