@@ -44,7 +44,14 @@ export function createConfigHmrPlugin(userRoot: string, cacheDir: string): Plugi
             const configModule = await import(/* @vite-ignore */ dataUrl)
             const userConfig = configModule.default || {}
 
-            writeFoundryConfig(userConfig.theme, userConfig.title, cacheDir)
+            writeFoundryConfig(
+              {
+                theme: userConfig.theme,
+                title: userConfig.title,
+                nav: userConfig.nav,
+              },
+              cacheDir
+            )
 
             // Invalidate the generated cache file so Vite re-reads it on reload
             const cacheFile = resolve(cacheDir, 'react-foundry-config.js')

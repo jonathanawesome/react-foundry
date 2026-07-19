@@ -63,6 +63,15 @@ export interface PreviewLeaf {
   component: Preview
 }
 
+/**
+ * One group as declared in the user's config. Declaration order is display
+ * order, so this is how authors control where a section sits in the shelf.
+ */
+export interface NavItem {
+  label: string
+  children?: NavItem[]
+}
+
 /** A group in the nav tree. Nests to arbitrary depth. */
 export interface NavNode {
   label: string

@@ -6,10 +6,12 @@ declare module 'virtual:react-foundry-previews' {
 }
 
 declare module 'virtual:react-foundry-config' {
+  import type { NavItem } from '@react-foundry/core'
   import type { ColorToken } from '@react-foundry/style'
   export const themeColors: {
     dark: Partial<Record<ColorToken, string>>
     light: Partial<Record<ColorToken, string>>
   }
   export const foundryTitle: string
+  export const foundryNav: NavItem[]
 }

@@ -22,7 +22,10 @@ export function createViteConfig(
 
   // Write config to a real file so vanilla-extract's child compiler can resolve it
   const cacheDir = resolve(root, 'node_modules', '.cache', 'react-foundry')
-  const configFilePath = writeFoundryConfig(config.theme, config.title, cacheDir)
+  const configFilePath = writeFoundryConfig(
+    { theme: config.theme, title: config.title, nav: config.nav },
+    cacheDir
+  )
 
   // Emit the NavPath union so preview files typecheck their `nav` against the
   // declared tree. Lands in the user's project so their editor picks it up.

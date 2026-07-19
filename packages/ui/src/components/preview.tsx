@@ -1,4 +1,4 @@
-import type { ComponentPreview } from '@react-foundry/core'
+import type { Preview as PreviewComponent } from '@react-foundry/core'
 import { useRef } from 'react'
 
 import { useUIStore } from '../state'
@@ -7,90 +7,35 @@ import { AccessibilityChecker } from './accessibility-checker'
 import { previewStyles } from './preview.css'
 
 interface PreviewProps {
-  preview: ComponentPreview | null
-  selectedItem: string | null
-  selectedType: 'variant' | 'demo' | null
+  preview: PreviewComponent | null
+  /** Shown when nothing is selected. */
+  emptyMessage?: string
 }
 
-export function Preview({ preview, selectedItem, selectedType }: PreviewProps) {
+export function Preview({
+  preview,
+  emptyMessage = 'Select a preview from the sidebar',
+}: PreviewProps) {
   const previewPaneRef = useRef<HTMLDivElement>(null)
 
   const isAccessibilityEnabled = useUIStore.use.isAccessibilityEnabled()
   const isShelfOpen = useUIStore.use.isShelfOpen()
 
-  if (!preview) {
-    return (
-      <div className={previewStyles.previewContainer}>
-        <div className={previewStyles.noSelection}>
-          Select a component from the sidebar to preview
-        </div>
-        <AccessibilityChecker
-          targetRef={previewPaneRef}
-          isEnabled={isAccessibilityEnabled}
-          isShelfOpen={isShelfOpen}
-        />
-      </div>
-    )
-  }
+  // Capitalised so JSX treats it as a component. Rendering it as an element
+  // rather than calling it gives the preview its own fiber, which is what makes
+  // hooks inside a preview legal.
+  const Component = preview
 
-  // If no selection, prompt user to select something
-  if (!selectedItem || !selectedType) {
-    return (
-      <div className={previewStyles.previewContainer}>
-        <div className={previewStyles.noSelection}>
-          Select a variant or demo to preview
-        </div>
-        <AccessibilityChecker
-          targetRef={previewPaneRef}
-          isEnabled={isAccessibilityEnabled}
-          isShelfOpen={isShelfOpen}
-        />
-      </div>
-    )
-  }
-
-  // Render based on selection type
-  if (selectedType === 'demo' && preview.demos) {
-    const currentDemo = preview.demos.find((d) => d.name === selectedItem)
-    if (currentDemo) {
-      // Wrap render function as a component to properly handle hooks
-      const DemoComponent = currentDemo.render
-      return (
-        <div className={previewStyles.previewContainer}>
-          <div className={previewStyles.previewPane} ref={previewPaneRef}>
-            <DemoComponent />
-          </div>
-          <AccessibilityChecker
-            targetRef={previewPaneRef}
-            isEnabled={isAccessibilityEnabled}
-            isShelfOpen={isShelfOpen}
-          />
-        </div>
-      )
-    }
-  } else if (selectedType === 'variant' && preview.variants) {
-    const currentVariant = preview.variants.find((v) => v.name === selectedItem)
-    if (currentVariant) {
-      const Component = preview.component
-      return (
-        <div className={previewStyles.previewContainer}>
-          <div className={previewStyles.previewPane} ref={previewPaneRef}>
-            <Component {...currentVariant.props} />
-          </div>
-          <AccessibilityChecker
-            targetRef={previewPaneRef}
-            isEnabled={isAccessibilityEnabled}
-            isShelfOpen={isShelfOpen}
-          />
-        </div>
-      )
-    }
-  }
-
-  // Fallback if nothing found
   return (
     <div className={previewStyles.previewContainer}>
-      <div className={previewStyles.noSelection}>Preview not found</div>
+      {Component ? (
+        <div className={previewStyles.previewPane} ref={previewPaneRef}>
+          <Component />
+        </div>
+      ) : (
+        <div className={previewStyles.noSelection}>{emptyMessage}</div>
+      )}
+
       <AccessibilityChecker
         targetRef={previewPaneRef}
         isEnabled={isAccessibilityEnabled}
