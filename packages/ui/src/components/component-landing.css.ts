@@ -12,11 +12,6 @@ export const componentLandingStyles = {
     marginBottom: themeContract.px[8],
   }),
 
-  category: style({
-    color: themeContract.colors.neutral6,
-    marginBottom: themeContract.px[8],
-  }),
-
   sourcePath: style({
     fontFamily: themeContract.fonts.mono,
     fontSize: themeContract.px[12],
