@@ -10,9 +10,9 @@ import { PREVIEW, type Preview, type PreviewOptions, type RenderFn } from './typ
  * ```tsx
  * export const Primary = createPreview(() => <Button variant="primary" />)
  *
- * export const AllSizes = createPreview({
- *   label: 'Every Size',
- *   render: () => <Stack>...</Stack>,
+ * export const Playground = createPreview({
+ *   controls: { variant: { type: 'select', options: ['primary', 'danger'] } },
+ *   render: (v) => <Button variant={v.variant} />,
  * })
  * ```
  *
@@ -23,12 +23,16 @@ export function createPreview(input: RenderFn | PreviewOptions): Preview {
   const isBare = typeof input === 'function'
   const render = isBare ? input : input.render
 
-  // Wrap rather than tag `render` directly so we never mutate a caller-owned
-  // function. Called at module scope, so the identity stays stable for React.
-  const preview = (() => render()) as Preview
+  // A React component taking the control values as one private prop, so control
+  // names can't collide with children/key/ref. Wrap rather than tag `render`
+  // so we never mutate a caller-owned function; module-scope identity stays
+  // stable for React. No hook or context here: tests call `preview()` directly,
+  // which would throw if the wrapper read one.
+  const preview = ((props) => render(props?.controlValues)) as Preview
 
   preview[PREVIEW] = true
   preview.label = isBare ? undefined : input.label
+  preview.controls = isBare ? undefined : input.controls
 
   return preview
 }

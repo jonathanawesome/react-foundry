@@ -1,6 +1,6 @@
 import { describe, expectTypeOf, it } from 'vitest'
 
-import type { NavPath, Preview, ResolveNavPath } from '../src/types'
+import type { ControlValues, NavPath, Preview, ResolveNavPath } from '../src/types'
 
 describe('ResolveNavPath', () => {
   it('falls back to string when the register declares no paths', () => {
@@ -46,5 +46,36 @@ describe('Preview', () => {
 
   it('carries an optional label', () => {
     expectTypeOf<Preview['label']>().toEqualTypeOf<string | undefined>()
+  })
+})
+
+describe('ControlValues', () => {
+  // Each control def maps to the value type render receives, so v.x is typed.
+  it('maps each control def to its value type', () => {
+    type Schema = {
+      label: { type: 'text' }
+      variant: { type: 'select'; options: string[] }
+      count: { type: 'number' }
+      volume: { type: 'range' }
+      disabled: { type: 'boolean' }
+      tint: { type: 'color' }
+    }
+
+    expectTypeOf<ControlValues<Schema>>().toEqualTypeOf<{
+      label: string
+      variant: string
+      count: number
+      volume: number
+      disabled: boolean
+      tint: string
+    }>()
+  })
+
+  it('rejects reading a control that is not in the schema', () => {
+    type Values = ControlValues<{ variant: { type: 'text' } }>
+
+    // @ts-expect-error `varinat` is a typo, not a declared control
+    const typo: string = ({} as Values).varinat
+    void typo
   })
 })
