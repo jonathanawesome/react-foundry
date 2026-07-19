@@ -17,7 +17,7 @@ export const shelfStyles = {
     position: 'fixed',
     zIndex: 9,
     top: 0,
-    right: 0,
+    left: 0,
     bottom: 0,
     width: SHELF_WIDTH,
     maxWidth: '90vw',
@@ -27,9 +27,9 @@ export const shelfStyles = {
     paddingTop: 48,
 
     background: themeContract.colors.neutral1,
-    borderLeft: `1px solid ${themeContract.colors.neutral4}`,
+    borderRight: `1px solid ${themeContract.colors.neutral4}`,
 
-    transform: 'translateX(100%)',
+    transform: 'translateX(-100%)',
     transition: `transform 0.3s ${themeContract.motion.authentic}`,
 
     selectors: {
@@ -39,7 +39,7 @@ export const shelfStyles = {
       '&[data-pinned="true"]': {
         transform: 'translateX(0)',
         transition: 'none',
-        borderLeft: `1px solid ${themeContract.colors.neutral4}`,
+        borderRight: `1px solid ${themeContract.colors.neutral4}`,
       },
     },
   }),
