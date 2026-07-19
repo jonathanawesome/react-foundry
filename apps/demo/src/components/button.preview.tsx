@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import { Button } from './button'
 
-export const nav: NavPath = 'UI Components/Button'
+export const nav: NavPath = 'Components/Actions'
 
 export const Primary = createPreview(() => (
   <Button variant="primary">Primary Button</Button>
