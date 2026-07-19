@@ -94,6 +94,18 @@ export interface PreviewModule {
   default: ComponentPreview
 }
 
+/**
+ * One discovered `.preview.tsx` file, as emitted by the previews virtual module.
+ *
+ * `exportOrder` is read off the source at build time because it cannot be
+ * recovered at runtime: the ES spec sorts module namespace keys alphabetically,
+ * so `Object.keys(module)` loses the order the author wrote.
+ */
+export interface PreviewFile {
+  module: Record<string, unknown>
+  exportOrder: string[]
+}
+
 export interface DiscoveredComponent {
   id: string
   path: string

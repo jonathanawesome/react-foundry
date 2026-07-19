@@ -1,7 +1,7 @@
 declare module 'virtual:react-foundry-previews' {
-  import type { PreviewModule } from '@react-foundry/core'
+  import type { PreviewFile } from '@react-foundry/core'
 
-  const previewModules: Record<string, PreviewModule>
+  const previewModules: Record<string, PreviewFile>
   export default previewModules
 }
 
