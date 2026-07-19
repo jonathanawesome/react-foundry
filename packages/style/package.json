@@ -14,7 +14,7 @@
   "dependencies": {
     "@vanilla-extract/css": "catalog:",
     "@vanilla-extract/recipes": "catalog:",
-    "@vanilla-extract/sprinkles": "^1.6.5"
+    "@vanilla-extract/sprinkles": "1.6.5"
   },
   "devDependencies": {
     "@vanilla-extract/vite-plugin": "catalog:",

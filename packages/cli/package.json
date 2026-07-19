@@ -21,11 +21,11 @@
     "@tanstack/router-plugin": "catalog:",
     "@vanilla-extract/css": "catalog:",
     "@vanilla-extract/vite-plugin": "catalog:",
-    "@vitejs/plugin-react": "^4.3.4",
-    "cac": "^6.7.14",
-    "glob": "^13.0.0",
-    "picocolors": "^1.1.1",
-    "tsx": "^4.21.0",
+    "@vitejs/plugin-react": "4.7.0",
+    "cac": "6.7.14",
+    "glob": "13.0.0",
+    "picocolors": "1.1.1",
+    "tsx": "4.21.0",
     "vite": "catalog:"
   },
   "devDependencies": {
