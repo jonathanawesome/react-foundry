@@ -11,13 +11,25 @@
     "test": "vitest run",
     "types": "tsc --noEmit"
   },
+  "peerDependencies": {
+    "react": "catalog:peers",
+    "react-dom": "catalog:peers"
+  },
   "dependencies": {
     "@vanilla-extract/css": "catalog:",
     "@vanilla-extract/recipes": "catalog:",
     "@vanilla-extract/sprinkles": "1.6.5"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
     "@vanilla-extract/vite-plugin": "catalog:",
+    "jsdom": "catalog:",
+    "react": "catalog:",
+    "react-dom": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
   }

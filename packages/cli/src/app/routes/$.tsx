@@ -2,7 +2,7 @@ import { findLeaf, findNode } from '@react-foundry/core'
 import { ComponentLanding, Preview } from '@react-foundry/ui'
 import { createFileRoute } from '@tanstack/react-router'
 
-import { discoverNav } from '../utils/discovery'
+import { discoverNav } from '../nav'
 
 /**
  * One splat route for the whole tree, since a nav path is arbitrarily deep.

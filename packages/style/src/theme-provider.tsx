@@ -14,9 +14,10 @@ export const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 interface ThemeProviderProps {
   children: ReactNode
-  defaultTheme?: Theme
-  storageKey?: string
 }
+
+const STORAGE_KEY = 'react-foundry-theme'
+const DEFAULT_THEME: Theme = 'system'
 
 function getSystemTheme(): 'light' | 'dark' {
   if (typeof window === 'undefined') {
@@ -26,13 +27,13 @@ function getSystemTheme(): 'light' | 'dark' {
   return matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
-function getStoredTheme(storageKey: string): Theme | null {
+function getStoredTheme(): Theme | null {
   if (typeof window === 'undefined') {
     return null
   }
 
   try {
-    const stored = localStorage.getItem(storageKey)
+    const stored = localStorage.getItem(STORAGE_KEY)
     if (stored && ['light', 'dark', 'system'].includes(stored)) {
       return stored as Theme
     }
@@ -43,25 +44,21 @@ function getStoredTheme(storageKey: string): Theme | null {
   return null
 }
 
-function setStoredTheme(storageKey: string, theme: Theme): void {
+function setStoredTheme(theme: Theme): void {
   if (typeof window === 'undefined') {
     return
   }
 
   try {
-    localStorage.setItem(storageKey, theme)
+    localStorage.setItem(STORAGE_KEY, theme)
   } catch {
     // Ignore localStorage errors
   }
 }
 
-export function ThemeProvider({
-  children,
-  defaultTheme = 'system',
-  storageKey = 'react-foundry-theme',
-}: ThemeProviderProps) {
+export function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, setThemeState] = useState<Theme>(() => {
-    return getStoredTheme(storageKey) ?? defaultTheme
+    return getStoredTheme() ?? DEFAULT_THEME
   })
 
   const [systemTheme, setSystemTheme] = useState<'light' | 'dark'>(() => {
@@ -97,7 +94,7 @@ export function ThemeProvider({
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme)
-    setStoredTheme(storageKey, newTheme)
+    setStoredTheme(newTheme)
   }
 
   return (

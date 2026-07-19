@@ -194,21 +194,40 @@ export function createVirtualModulePlugin(
         return [{ normalizedPath, index, exportOrder }]
       })
 
-      const imports = entries
-        .map(
-          ({ normalizedPath, index }) =>
-            `import * as module${index} from '${normalizedPath}';`
-        )
-        .join('\n')
+      return generateModuleSource(entries)
+    },
+  }
+}
 
-      const moduleObject = entries
-        .map(
-          ({ normalizedPath, index, exportOrder }) =>
-            `  '${normalizedPath}': { module: module${index}, exportOrder: ${JSON.stringify(exportOrder)} },`
-        )
-        .join('\n')
+export interface ModuleEntry {
+  normalizedPath: string
+  index: number
+  exportOrder: string[]
+}
 
-      return `${imports}
+/**
+ * Emits the virtual module: one namespace import per file, collected into a map
+ * keyed by absolute path.
+ *
+ * Paths and export names go through `JSON.stringify` so a path containing a
+ * quote produces valid source rather than a broken module.
+ */
+export function generateModuleSource(entries: ModuleEntry[]): string {
+  const imports = entries
+    .map(
+      ({ normalizedPath, index }) =>
+        `import * as module${index} from ${JSON.stringify(normalizedPath)};`
+    )
+    .join('\n')
+
+  const moduleObject = entries
+    .map(
+      ({ normalizedPath, index, exportOrder }) =>
+        `  ${JSON.stringify(normalizedPath)}: { module: module${index}, exportOrder: ${JSON.stringify(exportOrder)} },`
+    )
+    .join('\n')
+
+  return `${imports}
 
 const previewModules = {
 ${moduleObject}
@@ -216,8 +235,6 @@ ${moduleObject}
 
 export default previewModules;
 `
-    },
-  }
 }
 
 /**

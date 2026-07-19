@@ -26,14 +26,14 @@
     "zustand": "5.0.9"
   },
   "devDependencies": {
-    "@testing-library/dom": "10.4.1",
-    "@testing-library/jest-dom": "6.9.1",
-    "@testing-library/react": "16.3.2",
-    "@testing-library/user-event": "14.6.1",
+    "@testing-library/dom": "catalog:",
+    "@testing-library/jest-dom": "catalog:",
+    "@testing-library/react": "catalog:",
+    "@testing-library/user-event": "catalog:",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "@vanilla-extract/vite-plugin": "catalog:",
-    "jsdom": "29.1.1",
+    "jsdom": "catalog:",
     "vite": "catalog:",
     "vitest": "catalog:"
   }

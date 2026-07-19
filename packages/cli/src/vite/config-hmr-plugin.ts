@@ -6,6 +6,21 @@ import { findConfigPath } from '../config/load-config'
 import { writeFoundryConfig } from './write-foundry-config'
 import { writeNavTypes } from './write-nav-types'
 
+/** Matches an `import { ... } from '@react-foundry/cli'`, braces spanning lines. */
+const CLI_IMPORT = /import\s*\{[^}]*\}\s*from\s*['"]@react-foundry\/cli['"]\s*;?/g
+
+/**
+ * Replaces the CLI import in a config file with an inline `defineConfig` shim.
+ *
+ * The config is re-imported on every save to read its new values, but importing
+ * `@react-foundry/cli` for real would run the binary's entry point, which calls
+ * `cli.parse()` and re-triggers server startup. `defineConfig` is a passthrough,
+ * so a local stub is enough.
+ */
+export function shimConfigSource(source: string): string {
+  return source.replace(CLI_IMPORT, 'const defineConfig = (c) => c;')
+}
+
 export function createConfigHmrPlugin(userRoot: string, cacheDir: string): Plugin {
   return {
     name: 'react-foundry:config-hmr',
@@ -27,14 +42,7 @@ export function createConfigHmrPlugin(userRoot: string, cacheDir: string): Plugi
             // caches by file path) or ssrLoadModule (the CLI entry point has
             // side effects — cli.parse() — that re-trigger server startup).
             const source = readFileSync(configPath, 'utf-8')
-
-            // Replace the @react-foundry/cli import with an inline shim.
-            // defineConfig is just a passthrough — this avoids loading the
-            // CLI entry point which has side effects.
-            const shimmed = source.replace(
-              /import\s*\{[^}]*\}\s*from\s*['"]@react-foundry\/cli['"]\s*;?/,
-              'const defineConfig = (c) => c;'
-            )
+            const shimmed = shimConfigSource(source)
 
             const result = await transformWithEsbuild(shimmed, configPath, {
               loader: 'ts',
