@@ -3,9 +3,11 @@ import { describe, expect, it } from 'vitest'
 
 import {
   classifyChange,
+  generateModuleSource,
   globBaseDir,
   invalidateFile,
   invalidateVirtualModule,
+  type ModuleEntry,
   type PreviewMeta,
   parseExportOrder,
   parseNavPath,
@@ -295,6 +297,64 @@ describe('invalidation', () => {
 
       expect(invalidateVirtualModule(server)).toBe(0)
     })
+  })
+})
+
+describe('generateModuleSource', () => {
+  const entry = (
+    normalizedPath: string,
+    index: number,
+    exportOrder: string[]
+  ): ModuleEntry => ({ normalizedPath, index, exportOrder })
+
+  it('emits nothing but the empty map for no entries', () => {
+    const source = generateModuleSource([])
+
+    expect(source).toContain('const previewModules = {')
+    expect(source).toContain('export default previewModules')
+  })
+
+  it('imports each file as a namespace, numbered by index', () => {
+    const source = generateModuleSource([
+      entry('/p/a.preview.tsx', 0, ['Primary']),
+      entry('/p/b.preview.tsx', 1, ['Secondary']),
+    ])
+
+    expect(source).toContain('import * as module0 from "/p/a.preview.tsx";')
+    expect(source).toContain('import * as module1 from "/p/b.preview.tsx";')
+  })
+
+  it('keys the map by path with the module and its export order', () => {
+    const source = generateModuleSource([
+      entry('/p/a.preview.tsx', 0, ['Primary', 'Danger']),
+    ])
+
+    expect(source).toContain(
+      '"/p/a.preview.tsx": { module: module0, exportOrder: ["Primary","Danger"] }'
+    )
+  })
+
+  // A single quote in a path would otherwise close the string literal early and
+  // emit a broken module.
+  it('escapes a path containing a quote', () => {
+    const source = generateModuleSource([entry("/p/o'brien.preview.tsx", 0, ['A'])])
+
+    expect(source).toContain('import * as module0 from "/p/o\'brien.preview.tsx";')
+    expect(source).not.toContain("o'brien.preview.tsx'")
+  })
+
+  // The generated text must be valid JS. Strip the module-only import/export
+  // lines and parse the rest; a quoting break would throw here.
+  it('produces syntactically valid module source', () => {
+    const source = generateModuleSource([
+      entry('/p/a.preview.tsx', 0, ['Primary']),
+      entry("/p/it's.preview.tsx", 1, ['Danger']),
+    ])
+    const body = source
+      .replace(/^import .*$/gm, '')
+      .replace(/^export default .*$/gm, '')
+
+    expect(() => new Function(body)).not.toThrow()
   })
 })
 

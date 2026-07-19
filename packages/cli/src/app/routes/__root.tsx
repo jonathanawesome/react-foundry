@@ -6,7 +6,7 @@ import { Layout, Navigation, Shelf } from '@react-foundry/ui'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
-import { discoverNav } from '../utils/discovery'
+import { discoverNav } from '../nav'
 
 export const Route = createRootRoute({
   component: RootComponent,
