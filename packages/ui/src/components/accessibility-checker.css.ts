@@ -1,6 +1,6 @@
 import { style, themeContract } from '@react-foundry/style'
 
-import { SHELF_WIDTH } from '../constants'
+import { PANEL_WIDTH, SHELF_WIDTH } from '../constants'
 
 export const accessibilityCheckerStyles = {
   container: style({
@@ -19,6 +19,10 @@ export const accessibilityCheckerStyles = {
 
   containerWithShelf: style({
     left: SHELF_WIDTH,
+  }),
+
+  containerWithPanel: style({
+    right: PANEL_WIDTH,
   }),
 
   header: style({

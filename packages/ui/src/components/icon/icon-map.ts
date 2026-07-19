@@ -4,6 +4,7 @@ import {
   MoonIcon as Moon,
   NotebookIcon as Notebook,
   PushPinIcon as PushPin,
+  SlidersHorizontalIcon as Sliders,
   SunIcon as Sun,
   WheelchairIcon as Wheelchair,
 } from '@phosphor-icons/react'
@@ -14,6 +15,7 @@ export const IconMap = {
   Notebook,
   Moon,
   PushPin,
+  Sliders,
   Sun,
   Wheelchair,
 } as const

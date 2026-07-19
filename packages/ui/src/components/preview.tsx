@@ -20,6 +20,7 @@ export function Preview({
 
   const isAccessibilityEnabled = useUIStore.use.isAccessibilityEnabled()
   const isShelfOpen = useUIStore.use.isShelfOpen()
+  const isPanelOpen = useUIStore.use.isPanelOpen()
 
   // Capitalised so JSX treats it as a component. Rendering it as an element
   // rather than calling it gives the preview its own fiber, which is what makes
@@ -40,6 +41,7 @@ export function Preview({
         targetRef={previewPaneRef}
         isEnabled={isAccessibilityEnabled}
         isShelfOpen={isShelfOpen}
+        isPanelOpen={isPanelOpen}
       />
     </div>
   )

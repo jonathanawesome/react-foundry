@@ -30,6 +30,7 @@ export const Navigation = () => {
   const setIsShelfPinned = useUIStore.use.setIsShelfPinned()
   const toggleAccessibility = useUIStore.use.toggleAccessibility()
   const toggleShelf = useUIStore.use.toggleShelf()
+  const togglePanel = useUIStore.use.togglePanel()
   const { theme, setTheme, resolvedTheme } = useTheme()
 
   const handleToggleTheme = () => {
@@ -61,6 +62,12 @@ export const Navigation = () => {
           }
         }}
         title="Open Component List"
+      />
+
+      <NavigationItem
+        icon="Sliders"
+        onClick={togglePanel}
+        title="Toggle Controls Panel"
       />
 
       <NavigationItem

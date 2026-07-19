@@ -2,7 +2,7 @@
 
 import { foundryTitle } from 'virtual:react-foundry-config'
 import { ThemeProvider } from '@react-foundry/style'
-import { Layout, Navigation, Shelf } from '@react-foundry/ui'
+import { Layout, Navigation, PropsPanel, Shelf } from '@react-foundry/ui'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
@@ -24,6 +24,7 @@ function RootComponent() {
       <Layout>
         <Shelf nav={nav} />
         <Outlet />
+        <PropsPanel />
         <Navigation />
       </Layout>
     </ThemeProvider>

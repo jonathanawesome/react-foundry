@@ -23,8 +23,17 @@ describe('Navigation', () => {
       isAccessibilityEnabled: false,
       isShelfOpen: true,
       isShelfPinned: true,
+      isPanelOpen: true,
+      isPanelPinned: true,
       expandedNodes: [],
     })
+  })
+
+  it('toggles the controls panel', async () => {
+    render(<Navigation />)
+    await userEvent.click(screen.getByTitle('Toggle Controls Panel'))
+
+    expect(useUIStore.getState().isPanelOpen).toBe(false)
   })
 
   it('toggles accessibility', async () => {

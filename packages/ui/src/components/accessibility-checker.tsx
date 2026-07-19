@@ -7,6 +7,7 @@ interface AccessibilityCheckerProps {
   targetRef: React.RefObject<HTMLDivElement | null>
   isEnabled: boolean
   isShelfOpen?: boolean
+  isPanelOpen?: boolean
 }
 
 export function getImpactColor(impact: string | null) {
@@ -37,6 +38,7 @@ export function AccessibilityChecker({
   targetRef,
   isEnabled,
   isShelfOpen = false,
+  isPanelOpen = false,
 }: AccessibilityCheckerProps) {
   const [violations, setViolations] = useState<Violation[]>([])
   const [isExpanded, setIsExpanded] = useState(true)
@@ -91,10 +93,16 @@ export function AccessibilityChecker({
     0
   )
 
+  const containerClass = [
+    accessibilityCheckerStyles.container,
+    isShelfOpen && accessibilityCheckerStyles.containerWithShelf,
+    isPanelOpen && accessibilityCheckerStyles.containerWithPanel,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
-    <div
-      className={`${accessibilityCheckerStyles.container} ${isShelfOpen ? accessibilityCheckerStyles.containerWithShelf : ''}`}
-    >
+    <div className={containerClass}>
       <div className={accessibilityCheckerStyles.header}>
         <button
           type="button"

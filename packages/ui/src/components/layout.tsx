@@ -9,9 +9,14 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   const isShelfPinned = useUIStore.use.isShelfPinned()
+  const isPanelPinned = useUIStore.use.isPanelPinned()
 
   return (
-    <div className={styles.layout} data-shelf-pinned={isShelfPinned}>
+    <div
+      className={styles.layout}
+      data-shelf-pinned={isShelfPinned}
+      data-panel-pinned={isPanelPinned}
+    >
       {children}
     </div>
   )

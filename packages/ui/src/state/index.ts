@@ -14,6 +14,12 @@ type UIStore = {
   toggleShelf: () => void
   setIsShelfPinned: (val: boolean) => void
 
+  // props panel
+  isPanelOpen: boolean
+  isPanelPinned: boolean
+  togglePanel: () => void
+  setIsPanelPinned: (val: boolean) => void
+
   // nav tree
   /** Paths of expanded nav nodes. An array rather than a Set so it serializes. */
   expandedNodes: string[]
@@ -27,6 +33,8 @@ const uiStore = create<UIStore>()(
       isAccessibilityEnabled: false,
       isShelfOpen: true,
       isShelfPinned: true,
+      isPanelOpen: true,
+      isPanelPinned: true,
       expandedNodes: [],
 
       toggleAccessibility: () => {
@@ -41,6 +49,15 @@ const uiStore = create<UIStore>()(
       toggleShelf: () => {
         const isShelfOpen = get().isShelfOpen
         return set({ isShelfOpen: !isShelfOpen })
+      },
+
+      setIsPanelPinned: (bool) => {
+        return set({ isPanelPinned: bool })
+      },
+
+      togglePanel: () => {
+        const isPanelOpen = get().isPanelOpen
+        return set({ isPanelOpen: !isPanelOpen })
       },
 
       toggleNode: (path) => {
@@ -73,6 +90,8 @@ const uiStore = create<UIStore>()(
         isAccessibilityEnabled: state.isAccessibilityEnabled,
         isShelfOpen: state.isShelfOpen,
         isShelfPinned: state.isShelfPinned,
+        isPanelOpen: state.isPanelOpen,
+        isPanelPinned: state.isPanelPinned,
         expandedNodes: state.expandedNodes,
       }),
     }
