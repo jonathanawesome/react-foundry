@@ -1,6 +1,6 @@
 import type { NavNode } from '@react-foundry/core'
 import { Link, useParams } from '@tanstack/react-router'
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useUIStore } from '../state'
 import { Icon } from './icon/icon'
 
@@ -22,31 +22,24 @@ export function ancestorPaths(leafId: string): string[] {
  * Tracks which nodes are open.
  *
  * Keyed by node path rather than a synthetic id so it survives the tree being
- * rebuilt, and so auto-expanding an ancestor is a plain path lookup.
+ * rebuilt, and so auto-expanding an ancestor is a plain path lookup. Held in the
+ * persisted store because editing a preview file reloads the page, and losing
+ * the whole tree's open state on every save is worse than the edit is worth.
  */
 function useExpandState(activeLeafId: string | null) {
-  const [expanded, setExpanded] = useState<Set<string>>(new Set())
+  const expandedNodes = useUIStore.use.expandedNodes()
+  const toggle = useUIStore.use.toggleNode()
+  const expandNodes = useUIStore.use.expandNodes()
 
   useEffect(() => {
     if (!activeLeafId) return
 
     // Open every ancestor, not just the immediate parent, or a deeply nested
     // active leaf stays hidden.
-    setExpanded((prev) => new Set([...prev, ...ancestorPaths(activeLeafId)]))
-  }, [activeLeafId])
+    expandNodes(ancestorPaths(activeLeafId))
+  }, [activeLeafId, expandNodes])
 
-  const toggle = (path: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev)
-      if (next.has(path)) {
-        next.delete(path)
-      } else {
-        next.add(path)
-      }
-      return next
-    })
-
-  return { isExpanded: (path: string) => expanded.has(path), toggle }
+  return { isExpanded: (path: string) => expandedNodes.includes(path), toggle }
 }
 
 interface NavTreeProps {

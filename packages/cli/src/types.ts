@@ -40,7 +40,8 @@ export interface FoundryConfig {
    *
    * Optional: with no tree declared, `NavPath` stays `string` and the shelf is
    * inferred from the `nav` values it finds, alphabetically.
-   * Requires server restart.
+   * Hot-reloadable: both the shelf and the generated `NavPath` union update on
+   * save, though your editor may need a moment to reload the types.
    * @default []
    */
   nav?: NavItem[]

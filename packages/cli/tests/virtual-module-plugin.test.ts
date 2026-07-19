@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { globBaseDir, parseExportOrder } from '../src/vite/virtual-module-plugin'
+import {
+  globBaseDir,
+  parseExportOrder,
+  parseNavPath,
+} from '../src/vite/virtual-module-plugin'
 
 describe('parseExportOrder', () => {
   it('returns nothing for a file with no exports', () => {
@@ -100,6 +104,45 @@ describe('parseExportOrder', () => {
     const source = 'export const _private = 1\nexport const $special = 2\n'
 
     expect(parseExportOrder(source)).toEqual(['_private', '$special'])
+  })
+})
+
+// A file's nav path is baked into the emitted module, so the watcher has to
+// read it back to know whether an edit moved the file in the tree. Without
+// that, changing `nav` leaves the shelf showing the old position.
+describe('parseNavPath', () => {
+  it('reads a nav path declared with a type annotation', () => {
+    const source = "export const nav: NavPath = 'Forms/Button'\n"
+
+    expect(parseNavPath(source)).toBe('Forms/Button')
+  })
+
+  it('reads a nav path declared without one', () => {
+    expect(parseNavPath("export const nav = 'Forms/Button'\n")).toBe('Forms/Button')
+  })
+
+  it('reads a double quoted path', () => {
+    expect(parseNavPath('export const nav = "Forms/Button"\n')).toBe('Forms/Button')
+  })
+
+  it('returns null when the file declares no nav', () => {
+    expect(parseNavPath('export const Primary = createPreview(() => null)\n')).toBeNull()
+  })
+
+  it('ignores a nav that is not an exported top level const', () => {
+    expect(parseNavPath("const nav = 'Forms/Button'\n")).toBeNull()
+  })
+
+  it('picks the nav export out of a realistic file', () => {
+    const source = [
+      "import { createPreview, type NavPath } from '@react-foundry/core'",
+      '',
+      "export const nav: NavPath = 'Components/Inputs/Checkbox'",
+      '',
+      'export const Primary = createPreview(() => null)',
+    ].join('\n')
+
+    expect(parseNavPath(source)).toBe('Components/Inputs/Checkbox')
   })
 })
 

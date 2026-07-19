@@ -68,8 +68,16 @@ export function createViteConfig(
         strict: false,
       },
       watch: {
-        // Watch the user's project directory for changes
-        ignored: ['!**/node_modules/**', `${root}/**/*`],
+        // Excludes the user's project from Vite's watcher. Their previews and
+        // config are watched with `fs.watch` in the previews and config-HMR
+        // plugins instead, because those need to rebuild generated artifacts
+        // rather than just trigger a module update.
+        //
+        // A `'!**/node_modules/**'` entry used to sit here. Leading `!` is a
+        // picomatch negation, so as an ignore pattern it meant "ignore
+        // everything outside node_modules", leaving Vite watching node_modules
+        // and nothing else.
+        ignored: [`${root}/**/*`],
       },
     },
     optimizeDeps: {

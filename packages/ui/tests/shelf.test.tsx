@@ -36,6 +36,8 @@ describe('Shelf', () => {
       isAccessibilityEnabled: false,
       isShelfOpen: true,
       isShelfPinned: true,
+      // Expansion is persisted now, so it survives between tests unless reset.
+      expandedNodes: [],
     })
   })
 
