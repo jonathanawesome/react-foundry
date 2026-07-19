@@ -12,6 +12,17 @@ export interface ThemeConfig {
   colors?: ThemeColors
 }
 
+/**
+ * One group in the navigation tree. Nests to arbitrary depth.
+ *
+ * Declaration order is display order, so this is also how you control where a
+ * section sits in the shelf.
+ */
+export interface NavItem {
+  label: string
+  children?: NavItem[]
+}
+
 export interface FoundryConfig {
   /**
    * Glob pattern for preview files.
@@ -19,6 +30,20 @@ export interface FoundryConfig {
    * @default 'src/components/**\/*.preview.tsx'
    */
   previews?: string
+
+  /**
+   * The navigation tree. Array order is display order.
+   *
+   * Every path declared here becomes part of the `NavPath` union that preview
+   * files check their `nav` export against, so typos are compile errors rather
+   * than previews quietly landing in the wrong place.
+   *
+   * Optional: with no tree declared, `NavPath` stays `string` and the shelf is
+   * inferred from the `nav` values it finds, alphabetically.
+   * Requires server restart.
+   * @default []
+   */
+  nav?: NavItem[]
 
   /**
    * Port for dev server.

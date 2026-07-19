@@ -9,6 +9,12 @@ describe('DEFAULT_CONFIG', () => {
     expect(DEFAULT_CONFIG.host).toBe('localhost')
   })
 
+  // An empty tree is what makes the nav config optional: NavPath stays `string`
+  // and the shelf falls back to inferring its shape from the previews found.
+  it('defaults nav to an empty tree', () => {
+    expect(DEFAULT_CONFIG.nav).toEqual([])
+  })
+
   it('does not include optional keys', () => {
     const keys = Object.keys(DEFAULT_CONFIG)
     expect(keys).not.toContain('viteConfig')

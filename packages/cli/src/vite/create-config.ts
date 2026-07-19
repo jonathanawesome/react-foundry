@@ -8,6 +8,7 @@ import type { ResolvedFoundryConfig } from '../types'
 import { createConfigHmrPlugin } from './config-hmr-plugin'
 import { createVirtualModulePlugin } from './virtual-module-plugin'
 import { writeFoundryConfig } from './write-foundry-config'
+import { writeNavTypes } from './write-nav-types'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const cliAppDir = resolve(__dirname, '../../src/app')
@@ -22,6 +23,10 @@ export function createViteConfig(
   // Write config to a real file so vanilla-extract's child compiler can resolve it
   const cacheDir = resolve(root, 'node_modules', '.cache', 'react-foundry')
   const configFilePath = writeFoundryConfig(config.theme, config.title, cacheDir)
+
+  // Emit the NavPath union so preview files typecheck their `nav` against the
+  // declared tree. Lands in the user's project so their editor picks it up.
+  writeNavTypes(config.nav, root)
 
   const {
     plugins: userPlugins,
