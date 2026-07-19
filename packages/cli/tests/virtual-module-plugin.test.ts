@@ -350,9 +350,7 @@ describe('generateModuleSource', () => {
       entry('/p/a.preview.tsx', 0, ['Primary']),
       entry("/p/it's.preview.tsx", 1, ['Danger']),
     ])
-    const body = source
-      .replace(/^import .*$/gm, '')
-      .replace(/^export default .*$/gm, '')
+    const body = source.replace(/^import .*$/gm, '').replace(/^export default .*$/gm, '')
 
     expect(() => new Function(body)).not.toThrow()
   })
