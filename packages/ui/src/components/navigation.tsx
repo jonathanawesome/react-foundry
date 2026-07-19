@@ -46,7 +46,7 @@ export const Navigation = () => {
         <NavigationItem
           icon="PushPin"
           onClick={() => setIsShelfPinned(true)}
-          title={isShelfPinned ? 'Unpin and close shelf' : 'Pin shelf'}
+          title="Pin shelf"
         />
       )}
 

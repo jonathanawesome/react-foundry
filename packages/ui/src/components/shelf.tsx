@@ -1,257 +1,122 @@
-import type { DiscoveredComponent } from '@react-foundry/core'
+import type { NavNode } from '@react-foundry/core'
 import { Link, useParams } from '@tanstack/react-router'
-import { type ReactNode, useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { useUIStore } from '../state'
 import { Icon } from './icon/icon'
 
 import { shelfStyles } from './shelf.css'
 
 interface ShelfProps {
-  components: DiscoveredComponent[]
+  nav: NavNode[]
 }
 
-// Custom hook for managing expanded state
-function useExpandState(
-  routeComponentId: string | null,
-  routeVariantName: string | null,
-  routeDemoName: string | null
-) {
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set())
+/** Every ancestor path of a leaf id, so the tree can open down to the active item. */
+export function ancestorPaths(leafId: string): string[] {
+  const segments = leafId.split('/')
 
-  // Auto-expand sections based on current route
+  // Drop the last segment: that is the export name, not a node.
+  return segments.slice(0, -1).map((_, index) => segments.slice(0, index + 1).join('/'))
+}
+
+/**
+ * Tracks which nodes are open.
+ *
+ * Keyed by node path rather than a synthetic id so it survives the tree being
+ * rebuilt, and so auto-expanding an ancestor is a plain path lookup. Held in the
+ * persisted store because editing a preview file reloads the page, and losing
+ * the whole tree's open state on every save is worse than the edit is worth.
+ */
+function useExpandState(activeLeafId: string | null) {
+  const expandedNodes = useUIStore.use.expandedNodes()
+  const toggle = useUIStore.use.toggleNode()
+  const expandNodes = useUIStore.use.expandNodes()
+
   useEffect(() => {
-    if (routeComponentId) {
-      setExpandedSections((prev) => {
-        const newSet = new Set(prev)
-        // Expand the component section
-        newSet.add(`${routeComponentId}-component`)
+    if (!activeLeafId) return
 
-        // Expand variants section if we're on a variant route
-        if (routeVariantName) {
-          newSet.add(`${routeComponentId}-variants`)
-        }
+    // Open every ancestor, not just the immediate parent, or a deeply nested
+    // active leaf stays hidden.
+    expandNodes(ancestorPaths(activeLeafId))
+  }, [activeLeafId, expandNodes])
 
-        // Expand demos section if we're on a demo route
-        if (routeDemoName) {
-          newSet.add(`${routeComponentId}-demos`)
-        }
-
-        return newSet
-      })
-    }
-  }, [routeComponentId, routeVariantName, routeDemoName])
-
-  const toggleExpanded = (sectionId: string) => {
-    setExpandedSections((prev) => {
-      const newSet = new Set(prev)
-      if (newSet.has(sectionId)) {
-        newSet.delete(sectionId)
-      } else {
-        newSet.add(sectionId)
-      }
-      return newSet
-    })
-  }
-
-  const isExpanded = (sectionId: string) => expandedSections.has(sectionId)
-
-  return { isExpanded, toggleExpanded }
+  return { isExpanded: (path: string) => expandedNodes.includes(path), toggle }
 }
 
-// Reusable section header component
-const SectionHeader = ({
-  action,
-  title,
-  isExpanded,
-}: {
-  action: () => void
-  title: string
-  isExpanded: boolean
-}) => (
-  <button
-    type="button"
-    className={shelfStyles.sectionHeader}
-    onClick={action}
-    data-active={isExpanded}
-  >
-    <Icon name="CaretRight" rotate={isExpanded ? '90' : undefined} size={'sm'} />
-    {title}
-  </button>
+interface NavTreeProps {
+  nodes: NavNode[]
+  activeLeafId: string | null
+  isExpanded: (path: string) => boolean
+  toggle: (path: string) => void
+  depth: number
+}
+
+/**
+ * Renders the nav tree to arbitrary depth.
+ *
+ * One recursive component replaces the old fixed category, component, and
+ * variants/demos levels, which could only ever express three.
+ */
+const NavTree = ({ nodes, activeLeafId, isExpanded, toggle, depth }: NavTreeProps) => (
+  <ul className={shelfStyles.nodeList} data-depth={depth}>
+    {nodes.map((node) => {
+      const expanded = isExpanded(node.path)
+
+      return (
+        <li key={node.path} className={shelfStyles.node}>
+          <button
+            type="button"
+            className={shelfStyles.nodeHeader}
+            onClick={() => toggle(node.path)}
+            data-expanded={expanded}
+          >
+            <Icon name="CaretRight" rotate={expanded ? '90' : undefined} size="sm" />
+            {node.label}
+          </button>
+
+          {expanded && (
+            <>
+              {node.leaves.length > 0 && (
+                <ul className={shelfStyles.leafList}>
+                  {node.leaves.map((leaf) => (
+                    <li key={leaf.id}>
+                      <Link
+                        to="/$"
+                        params={{ _splat: leaf.id }}
+                        className={shelfStyles.leafLink}
+                        data-active={activeLeafId === leaf.id}
+                      >
+                        {leaf.label}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              {node.children.length > 0 && (
+                <NavTree
+                  nodes={node.children}
+                  activeLeafId={activeLeafId}
+                  isExpanded={isExpanded}
+                  toggle={toggle}
+                  depth={depth + 1}
+                />
+              )}
+            </>
+          )}
+        </li>
+      )
+    })}
+  </ul>
 )
 
-// Generic collapsible section component
-interface CollapsibleSectionProps {
-  title: string
-  sectionId: string
-  componentId: string
-  isExpanded: boolean
-  toggleExpanded: (id: string) => void
-  children: ReactNode
-}
-
-const CollapsibleSection = ({
-  title,
-  sectionId,
-  componentId,
-  isExpanded,
-  toggleExpanded,
-  children,
-}: CollapsibleSectionProps) => (
-  <div className={shelfStyles.section}>
-    <SectionHeader
-      action={() => toggleExpanded(sectionId)}
-      isExpanded={isExpanded}
-      title={title}
-    />
-    {isExpanded && (
-      <ul
-        className={shelfStyles.sectionList}
-        id={`${title.toLowerCase()}-list-${componentId}`}
-      >
-        {children}
-      </ul>
-    )}
-  </div>
-)
-
-// Section item link component
-interface SectionItemProps {
-  to: string
-  params: Record<string, string>
-  isActive: boolean
-  name: string
-}
-
-const SectionItem = ({ to, params, isActive, name }: SectionItemProps) => (
-  <li>
-    <Link
-      to={to}
-      params={params}
-      className={shelfStyles.itemButton}
-      data-active={isActive}
-    >
-      {name}
-    </Link>
-  </li>
-)
-
-// Component item with sections
-interface ComponentItemProps {
-  component: DiscoveredComponent
-  isComponentExpanded: boolean
-  toggleExpanded: (id: string) => void
-  isExpanded: (id: string) => boolean
-  routeComponentId: string | null
-  routeVariantName: string | null
-  routeDemoName: string | null
-}
-
-const ComponentItem = ({
-  component,
-  isComponentExpanded,
-  toggleExpanded,
-  isExpanded,
-  routeComponentId,
-  routeVariantName,
-  routeDemoName,
-}: ComponentItemProps) => {
-  const hasVariants = component.variants && component.variants.length > 0
-  const hasDemos = component.demos && component.demos.length > 0
-
-  const componentId = `${component.id}-component`
-  const variantsSectionId = `${component.id}-variants`
-  const demosSectionId = `${component.id}-demos`
-
-  return (
-    <li className={shelfStyles.componentItem}>
-      <button
-        type="button"
-        className={shelfStyles.componentTitle}
-        onClick={() => toggleExpanded(componentId)}
-        data-expanded={isComponentExpanded}
-      >
-        {component.name}
-      </button>
-
-      {isComponentExpanded && hasVariants && (
-        <CollapsibleSection
-          title="Variants"
-          sectionId={variantsSectionId}
-          componentId={component.id}
-          isExpanded={isExpanded(variantsSectionId)}
-          toggleExpanded={toggleExpanded}
-        >
-          {component.variants?.map((variant) => (
-            <SectionItem
-              key={variant.name}
-              to="/$componentId/variant/$variantName"
-              params={{
-                componentId: component.id,
-                variantName: variant.name,
-              }}
-              isActive={
-                routeComponentId === component.id && routeVariantName === variant.name
-              }
-              name={variant.name}
-            />
-          ))}
-        </CollapsibleSection>
-      )}
-
-      {isComponentExpanded && hasDemos && (
-        <CollapsibleSection
-          title="Demos"
-          sectionId={demosSectionId}
-          componentId={component.id}
-          isExpanded={isExpanded(demosSectionId)}
-          toggleExpanded={toggleExpanded}
-        >
-          {component.demos?.map((demo) => (
-            <SectionItem
-              key={demo.name}
-              to="/$componentId/demo/$demoName"
-              params={{
-                componentId: component.id,
-                demoName: demo.name,
-              }}
-              isActive={routeComponentId === component.id && routeDemoName === demo.name}
-              name={demo.name}
-            />
-          ))}
-        </CollapsibleSection>
-      )}
-    </li>
-  )
-}
-
-export const Shelf = ({ components }: ShelfProps) => {
+export const Shelf = ({ nav }: ShelfProps) => {
   const isShelfPinned = useUIStore.use.isShelfPinned()
   const isShelfOpen = useUIStore.use.isShelfOpen()
 
   const params = useParams({ strict: false })
+  const activeLeafId = '_splat' in params ? ((params._splat as string) ?? null) : null
 
-  // Extract route params more cleanly
-  const routeComponentId = 'componentId' in params ? (params.componentId as string) : null
-  const routeVariantName = 'variantName' in params ? (params.variantName as string) : null
-  const routeDemoName = 'demoName' in params ? (params.demoName as string) : null
-
-  const { isExpanded, toggleExpanded } = useExpandState(
-    routeComponentId,
-    routeVariantName,
-    routeDemoName
-  )
-
-  // Group components by category
-  const grouped = components.reduce(
-    (acc, comp) => {
-      if (!acc[comp.category]) {
-        acc[comp.category] = []
-      }
-      acc[comp.category].push(comp)
-      return acc
-    },
-    {} as Record<string, DiscoveredComponent[]>
-  )
+  const { isExpanded, toggle } = useExpandState(activeLeafId)
 
   return (
     <aside
@@ -260,27 +125,15 @@ export const Shelf = ({ components }: ShelfProps) => {
       data-pinned={isShelfPinned}
     >
       <div className={shelfStyles.content}>
-        <aside className={shelfStyles.sidebar}>
-          {Object.entries(grouped).map(([category, discoveredComponents]) => (
-            <div key={category} className={shelfStyles.category}>
-              <h2 className={shelfStyles.categoryTitle}>{category}</h2>
-              <ul className={shelfStyles.componentList}>
-                {discoveredComponents.map((component) => (
-                  <ComponentItem
-                    key={component.id}
-                    component={component}
-                    isComponentExpanded={isExpanded(`${component.id}-component`)}
-                    toggleExpanded={toggleExpanded}
-                    isExpanded={isExpanded}
-                    routeComponentId={routeComponentId}
-                    routeVariantName={routeVariantName}
-                    routeDemoName={routeDemoName}
-                  />
-                ))}
-              </ul>
-            </div>
-          ))}
-        </aside>
+        <nav className={shelfStyles.sidebar}>
+          <NavTree
+            nodes={nav}
+            activeLeafId={activeLeafId}
+            isExpanded={isExpanded}
+            toggle={toggle}
+            depth={0}
+          />
+        </nav>
       </div>
     </aside>
   )

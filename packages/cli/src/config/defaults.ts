@@ -4,6 +4,7 @@ export const DEFAULT_CONFIG: Required<
   Omit<FoundryConfig, 'viteConfig' | 'theme' | 'title'>
 > = {
   previews: 'src/components/**/*.preview.tsx',
+  nav: [],
   port: 5173,
   host: 'localhost',
 }

@@ -14,23 +14,23 @@ afterEach(() => {
 })
 
 describe('writeFoundryConfig', () => {
-  it('writes empty dark/light objects and empty title when no config provided', () => {
-    const filePath = writeFoundryConfig(undefined, undefined, testCacheDir)
+  it('writes empty defaults when no config provided', () => {
+    const filePath = writeFoundryConfig({}, testCacheDir)
     const content = readFileSync(filePath, 'utf-8')
     expect(content).toContain('export const themeColors = {"dark":{},"light":{}};')
     expect(content).toContain('export const foundryTitle = "";')
+    expect(content).toContain('export const foundryNav = [];')
   })
 
   it('returns the absolute path to the generated file', () => {
-    const filePath = writeFoundryConfig(undefined, undefined, testCacheDir)
+    const filePath = writeFoundryConfig({}, testCacheDir)
     expect(filePath).toBe(resolve(testCacheDir, 'react-foundry-config.js'))
     expect(existsSync(filePath)).toBe(true)
   })
 
   it('serializes dark color overrides', () => {
     const filePath = writeFoundryConfig(
-      { colors: { dark: { brand: '#0ea5e9', neutral1: 'oklch(10% 0 0)' } } },
-      undefined,
+      { theme: { colors: { dark: { brand: '#0ea5e9', neutral1: 'oklch(10% 0 0)' } } } },
       testCacheDir
     )
     const content = readFileSync(filePath, 'utf-8')
@@ -40,8 +40,7 @@ describe('writeFoundryConfig', () => {
 
   it('serializes light color overrides', () => {
     const filePath = writeFoundryConfig(
-      { colors: { light: { neutral1: 'oklch(99% 0 0)' } } },
-      undefined,
+      { theme: { colors: { light: { neutral1: 'oklch(99% 0 0)' } } } },
       testCacheDir
     )
     const content = readFileSync(filePath, 'utf-8')
@@ -50,22 +49,43 @@ describe('writeFoundryConfig', () => {
   })
 
   it('serializes the title', () => {
-    const filePath = writeFoundryConfig(undefined, 'My Components', testCacheDir)
+    const filePath = writeFoundryConfig({ title: 'My Components' }, testCacheDir)
     const content = readFileSync(filePath, 'utf-8')
     expect(content).toContain('export const foundryTitle = "My Components";')
   })
 
+  // Discovery runs in the browser, so the declared tree has to travel with the
+  // rest of the runtime config rather than staying in the node process.
+  it('serializes the nav tree so the browser can order the shelf', () => {
+    const filePath = writeFoundryConfig(
+      { nav: [{ label: 'Forms', children: [{ label: 'Button' }] }] },
+      testCacheDir
+    )
+    const content = readFileSync(filePath, 'utf-8')
+    expect(content).toContain(
+      'export const foundryNav = [{"label":"Forms","children":[{"label":"Button"}]}];'
+    )
+  })
+
+  it('preserves nav declaration order, which is display order', () => {
+    const filePath = writeFoundryConfig(
+      { nav: [{ label: 'Zulu' }, { label: 'Alpha' }] },
+      testCacheDir
+    )
+    const content = readFileSync(filePath, 'utf-8')
+    expect(content).toContain('[{"label":"Zulu"},{"label":"Alpha"}]')
+  })
+
   it('creates the cache directory if it does not exist', () => {
     expect(existsSync(testCacheDir)).toBe(false)
-    writeFoundryConfig(undefined, undefined, testCacheDir)
+    writeFoundryConfig({}, testCacheDir)
     expect(existsSync(testCacheDir)).toBe(true)
   })
 
   it('overwrites existing file on subsequent calls', () => {
-    writeFoundryConfig({ colors: { dark: { brand: 'old' } } }, undefined, testCacheDir)
+    writeFoundryConfig({ theme: { colors: { dark: { brand: 'old' } } } }, testCacheDir)
     const filePath = writeFoundryConfig(
-      { colors: { dark: { brand: 'new' } } },
-      undefined,
+      { theme: { colors: { dark: { brand: 'new' } } } },
       testCacheDir
     )
     const content = readFileSync(filePath, 'utf-8')

@@ -1,53 +1,47 @@
-import type { DiscoveredComponent } from '@react-foundry/core'
+import type { NavNode } from '@react-foundry/core'
 import { Link } from '@tanstack/react-router'
 
 import { componentLandingStyles as styles } from './component-landing.css'
 
 interface ComponentLandingProps {
-  preview: DiscoveredComponent | null
-  componentId: string
+  node: NavNode | null
+  path: string
 }
 
-export const ComponentLanding = ({ preview, componentId }: ComponentLandingProps) => {
-  if (!preview) {
+/**
+ * Landing view for a nav path that resolves to a group rather than a preview.
+ *
+ * Lists what sits under it, so a partial URL is a useful page instead of a
+ * dead end.
+ */
+export const ComponentLanding = ({ node, path }: ComponentLandingProps) => {
+  if (!node) {
     return (
       <div className={styles.notFound}>
-        <h1>Component not found</h1>
-        <p>The component &quot;{componentId}&quot; could not be found.</p>
+        <h1>Not found</h1>
+        <p>Nothing is registered at &quot;{path}&quot;.</p>
         <Link to="/">← Back to home</Link>
       </div>
     )
   }
 
-  const hasVariants = preview.variants && preview.variants.length > 0
-  const hasDemos = preview.demos && preview.demos.length > 0
+  const isEmpty = node.leaves.length === 0 && node.children.length === 0
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>{preview.title}</h1>
-      {preview.category && (
-        <p className={styles.category}>Category: {preview.category}</p>
-      )}
-      <p className={styles.sourcePath}>{preview.path}</p>
+      <h1 className={styles.title}>{node.label}</h1>
+      <p className={styles.sourcePath}>{node.path}</p>
 
-      {!hasVariants && !hasDemos && (
-        <p className={styles.emptyState}>
-          No variants or demos available for this component.
-        </p>
-      )}
+      {isEmpty && <p className={styles.emptyState}>Nothing here yet.</p>}
 
-      {hasVariants && (
+      {node.leaves.length > 0 && (
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Variants</h2>
+          <h2 className={styles.sectionTitle}>Previews</h2>
           <ul className={styles.list}>
-            {preview.variants?.map((variant) => (
-              <li key={variant.name} className={styles.listItem}>
-                <Link
-                  to="/$componentId/variant/$variantName"
-                  params={{ componentId, variantName: variant.name }}
-                  className={styles.itemLink}
-                >
-                  {variant.name}
+            {node.leaves.map((leaf) => (
+              <li key={leaf.id} className={styles.listItem}>
+                <Link to="/$" params={{ _splat: leaf.id }} className={styles.itemLink}>
+                  {leaf.label}
                 </Link>
               </li>
             ))}
@@ -55,18 +49,14 @@ export const ComponentLanding = ({ preview, componentId }: ComponentLandingProps
         </section>
       )}
 
-      {hasDemos && (
+      {node.children.length > 0 && (
         <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Demos</h2>
+          <h2 className={styles.sectionTitle}>Sections</h2>
           <ul className={styles.list}>
-            {preview.demos?.map((demo) => (
-              <li key={demo.name} className={styles.listItem}>
-                <Link
-                  to="/$componentId/demo/$demoName"
-                  params={{ componentId, demoName: demo.name }}
-                  className={styles.itemLink}
-                >
-                  {demo.name}
+            {node.children.map((child) => (
+              <li key={child.path} className={styles.listItem}>
+                <Link to="/$" params={{ _splat: child.path }} className={styles.itemLink}>
+                  {child.label}
                 </Link>
               </li>
             ))}

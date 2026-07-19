@@ -9,8 +9,8 @@ import type { FoundryConfig } from '../types'
  *
  * export default defineConfig({
  *   previews: 'src/components/**\/*.preview.tsx',
- *   port: 5173,
- *   debug: true,
+ *   title: 'My Components',
+ *   nav: [{ label: 'Forms', children: [{ label: 'Button' }] }],
  * })
  * ```
  */

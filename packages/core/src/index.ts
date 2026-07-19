@@ -1,9 +1,16 @@
-export { createPreview } from './create-preview'
-export { createDiscovery } from './discovery'
+export { createPreview, isPreview } from './create-preview'
+export { createDiscovery, deCamelCase, navPathFromFilename } from './discovery'
+export { findLeaf, findNode } from './nav'
 export type {
-  ComponentDemo,
-  ComponentPreview,
-  ComponentVariant,
-  DiscoveredComponent,
-  PreviewModule,
+  NavItem,
+  NavNode,
+  NavPath,
+  Preview,
+  PreviewFile,
+  PreviewLeaf,
+  PreviewOptions,
+  Register,
+  RenderFn,
+  ResolveNavPath,
 } from './types'
+export { PREVIEW } from './types'

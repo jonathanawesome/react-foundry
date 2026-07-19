@@ -11,7 +11,7 @@ export const layout = style({
 
   selectors: {
     '&[data-shelf-pinned="true"]': {
-      paddingRight: SHELF_WIDTH,
+      paddingLeft: SHELF_WIDTH,
     },
   },
 })

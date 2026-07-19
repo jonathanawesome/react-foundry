@@ -6,14 +6,14 @@ import { Layout, Navigation, Shelf } from '@react-foundry/ui'
 import { createRootRoute, Outlet } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
-import { discoverComponents } from '../utils/discovery'
+import { discoverNav } from '../utils/discovery'
 
 export const Route = createRootRoute({
   component: RootComponent,
 })
 
 function RootComponent() {
-  const components = discoverComponents()
+  const nav = discoverNav()
 
   useEffect(() => {
     document.title = foundryTitle || 'React Foundry'
@@ -22,7 +22,7 @@ function RootComponent() {
   return (
     <ThemeProvider>
       <Layout>
-        <Shelf components={components} />
+        <Shelf nav={nav} />
         <Outlet />
         <Navigation />
       </Layout>

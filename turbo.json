@@ -18,8 +18,12 @@
     "//#format": {
       "cache": false
     },
-    "types": {},
-    "test": {},
+    "types": {
+      "dependsOn": ["^types"]
+    },
+    "test": {
+      "dependsOn": ["^types"]
+    },
     "clean": {
       "cache": false
     }

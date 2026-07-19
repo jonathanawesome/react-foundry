@@ -12,30 +12,29 @@
     "types": "tsc --noEmit"
   },
   "peerDependencies": {
-    "react": "^18.0.0 || ^19.0.0",
-    "react-dom": "^18.0.0 || ^19.0.0"
+    "react": "catalog:peers",
+    "react-dom": "catalog:peers"
   },
   "dependencies": {
-    "@phosphor-icons/react": "^2.1.10",
+    "@phosphor-icons/react": "2.1.10",
     "@react-foundry/core": "workspace:*",
     "@react-foundry/style": "workspace:*",
-    "@tanstack/react-router": "^1.131.36",
-    "@vanilla-extract/css": "^1.17.0",
-    "@vanilla-extract/recipes": "^0.5.0",
-    "axe-core": "^4.10.3",
-    "zustand": "^5.0.8"
+    "@tanstack/react-router": "catalog:",
+    "@vanilla-extract/css": "catalog:",
+    "@vanilla-extract/recipes": "catalog:",
+    "axe-core": "4.11.0",
+    "zustand": "5.0.9"
   },
   "devDependencies": {
-    "@testing-library/dom": "^10.4.1",
-    "@testing-library/jest-dom": "^6.9.1",
-    "@testing-library/react": "^16.3.2",
-    "@testing-library/user-event": "^14.6.1",
-    "@types/axe-core": "^3.0.6",
-    "@types/react": "^19.1.12",
-    "@types/react-dom": "^19.1.9",
-    "@vanilla-extract/vite-plugin": "^5.1.3",
-    "jsdom": "^29.1.1",
-    "vite": "^6.4.1",
-    "vitest": "^4.0.18"
+    "@testing-library/dom": "10.4.1",
+    "@testing-library/jest-dom": "6.9.1",
+    "@testing-library/react": "16.3.2",
+    "@testing-library/user-event": "14.6.1",
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "@vanilla-extract/vite-plugin": "catalog:",
+    "jsdom": "29.1.1",
+    "vite": "catalog:",
+    "vitest": "catalog:"
   }
 }
