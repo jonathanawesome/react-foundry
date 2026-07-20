@@ -80,10 +80,14 @@ pass "import 'react-foundry' is side-effect-free"
 echo "==> foundry dev"
 npx foundry dev > "$DEV_LOG" 2>&1 &
 SERVER_PID=$!
-for _ in $(seq 1 30); do grep -q "Local:" "$DEV_LOG" 2>/dev/null && break; sleep 1; done
+# Generous ceiling: a cold CI runner pre-bundles react/router/etc. on first `dev`, which
+# can take ~30s. The loop breaks the instant the server is up, so this only affects the
+# failure timeout, not the happy path.
+for _ in $(seq 1 90); do grep -q "Local:" "$DEV_LOG" 2>/dev/null && break; sleep 1; done
 grep -q "Local:" "$DEV_LOG" || { cat "$DEV_LOG"; fail "dev server did not start"; }
 PORT="$(grep -oE "localhost:[0-9]+" "$DEV_LOG" | head -1 | cut -d: -f2)"
-curl -fsS "http://localhost:$PORT/" >/dev/null || fail "dev server did not serve /"
+curl -fsS --retry 5 --retry-delay 1 --retry-connrefused "http://localhost:$PORT/" >/dev/null \
+  || fail "dev server did not serve /"
 pass "dev server serving on :$PORT"
 
 # The landmine failures surface as these strings in the server log.
@@ -108,10 +112,11 @@ pass "build emitted themed CSS with the override and font"
 echo "==> foundry preview"
 npx foundry preview > "$PREVIEW_LOG" 2>&1 &
 SERVER_PID=$!
-for _ in $(seq 1 20); do grep -q "Local:" "$PREVIEW_LOG" 2>/dev/null && break; sleep 1; done
+for _ in $(seq 1 60); do grep -q "Local:" "$PREVIEW_LOG" 2>/dev/null && break; sleep 1; done
 grep -q "Local:" "$PREVIEW_LOG" || { cat "$PREVIEW_LOG"; fail "preview server did not start"; }
 PPORT="$(grep -oE "localhost:[0-9]+" "$PREVIEW_LOG" | head -1 | cut -d: -f2)"
-curl -fsS "http://localhost:$PPORT/" >/dev/null || fail "preview server did not serve /"
+curl -fsS --retry 5 --retry-delay 1 --retry-connrefused "http://localhost:$PPORT/" >/dev/null \
+  || fail "preview server did not serve /"
 pass "preview server serving on :$PPORT"
 kill "$SERVER_PID" 2>/dev/null || true; SERVER_PID=""
 
