@@ -11,8 +11,8 @@ export const toolbarStyles = {
 
     display: 'flex',
     alignItems: 'center',
-    gap: themeContract.px[2],
-    padding: themeContract.px[4],
+    gap: themeContract.px[8],
+    padding: themeContract.px[8],
 
     background: themeContract.colors.neutral1,
     border: `1px solid ${themeContract.colors.neutral4}`,

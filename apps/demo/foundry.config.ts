@@ -13,6 +13,7 @@ export default defineConfig({
         { label: 'Control Field' },
         { label: 'Icon' },
         { label: 'Icon Button' },
+        { label: 'Render True' },
       ],
     },
     // Example components built on Base UI, showing the authoring surface.
