@@ -11,7 +11,7 @@ export async function dev(root: string = process.cwd()) {
     const config = await loadConfig(root)
 
     // Create Vite config
-    const viteConfig = createViteConfig(config, root)
+    const viteConfig = await createViteConfig(config, root)
 
     // Create and start Vite dev server
     const server = await createServer(viteConfig)

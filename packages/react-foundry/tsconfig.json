@@ -9,6 +9,13 @@
     /* Bundler mode */
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
+    /* Map the bundled workspace packages to their source so the dts program compiles
+       their declarations inline (they ship no prebuilt .d.ts). */
+    "paths": {
+      "@react-foundry/core": ["../core/src/index.ts"],
+      "@react-foundry/core/types": ["../core/src/types.ts"],
+      "@react-foundry/core/discovery": ["../core/src/discovery.ts"]
+    },
     "resolveJsonModule": true,
     "isolatedModules": true,
     "noEmit": true,

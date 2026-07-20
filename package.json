@@ -2,7 +2,7 @@
   "name": "react-foundry",
   "version": "0.0.1",
   "private": true,
-  "description": "A lightweight, Ladle-like component development environment for React",
+  "description": "A lightweight component development environment for React",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",

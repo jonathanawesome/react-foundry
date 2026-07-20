@@ -11,7 +11,7 @@ export async function preview(root: string = process.cwd()) {
     const config = await loadConfig(root)
 
     // Create Vite config
-    const viteConfig = createViteConfig(config, root)
+    const viteConfig = await createViteConfig(config, root)
 
     // Start preview server
     const server = await vitePreview(viteConfig)

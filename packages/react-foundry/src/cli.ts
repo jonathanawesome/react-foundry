@@ -1,10 +1,8 @@
 import cac from 'cac'
+
 import { build } from './commands/build'
 import { dev } from './commands/dev'
 import { preview } from './commands/preview'
-
-export { defineConfig } from './config/define-config'
-export type { FoundryConfig, ThemeColors, ThemeConfig } from './types'
 
 const cli = cac('foundry')
 

@@ -1,8 +1,8 @@
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { pathToFileURL } from 'node:url'
 import type { FoundryConfig, ResolvedFoundryConfig } from '../types'
 import { DEFAULT_CONFIG } from './defaults'
+import { importUserConfig } from './import-config'
 
 const CONFIG_FILE_NAMES = [
   'foundry.config.mjs',
@@ -29,9 +29,8 @@ export async function loadConfig(
 
   if (configPath) {
     try {
-      const configUrl = pathToFileURL(configPath).href
-      const configModule = await import(/* @vite-ignore */ configUrl)
-      userConfig = configModule.default || {}
+      const cacheDir = resolve(root, 'node_modules', '.cache', 'react-foundry')
+      userConfig = (await importUserConfig(configPath, cacheDir)) as FoundryConfig
     } catch (error) {
       console.error(`Failed to load config from ${configPath}:`, error)
     }

@@ -11,13 +11,13 @@
   },
   "dependencies": {
     "@base-ui/react": "1.6.0",
-    "@react-foundry/cli": "workspace:*",
     "@react-foundry/core": "workspace:*",
     "@react-foundry/style": "workspace:*",
     "@react-foundry/ui": "workspace:*",
     "@vanilla-extract/recipes": "catalog:",
     "react": "catalog:",
-    "react-dom": "catalog:"
+    "react-dom": "catalog:",
+    "react-foundry": "workspace:*"
   },
   "devDependencies": {
     "@types/react": "catalog:",
