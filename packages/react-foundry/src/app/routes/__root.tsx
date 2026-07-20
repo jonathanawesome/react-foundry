@@ -1,10 +1,9 @@
 /// <reference types="vite/client" />
 
 import { foundryTitle } from 'virtual:react-foundry-config'
-import { findLeaf } from '@react-foundry/core'
 import { ThemeProvider } from '@react-foundry/style'
 import { Layout, PropsPanel, Shelf, Toolbar } from '@react-foundry/ui'
-import { createRootRoute, Outlet, useParams } from '@tanstack/react-router'
+import { createRootRoute, Outlet, useMatch } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
 import { discoverNav } from '../nav'
@@ -16,12 +15,17 @@ export const Route = createRootRoute({
 function RootComponent() {
   const nav = discoverNav()
 
-  // The active leaf, resolved the same way the canvas resolves it. The `$`
-  // loader is synchronous, so this and the loader data commit together — no
-  // split-brain between the panel's controls and the rendered preview.
-  const params = useParams({ strict: false })
-  const splat = '_splat' in params ? ((params._splat as string) ?? '') : ''
-  const activeLeaf = findLeaf(nav, splat)
+  // The active preview's controls come off the same `/$` loader data the canvas
+  // renders from, so the panel and the preview always reflect one atomically
+  // committed value — no split-brain between them during a pending navigation.
+  // `shouldThrow: false` returns undefined on the index route, where nothing is
+  // selected; selecting just the controls keeps a search-param edit from
+  // re-rendering the whole shell.
+  const controls = useMatch({
+    from: '/$',
+    shouldThrow: false,
+    select: (match) => match.loaderData?.component?.controls,
+  })
 
   useEffect(() => {
     document.title = foundryTitle || 'React Foundry'
@@ -32,7 +36,7 @@ function RootComponent() {
       <Layout>
         <Shelf nav={nav} />
         <Outlet />
-        <PropsPanel controls={activeLeaf?.component.controls} />
+        <PropsPanel controls={controls} />
         <Toolbar />
       </Layout>
     </ThemeProvider>

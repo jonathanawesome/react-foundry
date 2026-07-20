@@ -105,6 +105,20 @@ export type Preview = ((props?: { controlValues?: ControlValues }) => ReactNode)
   controls?: ControlSchema
 }
 
+/**
+ * One preview, as read statically from a file's source at build time.
+ *
+ * Carries only what the nav tree needs, so the tree can be built without
+ * evaluating any preview module. The module itself is fetched on demand through
+ * {@link PreviewFile.load}, which is what keeps each preview in its own lazy
+ * chunk rather than the initial bundle.
+ */
+export interface PreviewEntry {
+  exportName: string
+  /** An explicit string-literal label, or null to derive one from the name. */
+  label: string | null
+}
+
 /** One navigable preview: a leaf of the nav tree. */
 export interface PreviewLeaf {
   /** Url path, built from the nav path and the export name. */
@@ -112,7 +126,8 @@ export interface PreviewLeaf {
   label: string
   /** The export name this leaf came from. Drives `id`, never the label. */
   exportName: string
-  component: Preview
+  /** Lazily imports the module this preview lives in, for rendering on demand. */
+  load: () => Promise<Record<string, unknown>>
 }
 
 /**
@@ -136,11 +151,15 @@ export interface NavNode {
 /**
  * One discovered `.preview.tsx` file, as emitted by the previews virtual module.
  *
- * `exportOrder` is read off the source at build time because it cannot be
- * recovered at runtime: the ES spec sorts module namespace keys alphabetically,
- * so `Object.keys(module)` loses the order the author wrote.
+ * Everything the nav tree needs (the file's nav path and its previews, in source
+ * order) is read off the source at build time, so discovery never evaluates a
+ * preview module. `load` fetches the module on demand when a preview is actually
+ * rendered, giving each file its own lazy chunk.
  */
 export interface PreviewFile {
-  module: Record<string, unknown>
-  exportOrder: string[]
+  /** Declared nav path, or null to derive one from the filename. */
+  nav: string | null
+  /** The file's previews, in the order they are written. */
+  previews: PreviewEntry[]
+  load: () => Promise<Record<string, unknown>>
 }

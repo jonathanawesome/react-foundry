@@ -1,7 +1,7 @@
 import type { ReactElement } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { createPreview } from '../src/create-preview'
+import { createPreview, isPreview } from '../src/create-preview'
 import { createDiscovery, deCamelCase, navPathFromFilename } from '../src/discovery'
 import type { NavItem, NavNode, PreviewFile } from '../src/types'
 
@@ -10,25 +10,29 @@ const preview = (label?: string) =>
   label ? createPreview({ label, render: () => element }) : createPreview(() => element)
 
 /**
- * Builds a preview file the way the Vite plugin emits one.
+ * Builds a preview file the way the Vite plugin emits one: statically parsed
+ * metadata plus a lazy loader, with the module itself never touched by
+ * discovery.
  *
- * `exportOrder` defaults to the key order of `previews`, but tests that care
- * about ordering pass it explicitly, since that is the whole point of the field.
+ * The `order` argument controls the `previews` order, which tests about ordering
+ * pass explicitly; a `nav` entry in it is dropped, mirroring the real parser,
+ * which never lists the nav export. Labels are read off each `preview()` value
+ * so call sites can keep declaring them inline.
  */
 function previewFile(
   nav: string | undefined,
   previews: Record<string, unknown>,
-  exportOrder?: string[]
+  order?: string[]
 ): PreviewFile {
-  const module: Record<string, unknown> = { ...previews }
-  if (nav !== undefined) module.nav = nav
+  const names = (order ?? Object.keys(previews)).filter((name) => name !== 'nav')
 
   return {
-    module,
-    exportOrder: exportOrder ?? [
-      ...(nav !== undefined ? ['nav'] : []),
-      ...Object.keys(previews),
-    ],
+    nav: nav ?? null,
+    previews: names.map((exportName) => {
+      const value = previews[exportName]
+      return { exportName, label: isPreview(value) ? (value.label ?? null) : null }
+    }),
+    load: async () => ({ ...previews }),
   }
 }
 
@@ -151,25 +155,9 @@ describe('createDiscovery', () => {
     expect(tree[0].leaves[0].id).toBe('Forms/AllSizes')
   })
 
-  // The reason createPreview brands its result at all.
-  it('ignores exports that are not previews', () => {
-    const files = {
-      '/p/x.preview.tsx': previewFile(
-        'Forms',
-        {
-          Primary: preview(),
-          sizes: ['small', 'large'],
-          helper: () => element,
-          label: 'not a preview',
-        },
-        ['nav', 'Primary', 'sizes', 'helper', 'label']
-      ),
-    }
-    const tree = createDiscovery(files, [{ label: 'Forms' }])()
-
-    expect(tree[0].leaves.map((l) => l.exportName)).toEqual(['Primary'])
-  })
-
+  // Non-preview exports are filtered by the static parser now, not discovery, so
+  // the `previews` metadata a file arrives with is trusted as-is. The nav export
+  // is likewise never among them.
   it('never treats the nav export as a leaf', () => {
     const tree = createDiscovery(
       { '/p/x.preview.tsx': previewFile('Forms', { Primary: preview() }) },

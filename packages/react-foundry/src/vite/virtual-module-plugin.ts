@@ -212,14 +212,15 @@ export function resolvePreviewsGlob(pattern: string, userRoot: string): string {
 
 export interface PreviewMeta {
   nav: string | null
-  exportOrder: string[]
+  previews: ParsedPreview[]
 }
 
 /**
  * Describes what changed about a preview file, for the reload log.
  *
  * Every case reloads. Vite does not watch the user's project, so nothing else
- * would pick the change up.
+ * would pick the change up. Labels are compared alongside the export set now
+ * that they are read statically and feed the tree, so a label edit is visible.
  */
 export function classifyChange(
   previous: PreviewMeta | undefined,
@@ -229,11 +230,19 @@ export function classifyChange(
   if (!previous) return 'preview added'
   if (next.nav !== previous.nav) return `moved to ${next.nav}`
 
-  const orderChanged =
-    next.exportOrder.length !== previous.exportOrder.length ||
-    next.exportOrder.some((name, index) => name !== previous.exportOrder[index])
+  const structureChanged =
+    next.previews.length !== previous.previews.length ||
+    next.previews.some(
+      (p, index) => p.exportName !== previous.previews[index]?.exportName
+    )
+  if (structureChanged) return 'previews added or reordered'
 
-  return orderChanged ? 'previews added or reordered' : 'edited'
+  const labelChanged = next.previews.some(
+    (p, index) => p.label !== previous.previews[index]?.label
+  )
+  if (labelChanged) return 'label changed'
+
+  return 'edited'
 }
 
 export function createVirtualModulePlugin(
@@ -266,7 +275,7 @@ export function createVirtualModulePlugin(
         if (existsSync(file)) {
           try {
             const source = readFileSync(file, 'utf-8')
-            next = { nav: parseNavPath(source), exportOrder: parseExportOrder(source) }
+            next = { nav: parseNavPath(source), previews: parsePreviewExports(source) }
           } catch {
             // Mid-write; the next event will carry the finished file.
             return
@@ -324,7 +333,7 @@ export function createVirtualModulePlugin(
 
       fileMeta.clear()
 
-      const entries = files.flatMap((file, index) => {
+      const entries = files.flatMap((file) => {
         const normalizedPath = file.split('\\').join('/')
 
         // A file deleted between the glob and this read would otherwise throw
@@ -336,10 +345,22 @@ export function createVirtualModulePlugin(
           return []
         }
 
-        const exportOrder = parseExportOrder(source)
-        fileMeta.set(normalizedPath, { nav: parseNavPath(source), exportOrder })
+        const nav = parseNavPath(source)
+        const previews = parsePreviewExports(source)
+        fileMeta.set(normalizedPath, { nav, previews })
 
-        return [{ normalizedPath, index, exportOrder }]
+        // The static parse only sees `export const X = createPreview(...)`. A
+        // file that calls createPreview some other way (aliased, wrapped, or
+        // re-exported) would silently show no previews, so say so.
+        if (previews.length === 0 && source.includes('createPreview')) {
+          console.log(
+            pc.yellow(
+              `  ${normalizedPath} calls createPreview but no preview was detected. Author each as \`export const X = createPreview(...)\`.`
+            )
+          )
+        }
+
+        return [{ normalizedPath, nav, previews }]
       })
 
       return generateModuleSource(entries)
@@ -349,35 +370,32 @@ export function createVirtualModulePlugin(
 
 export interface ModuleEntry {
   normalizedPath: string
-  index: number
-  exportOrder: string[]
+  nav: string | null
+  previews: ParsedPreview[]
 }
 
 /**
- * Emits the virtual module: one namespace import per file, collected into a map
- * keyed by absolute path.
+ * Emits the virtual module: a map keyed by absolute path, each entry carrying
+ * the file's statically parsed metadata and a `load` thunk that dynamically
+ * imports it.
  *
- * Paths and export names go through `JSON.stringify` so a path containing a
- * quote produces valid source rather than a broken module.
+ * The dynamic `import()` is the point: it is a code-split boundary, so each
+ * preview file becomes its own chunk instead of riding in the initial bundle.
+ * Everything else (nav, previews) is a plain JSON value, so discovery builds the
+ * tree without ever evaluating a preview module.
+ *
+ * Paths and metadata go through `JSON.stringify` so a path containing a quote
+ * produces valid source rather than a broken module.
  */
 export function generateModuleSource(entries: ModuleEntry[]): string {
-  const imports = entries
-    .map(
-      ({ normalizedPath, index }) =>
-        `import * as module${index} from ${JSON.stringify(normalizedPath)};`
-    )
-    .join('\n')
-
   const moduleObject = entries
     .map(
-      ({ normalizedPath, index, exportOrder }) =>
-        `  ${JSON.stringify(normalizedPath)}: { module: module${index}, exportOrder: ${JSON.stringify(exportOrder)} },`
+      ({ normalizedPath, nav, previews }) =>
+        `  ${JSON.stringify(normalizedPath)}: { nav: ${JSON.stringify(nav)}, previews: ${JSON.stringify(previews)}, load: () => import(${JSON.stringify(normalizedPath)}) },`
     )
     .join('\n')
 
-  return `${imports}
-
-const previewModules = {
+  return `const previewModules = {
 ${moduleObject}
 };
 

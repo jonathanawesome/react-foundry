@@ -296,40 +296,50 @@ describe('parsePreviewExports', () => {
 // The reason each branch exists is the log line a user reads when a reload
 // happens. Without these, the whole diff could return the wrong branch silently.
 describe('classifyChange', () => {
-  const meta = (nav: string | null, exportOrder: string[]): PreviewMeta => ({
-    nav,
-    exportOrder,
-  })
+  const meta = (
+    nav: string | null,
+    previews: { exportName: string; label: string | null }[]
+  ): PreviewMeta => ({ nav, previews })
+  const named = (...names: string[]) =>
+    names.map((exportName) => ({ exportName, label: null }))
 
   it('reports a removed file', () => {
-    expect(classifyChange(meta('Forms', ['Primary']), null)).toBe('preview removed')
+    expect(classifyChange(meta('Forms', named('Primary')), null)).toBe('preview removed')
   })
 
   it('reports a file it has not seen before', () => {
-    expect(classifyChange(undefined, meta('Forms', ['Primary']))).toBe('preview added')
+    expect(classifyChange(undefined, meta('Forms', named('Primary')))).toBe(
+      'preview added'
+    )
   })
 
   it('reports a moved nav path, naming the destination', () => {
-    expect(classifyChange(meta('Forms', ['Primary']), meta('Layout', ['Primary']))).toBe(
-      'moved to Layout'
-    )
+    expect(
+      classifyChange(meta('Forms', named('Primary')), meta('Layout', named('Primary')))
+    ).toBe('moved to Layout')
   })
 
   it('treats gaining a nav path as a move', () => {
-    expect(classifyChange(meta(null, ['Primary']), meta('Forms', ['Primary']))).toBe(
-      'moved to Forms'
-    )
+    expect(
+      classifyChange(meta(null, named('Primary')), meta('Forms', named('Primary')))
+    ).toBe('moved to Forms')
   })
 
   it('reports an added preview', () => {
     expect(
-      classifyChange(meta('Forms', ['Primary']), meta('Forms', ['Primary', 'Danger']))
+      classifyChange(
+        meta('Forms', named('Primary')),
+        meta('Forms', named('Primary', 'Danger'))
+      )
     ).toBe('previews added or reordered')
   })
 
   it('reports a removed preview', () => {
     expect(
-      classifyChange(meta('Forms', ['Primary', 'Danger']), meta('Forms', ['Primary']))
+      classifyChange(
+        meta('Forms', named('Primary', 'Danger')),
+        meta('Forms', named('Primary'))
+      )
     ).toBe('previews added or reordered')
   })
 
@@ -337,16 +347,27 @@ describe('classifyChange', () => {
   it('reports a reorder', () => {
     expect(
       classifyChange(
-        meta('Forms', ['Primary', 'Danger']),
-        meta('Forms', ['Danger', 'Primary'])
+        meta('Forms', named('Primary', 'Danger')),
+        meta('Forms', named('Danger', 'Primary'))
       )
     ).toBe('previews added or reordered')
   })
 
+  // Labels feed the shelf now that they are parsed statically, so an edit to one
+  // alone still changes what the user sees.
+  it('reports a label change when the export set is unchanged', () => {
+    expect(
+      classifyChange(
+        meta('Forms', [{ exportName: 'Primary', label: 'Primary' }]),
+        meta('Forms', [{ exportName: 'Primary', label: 'Primary Button' }])
+      )
+    ).toBe('label changed')
+  })
+
   it('reports an ordinary edit when nothing structural changed', () => {
-    expect(classifyChange(meta('Forms', ['Primary']), meta('Forms', ['Primary']))).toBe(
-      'edited'
-    )
+    expect(
+      classifyChange(meta('Forms', named('Primary')), meta('Forms', named('Primary')))
+    ).toBe('edited')
   })
 })
 
@@ -445,9 +466,9 @@ describe('invalidation', () => {
 describe('generateModuleSource', () => {
   const entry = (
     normalizedPath: string,
-    index: number,
-    exportOrder: string[]
-  ): ModuleEntry => ({ normalizedPath, index, exportOrder })
+    nav: string | null,
+    previews: { exportName: string; label: string | null }[]
+  ): ModuleEntry => ({ normalizedPath, nav, previews })
 
   it('emits nothing but the empty map for no entries', () => {
     const source = generateModuleSource([])
@@ -456,43 +477,56 @@ describe('generateModuleSource', () => {
     expect(source).toContain('export default previewModules')
   })
 
-  it('imports each file as a namespace, numbered by index', () => {
+  // The whole point of the refactor: no static import means the preview and its
+  // deps stay out of the initial chunk, reachable only through the lazy loader.
+  it('emits no static import, only a lazy loader per file', () => {
     const source = generateModuleSource([
-      entry('/p/a.preview.tsx', 0, ['Primary']),
-      entry('/p/b.preview.tsx', 1, ['Secondary']),
+      entry('/p/a.preview.tsx', 'Forms', [{ exportName: 'Primary', label: null }]),
     ])
 
-    expect(source).toContain('import * as module0 from "/p/a.preview.tsx";')
-    expect(source).toContain('import * as module1 from "/p/b.preview.tsx";')
+    expect(source).not.toContain('import * as')
+    expect(source).toContain('load: () => import("/p/a.preview.tsx")')
   })
 
-  it('keys the map by path with the module and its export order', () => {
+  it('keys the map by path with its nav, previews, and loader', () => {
     const source = generateModuleSource([
-      entry('/p/a.preview.tsx', 0, ['Primary', 'Danger']),
+      entry('/p/a.preview.tsx', 'Forms/Button', [
+        { exportName: 'Primary', label: 'Primary' },
+        { exportName: 'Danger', label: null },
+      ]),
     ])
 
     expect(source).toContain(
-      '"/p/a.preview.tsx": { module: module0, exportOrder: ["Primary","Danger"] }'
+      '"/p/a.preview.tsx": { nav: "Forms/Button", previews: [{"exportName":"Primary","label":"Primary"},{"exportName":"Danger","label":null}], load: () => import("/p/a.preview.tsx") }'
     )
   })
 
-  // A single quote in a path would otherwise close the string literal early and
-  // emit a broken module.
-  it('escapes a path containing a quote', () => {
-    const source = generateModuleSource([entry("/p/o'brien.preview.tsx", 0, ['A'])])
+  it('emits a missing nav as the literal null', () => {
+    const source = generateModuleSource([entry('/p/a.preview.tsx', null, [])])
 
-    expect(source).toContain('import * as module0 from "/p/o\'brien.preview.tsx";')
+    expect(source).toContain('nav: null')
+  })
+
+  // A single quote in a path would otherwise close the string literal early and
+  // emit a broken module, in both the map key and the dynamic import.
+  it('escapes a path containing a quote', () => {
+    const source = generateModuleSource([
+      entry("/p/o'brien.preview.tsx", null, [{ exportName: 'A', label: null }]),
+    ])
+
+    expect(source).toContain('import("/p/o\'brien.preview.tsx")')
     expect(source).not.toContain("o'brien.preview.tsx'")
   })
 
-  // The generated text must be valid JS. Strip the module-only import/export
-  // lines and parse the rest; a quoting break would throw here.
+  // The generated text must be valid JS. Strip the module-only export line and
+  // parse the rest; a quoting break would throw here. A dynamic `import()` is a
+  // valid expression in a plain function body, so it need not be stripped.
   it('produces syntactically valid module source', () => {
     const source = generateModuleSource([
-      entry('/p/a.preview.tsx', 0, ['Primary']),
-      entry("/p/it's.preview.tsx", 1, ['Danger']),
+      entry('/p/a.preview.tsx', 'Forms', [{ exportName: 'Primary', label: 'Primary' }]),
+      entry("/p/it's.preview.tsx", null, [{ exportName: 'Danger', label: null }]),
     ])
-    const body = source.replace(/^import .*$/gm, '').replace(/^export default .*$/gm, '')
+    const body = source.replace(/^export default .*$/gm, '')
 
     expect(() => new Function(body)).not.toThrow()
   })

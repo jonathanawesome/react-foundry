@@ -1,8 +1,4 @@
-import { isPreview } from './create-preview'
-import type { NavItem, NavNode, Preview, PreviewFile, PreviewLeaf } from './types'
-
-/** Export name reserved for a file's position in the nav tree. */
-const NAV_EXPORT = 'nav'
+import type { NavItem, NavNode, PreviewFile, PreviewLeaf } from './types'
 
 /**
  * Surfaces a discovery problem to the author without failing the build.
@@ -114,31 +110,20 @@ function sortTree(nodes: NavNode[]): NavNode[] {
 /**
  * Reads previews out of one file, in the order they were written.
  *
- * Only exports wrapped in `createPreview` count, so helpers, fixtures, and the
- * `nav` export itself are skipped rather than becoming stray nav entries.
+ * The list comes straight from the file's statically parsed metadata, so no
+ * preview module is evaluated here: that is what keeps each preview in its own
+ * lazy chunk. Non-preview exports (helpers, fixtures, the `nav` export) were
+ * already filtered out during the static parse.
  */
 function collectLeaves(navPath: string, file: PreviewFile): PreviewLeaf[] {
-  const leaves: PreviewLeaf[] = []
-
-  for (const exportName of file.exportOrder) {
-    if (exportName === NAV_EXPORT) continue
-
-    const value = file.module[exportName]
-    if (!isPreview(value)) continue
-
-    const preview = value as Preview
-
-    leaves.push({
-      // The export name, never the label: renaming a label must not break a
-      // link, and export names are already identifier-safe.
-      id: `${navPath}/${exportName}`,
-      label: preview.label ?? deCamelCase(exportName),
-      exportName,
-      component: preview,
-    })
-  }
-
-  return leaves
+  return file.previews.map(({ exportName, label }) => ({
+    // The export name, never the label: renaming a label must not break a link,
+    // and export names are already identifier-safe.
+    id: `${navPath}/${exportName}`,
+    label: label ?? deCamelCase(exportName),
+    exportName,
+    load: file.load,
+  }))
 }
 
 /**
@@ -167,11 +152,7 @@ export function createDiscovery(
     const files = Object.entries(previewModules).sort(([a], [b]) => a.localeCompare(b))
 
     for (const [filePath, file] of files) {
-      const declaredNav = file.module[NAV_EXPORT]
-      const navPath =
-        typeof declaredNav === 'string' && declaredNav
-          ? declaredNav
-          : navPathFromFilename(filePath)
+      const navPath = file.nav || navPathFromFilename(filePath)
 
       if (isDeclared && !index.has(navPath)) {
         warn(
