@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { checkbox, layout } from './base-ui.css'
 
-export const nav: NavPath = 'Components/Inputs/Checkbox'
+export const nav: NavPath = 'Demo/Inputs/Checkbox'
 
 const Check = () => (
   <svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true">

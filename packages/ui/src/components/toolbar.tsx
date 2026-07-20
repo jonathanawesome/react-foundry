@@ -1,30 +1,18 @@
 import { useTheme } from '@react-foundry/style'
+
 import { useUIStore } from '../state'
-import { Icon, type IconName } from './icon/icon'
+import { IconButton } from './icon-button'
+import { toolbarStyles } from './toolbar.css'
 
-import { navigationStyles } from './navigation.css'
-
-type NavigationItemProps = {
-  icon: IconName
-  onClick: () => void
-  title: string
-}
-
-const NavigationItem = ({ icon, onClick, title }: NavigationItemProps) => {
-  return (
-    <button
-      type="button"
-      className={navigationStyles.item}
-      onClick={onClick}
-      title={title}
-    >
-      <Icon name={icon} size={'md'} />
-    </button>
-  )
-}
-
-export const Navigation = () => {
+/**
+ * The floating control bar: shelf and panel toggles, plus theme and
+ * accessibility controls. The nav *tree* is the {@link Shelf}; this is the
+ * chrome around it.
+ */
+export const Toolbar = () => {
   const isAccessibilityEnabled = useUIStore.use.isAccessibilityEnabled()
+  const isShelfOpen = useUIStore.use.isShelfOpen()
+  const isPanelOpen = useUIStore.use.isPanelOpen()
   const toggleAccessibility = useUIStore.use.toggleAccessibility()
   const toggleShelf = useUIStore.use.toggleShelf()
   const togglePanel = useUIStore.use.togglePanel()
@@ -39,28 +27,30 @@ export const Navigation = () => {
   }
 
   return (
-    <div className={navigationStyles.container}>
-      <NavigationItem
+    <div className={toolbarStyles.container}>
+      <IconButton
         icon="Notebook"
         onClick={toggleShelf}
         title="Toggle Component List"
+        active={isShelfOpen}
       />
 
-      <NavigationItem
+      <IconButton
         icon="Sliders"
         onClick={togglePanel}
         title="Toggle Controls Panel"
+        active={isPanelOpen}
       />
 
-      <div className={navigationStyles.separator} aria-hidden />
+      <div className={toolbarStyles.separator} aria-hidden />
 
-      <NavigationItem
+      <IconButton
         icon={theme === 'dark' ? 'Sun' : 'Moon'}
         onClick={handleToggleTheme}
         title="Toggle Theme"
       />
 
-      <NavigationItem
+      <IconButton
         icon="Wheelchair"
         onClick={toggleAccessibility}
         title={
@@ -68,6 +58,7 @@ export const Navigation = () => {
             ? 'Disable Accessibility Check'
             : 'Enable Accessibility Check'
         }
+        active={isAccessibilityEnabled}
       />
     </div>
   )

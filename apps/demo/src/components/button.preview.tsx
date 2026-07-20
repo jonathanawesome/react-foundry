@@ -3,7 +3,7 @@ import { useState } from 'react'
 
 import { Button } from './button'
 
-export const nav: NavPath = 'Components/Actions'
+export const nav: NavPath = 'Demo/Actions'
 
 // Extracted so it can be reused across previews. defineControls keeps the literal
 // option types, so `v.variant`/`v.size` narrow to their unions with no casts.

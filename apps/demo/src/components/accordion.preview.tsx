@@ -3,7 +3,7 @@ import { createPreview, type NavPath } from '@react-foundry/core'
 
 import { accordion } from './base-ui.css'
 
-export const nav: NavPath = 'Components/Disclosure/Accordion'
+export const nav: NavPath = 'Demo/Disclosure/Accordion'
 
 const sections = [
   {

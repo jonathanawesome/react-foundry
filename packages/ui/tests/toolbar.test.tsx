@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { Navigation } from '../src/components/navigation'
+import { Toolbar } from '../src/components/toolbar'
 import { useUIStore } from '../src/state'
 
 const setTheme = vi.fn()
@@ -14,7 +14,7 @@ vi.mock('@react-foundry/style', async () => {
   return { ...actual, useTheme: () => ({ theme, resolvedTheme, setTheme }) }
 })
 
-describe('Navigation', () => {
+describe('Toolbar', () => {
   beforeEach(() => {
     setTheme.mockClear()
     theme = 'system'
@@ -28,7 +28,7 @@ describe('Navigation', () => {
   })
 
   it('toggles the shelf open and closed', async () => {
-    render(<Navigation />)
+    render(<Toolbar />)
     const toggle = screen.getByTitle('Toggle Component List')
 
     await userEvent.click(toggle)
@@ -39,7 +39,7 @@ describe('Navigation', () => {
   })
 
   it('toggles the controls panel open and closed', async () => {
-    render(<Navigation />)
+    render(<Toolbar />)
     const toggle = screen.getByTitle('Toggle Controls Panel')
 
     await userEvent.click(toggle)
@@ -50,15 +50,62 @@ describe('Navigation', () => {
   })
 
   it('toggles accessibility', async () => {
-    render(<Navigation />)
+    render(<Toolbar />)
     await userEvent.click(screen.getByTitle('Enable Accessibility Check'))
 
     expect(useUIStore.getState().isAccessibilityEnabled).toBe(true)
   })
 
+  describe('active state', () => {
+    it('marks the shelf and panel toggles active when open', () => {
+      useUIStore.setState({ isShelfOpen: true, isPanelOpen: true })
+      render(<Toolbar />)
+
+      expect(screen.getByTitle('Toggle Component List')).toHaveAttribute(
+        'data-active',
+        'true'
+      )
+      expect(screen.getByTitle('Toggle Controls Panel')).toHaveAttribute(
+        'data-active',
+        'true'
+      )
+    })
+
+    it('marks the shelf and panel toggles inactive when closed', () => {
+      useUIStore.setState({ isShelfOpen: false, isPanelOpen: false })
+      render(<Toolbar />)
+
+      expect(screen.getByTitle('Toggle Component List')).toHaveAttribute(
+        'data-active',
+        'false'
+      )
+      expect(screen.getByTitle('Toggle Controls Panel')).toHaveAttribute(
+        'data-active',
+        'false'
+      )
+    })
+
+    it('marks the accessibility toggle active when enabled', () => {
+      useUIStore.setState({ isAccessibilityEnabled: true })
+      render(<Toolbar />)
+
+      expect(screen.getByTitle('Disable Accessibility Check')).toHaveAttribute(
+        'data-active',
+        'true'
+      )
+    })
+
+    // The theme switcher has no on/off state, so it never carries one.
+    it('leaves the theme switcher without an active state', () => {
+      render(<Toolbar />)
+
+      expect(screen.getByTitle('Toggle Theme')).not.toHaveAttribute('data-active', 'true')
+    })
+  })
+
   it('reflects accessibility being on in the button title', () => {
     useUIStore.setState({ isAccessibilityEnabled: true })
-    render(<Navigation />)
+    render(<Toolbar />)
 
     expect(screen.getByTitle('Disable Accessibility Check')).toBeInTheDocument()
   })
@@ -69,7 +116,7 @@ describe('Navigation', () => {
     it('flips away from the resolved theme when following the system', async () => {
       theme = 'system'
       resolvedTheme = 'dark'
-      render(<Navigation />)
+      render(<Toolbar />)
       await userEvent.click(screen.getByTitle('Toggle Theme'))
 
       expect(setTheme).toHaveBeenCalledWith('light')
@@ -78,7 +125,7 @@ describe('Navigation', () => {
     it('flips to dark when following the system in light mode', async () => {
       theme = 'system'
       resolvedTheme = 'light'
-      render(<Navigation />)
+      render(<Toolbar />)
       await userEvent.click(screen.getByTitle('Toggle Theme'))
 
       expect(setTheme).toHaveBeenCalledWith('dark')
@@ -86,7 +133,7 @@ describe('Navigation', () => {
 
     it('flips an explicit dark theme to light', async () => {
       theme = 'dark'
-      render(<Navigation />)
+      render(<Toolbar />)
       await userEvent.click(screen.getByTitle('Toggle Theme'))
 
       expect(setTheme).toHaveBeenCalledWith('light')
@@ -94,7 +141,7 @@ describe('Navigation', () => {
 
     it('flips an explicit light theme to dark', async () => {
       theme = 'light'
-      render(<Navigation />)
+      render(<Toolbar />)
       await userEvent.click(screen.getByTitle('Toggle Theme'))
 
       expect(setTheme).toHaveBeenCalledWith('dark')

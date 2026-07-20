@@ -122,6 +122,7 @@ export function ControlField({ name, def, value, onChange }: ControlFieldProps) 
           id={id}
           type="number"
           className={s.input}
+          autoComplete="off"
           min={def.min}
           max={def.max}
           step={def.step}
@@ -157,6 +158,7 @@ export function ControlField({ name, def, value, onChange }: ControlFieldProps) 
         id={id}
         type="text"
         className={s.input}
+        autoComplete="off"
         value={String(value)}
         onChange={(e) => onChange(e.target.value)}
       />

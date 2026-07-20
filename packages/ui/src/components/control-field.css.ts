@@ -76,8 +76,8 @@ export const controlFieldStyles = {
 
   radioGroup: style({
     display: 'flex',
-    flexWrap: 'wrap',
-    gap: themeContract.px[12],
+    flexDirection: 'column',
+    gap: themeContract.px[8],
   }),
 
   radioOption: style({

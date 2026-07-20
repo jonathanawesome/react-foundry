@@ -15,6 +15,23 @@ export const accessibilityCheckerStyles = {
     flexDirection: 'column',
     zIndex: 1000,
     boxShadow: '0 -2px 10px rgba(0, 0, 0, 0.1)',
+
+    // Slides up from the bottom on open/close, and its left/right edges ease in
+    // sync with the shelf and panel as those slide. Each property only animates
+    // when its own value changes, so opening the checker is a pure vertical
+    // slide and a shelf toggle is a pure edge slide.
+    transform: 'translateY(100%)',
+    transition: [
+      `transform 0.3s ${themeContract.motion.authentic}`,
+      `left 0.3s ${themeContract.motion.authentic}`,
+      `right 0.3s ${themeContract.motion.authentic}`,
+    ].join(', '),
+
+    selectors: {
+      '&[data-open="true"]': {
+        transform: 'translateY(0)',
+      },
+    },
   }),
 
   containerWithShelf: style({
@@ -61,14 +78,9 @@ export const accessibilityCheckerStyles = {
     animation: 'pulse 1.5s ease-in-out infinite',
   }),
 
-  violationCount: style({
+  // Pushes a header item (a Badge) to the far right.
+  pushRight: style({
     marginLeft: 'auto',
-    backgroundColor: 'rgba(217, 50, 81, 0.1)',
-    color: '#d93251',
-    padding: '2px 8px',
-    borderRadius: '12px',
-    fontSize: '12px',
-    fontWeight: 500,
   }),
 
   passedIndicator: style({
@@ -145,34 +157,6 @@ export const accessibilityCheckerStyles = {
     flex: 1,
     fontWeight: 500,
     fontSize: '14px',
-  }),
-
-  impact: style({
-    padding: '2px 6px',
-    borderRadius: '4px',
-    fontSize: '11px',
-    fontWeight: 600,
-    textTransform: 'uppercase',
-  }),
-
-  impactCritical: style({
-    color: '#d93251',
-    backgroundColor: 'rgba(217, 50, 81, 0.1)',
-  }),
-
-  impactSerious: style({
-    color: '#e56910',
-    backgroundColor: 'rgba(229, 105, 16, 0.1)',
-  }),
-
-  impactModerate: style({
-    color: '#c29a00',
-    backgroundColor: 'rgba(194, 154, 0, 0.1)',
-  }),
-
-  impactMinor: style({
-    color: '#0077c7',
-    backgroundColor: 'rgba(0, 119, 199, 0.1)',
   }),
 
   nodeCount: style({

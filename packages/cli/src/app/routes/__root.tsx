@@ -3,7 +3,7 @@
 import { foundryTitle } from 'virtual:react-foundry-config'
 import { findLeaf } from '@react-foundry/core'
 import { ThemeProvider } from '@react-foundry/style'
-import { Layout, Navigation, PropsPanel, Shelf } from '@react-foundry/ui'
+import { Layout, PropsPanel, Shelf, Toolbar } from '@react-foundry/ui'
 import { createRootRoute, Outlet, useParams } from '@tanstack/react-router'
 import { useEffect } from 'react'
 
@@ -33,7 +33,7 @@ function RootComponent() {
         <Shelf nav={nav} />
         <Outlet />
         <PropsPanel controls={activeLeaf?.component.controls} />
-        <Navigation />
+        <Toolbar />
       </Layout>
     </ThemeProvider>
   )

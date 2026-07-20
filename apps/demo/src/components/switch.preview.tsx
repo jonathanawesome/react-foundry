@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { layout, switchStyles } from './base-ui.css'
 
-export const nav: NavPath = 'Components/Inputs/Switch'
+export const nav: NavPath = 'Demo/Inputs/Switch'
 
 export const Off = createPreview(() => (
   <div className={layout.row}>

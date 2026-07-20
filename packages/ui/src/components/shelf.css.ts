@@ -1,6 +1,6 @@
 import { style, themeContract } from '@react-foundry/style'
 
-import { NAV_HEIGHT, SHELF_WIDTH } from '../constants'
+import { SHELF_WIDTH } from '../constants'
 
 export const shelfStyles = {
   overlay: style({
@@ -43,8 +43,6 @@ export const shelfStyles = {
     flex: 1,
     overflow: 'auto',
     padding: themeContract.px[20],
-    // Clear the fixed navigation bar so the tree does not scroll under it.
-    paddingBottom: NAV_HEIGHT,
   }),
 
   sidebar: style({

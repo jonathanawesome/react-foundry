@@ -2,7 +2,7 @@ import { createPreview, type NavPath } from '@react-foundry/core'
 
 import { Card } from './card'
 
-export const nav: NavPath = 'Components/Surfaces'
+export const nav: NavPath = 'Demo/Surfaces'
 
 export const Default = createPreview(() => (
   <Card>This is a card with default padding</Card>

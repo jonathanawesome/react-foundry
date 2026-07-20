@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { layout, slider } from './base-ui.css'
 
-export const nav: NavPath = 'Components/Inputs/Slider'
+export const nav: NavPath = 'Demo/Inputs/Slider'
 
 // Controlled from the panel: a range drives the default value, a number the step,
 // and a boolean the disabled state.
