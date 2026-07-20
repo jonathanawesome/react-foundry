@@ -80,22 +80,28 @@ pass "import 'react-foundry' is side-effect-free"
 echo "==> foundry dev"
 npx foundry dev > "$DEV_LOG" 2>&1 &
 SERVER_PID=$!
-# Generous ceiling: a cold CI runner pre-bundles react/router/etc. on first `dev`, which
-# can take ~30s. The loop breaks the instant the server is up, so this only affects the
-# failure timeout, not the happy path.
-for _ in $(seq 1 90); do grep -q "Local:" "$DEV_LOG" 2>/dev/null && break; sleep 1; done
-grep -q "Local:" "$DEV_LOG" || { cat "$DEV_LOG"; fail "dev server did not start"; }
-PORT="$(grep -oE "localhost:[0-9]+" "$DEV_LOG" | head -1 | cut -d: -f2)"
-curl -fsS --retry 5 --retry-delay 1 --retry-connrefused "http://localhost:$PORT/" >/dev/null \
-  || fail "dev server did not serve /"
-pass "dev server serving on :$PORT"
+# Poll the port for readiness rather than grepping the log for "Local:". Piped stdout is
+# block-buffered (no TTY on CI), so that line can sit unflushed for the whole run even
+# though the server is already listening; grepping it is unwinnable. The dev port is fixed
+# by the consumer config written above (5177). A generous ceiling covers cold-runner dep
+# pre-bundling; the loop breaks the instant the server answers.
+DEV_PORT=5177
+dev_ok=""
+for _ in $(seq 1 90); do
+  curl -fsS --max-time 5 "http://localhost:$DEV_PORT/" >/dev/null 2>&1 && { dev_ok=1; break; }
+  sleep 1
+done
+[ -n "$dev_ok" ] || { cat "$DEV_LOG"; fail "dev server did not serve on :$DEV_PORT"; }
+pass "dev server serving on :$DEV_PORT"
 
-# The landmine failures surface as these strings in the server log.
+# Stop the server so its buffered stdout flushes to the log, then scan for the packaging
+# landmine failures (they surface as these strings).
+kill "$SERVER_PID" 2>/dev/null || true; SERVER_PID=""
+sleep 1
 for bad in "/@fs//" "Cannot find module" "was not allowed" "outside of Vite serving allow list"; do
   grep -qF "$bad" "$DEV_LOG" && { cat "$DEV_LOG"; fail "dev log contains '$bad'"; } || true
 done
 pass "no path / fs.strict / resolve errors in the dev log"
-kill "$SERVER_PID" 2>/dev/null || true; SERVER_PID=""
 
 # --- 5. foundry build ---------------------------------------------------------
 echo "==> foundry build"
@@ -112,12 +118,16 @@ pass "build emitted themed CSS with the override and font"
 echo "==> foundry preview"
 npx foundry preview > "$PREVIEW_LOG" 2>&1 &
 SERVER_PID=$!
-for _ in $(seq 1 60); do grep -q "Local:" "$PREVIEW_LOG" 2>/dev/null && break; sleep 1; done
-grep -q "Local:" "$PREVIEW_LOG" || { cat "$PREVIEW_LOG"; fail "preview server did not start"; }
-PPORT="$(grep -oE "localhost:[0-9]+" "$PREVIEW_LOG" | head -1 | cut -d: -f2)"
-curl -fsS --retry 5 --retry-delay 1 --retry-connrefused "http://localhost:$PPORT/" >/dev/null \
-  || fail "preview server did not serve /"
-pass "preview server serving on :$PPORT"
+# Same port-polling as dev. `foundry preview` uses Vite's preview server, whose default
+# port is 4173 (the config `port` applies to the dev server, not preview).
+PREVIEW_PORT=4173
+preview_ok=""
+for _ in $(seq 1 60); do
+  curl -fsS --max-time 5 "http://localhost:$PREVIEW_PORT/" >/dev/null 2>&1 && { preview_ok=1; break; }
+  sleep 1
+done
+[ -n "$preview_ok" ] || { cat "$PREVIEW_LOG"; fail "preview server did not serve on :$PREVIEW_PORT"; }
+pass "preview server serving on :$PREVIEW_PORT"
 kill "$SERVER_PID" 2>/dev/null || true; SERVER_PID=""
 
 # --- 7. the installed package is unchanged ------------------------------------
