@@ -11,6 +11,7 @@ import {
   type PreviewMeta,
   parseExportOrder,
   parseNavPath,
+  parsePreviewExports,
   resolvePreviewsGlob,
 } from '../src/vite/virtual-module-plugin'
 
@@ -148,6 +149,147 @@ describe('parseNavPath', () => {
     ].join('\n')
 
     expect(parseNavPath(source)).toBe('Components/Inputs/Checkbox')
+  })
+})
+
+describe('parsePreviewExports', () => {
+  it('returns nothing for a file with no previews', () => {
+    expect(parsePreviewExports('const x = 1\n')).toEqual([])
+  })
+
+  it('reads only createPreview exports, in source order', () => {
+    const source = [
+      'export const Zulu = createPreview(() => <div />)',
+      'export const Alpha = createPreview(() => <div />)',
+      'export const Mike = createPreview(() => <div />)',
+    ].join('\n')
+
+    expect(parsePreviewExports(source)).toEqual([
+      { exportName: 'Zulu', label: null },
+      { exportName: 'Alpha', label: null },
+      { exportName: 'Mike', label: null },
+    ])
+  })
+
+  // The whole point of the parse: the nav tree is built without evaluating the
+  // module, so the label has to come off the source rather than the loaded fn.
+  it('reads an explicit string-literal label from the options object', () => {
+    const source =
+      "export const Primary = createPreview({ label: 'Primary Button', render: () => null })\n"
+
+    expect(parsePreviewExports(source)).toEqual([
+      { exportName: 'Primary', label: 'Primary Button' },
+    ])
+  })
+
+  it('reads a double-quoted label', () => {
+    const source =
+      'export const Primary = createPreview({ label: "Primary", render: () => null })\n'
+
+    expect(parsePreviewExports(source)).toEqual([
+      { exportName: 'Primary', label: 'Primary' },
+    ])
+  })
+
+  it('yields a null label for the bare-function form', () => {
+    expect(
+      parsePreviewExports('export const Primary = createPreview(() => null)\n')
+    ).toEqual([{ exportName: 'Primary', label: null }])
+  })
+
+  it('handles a createPreview call spanning multiple lines', () => {
+    const source = [
+      'export const Primary = createPreview({',
+      "  label: 'Danger Playground',",
+      '  controls: { tone: { type: "select", options: ["a", "b"], default: "a" } },',
+      '  render: () => <Button />,',
+      '})',
+      'export const Danger = createPreview(() => <Button />)',
+    ].join('\n')
+
+    expect(parsePreviewExports(source)).toEqual([
+      { exportName: 'Primary', label: 'Danger Playground' },
+      { exportName: 'Danger', label: null },
+    ])
+  })
+
+  // The regression the depth guard exists for: a `label:` nested inside the
+  // controls object or the render body must not be read as the preview's label.
+  it('ignores a label nested inside controls', () => {
+    const source = [
+      'export const Primary = createPreview({',
+      '  controls: { label: { type: "text", default: "hi" } },',
+      '  render: () => null,',
+      '})',
+    ].join('\n')
+
+    expect(parsePreviewExports(source)).toEqual([{ exportName: 'Primary', label: null }])
+  })
+
+  it('ignores a label nested inside the render body', () => {
+    const source = [
+      'export const Primary = createPreview({',
+      '  render: () => <List items={[{ label: "a" }]} />,',
+      '})',
+    ].join('\n')
+
+    expect(parsePreviewExports(source)).toEqual([{ exportName: 'Primary', label: null }])
+  })
+
+  it('is not thrown off by braces or a colon inside a string', () => {
+    const source =
+      'export const Primary = createPreview({ render: () => <p>{"a: {b}"}</p>, label: \'Real\' })\n'
+
+    expect(parsePreviewExports(source)).toEqual([
+      { exportName: 'Primary', label: 'Real' },
+    ])
+  })
+
+  it('skips the nav export and other non-preview exports', () => {
+    const source = [
+      "export const nav: NavPath = 'Forms/Button'",
+      'export const helper = 1',
+      "export const Primary = createPreview({ label: 'Primary', render: () => null })",
+    ].join('\n')
+
+    expect(parsePreviewExports(source)).toEqual([
+      { exportName: 'Primary', label: 'Primary' },
+    ])
+  })
+
+  it('ignores default exports, re-exports, and type exports', () => {
+    const source = [
+      'export default createPreview(() => null)',
+      "export { Other } from './other'",
+      "export * from './star'",
+      'export type Foo = string',
+      "export const Real = createPreview({ label: 'Real', render: () => null })",
+    ].join('\n')
+
+    expect(parsePreviewExports(source)).toEqual([{ exportName: 'Real', label: 'Real' }])
+  })
+
+  it('ignores a createPreview that is not at the start of a line', () => {
+    const source =
+      '// export const Commented = createPreview(() => null)\nexport const Real = createPreview(() => null)\n'
+
+    expect(parsePreviewExports(source)).toEqual([{ exportName: 'Real', label: null }])
+  })
+
+  // A template literal is treated as computed, not a literal, so it degrades to
+  // a derived name rather than risking a wrong label from an interpolation.
+  it('yields a null label for a template-literal label', () => {
+    const source =
+      'export const Primary = createPreview({ label: `Primary`, render: () => null })\n'
+
+    expect(parsePreviewExports(source)).toEqual([{ exportName: 'Primary', label: null }])
+  })
+
+  it('does not match a longer identifier ending in label', () => {
+    const source =
+      "export const Primary = createPreview({ ariaLabel: 'nope', render: () => null })\n"
+
+    expect(parsePreviewExports(source)).toEqual([{ exportName: 'Primary', label: null }])
   })
 })
 

@@ -47,6 +47,154 @@ export function parseNavPath(source: string): string | null {
   return source.match(NAV_PATTERN)?.[1] ?? null
 }
 
+/** A preview export, as read statically from source. */
+export interface ParsedPreview {
+  exportName: string
+  /** An explicit string-literal label, or null to derive one from the name. */
+  label: string | null
+}
+
+/** Matches `export const <Name> = createPreview(`, capturing the export name. */
+const PREVIEW_DECLARATION =
+  /^export\s+const\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*createPreview\s*\(/gm
+
+/**
+ * Reads the previews a file declares, in the order they are written.
+ *
+ * This is a static parse: it lets the nav tree be built without evaluating any
+ * preview module, which is what keeps each preview in its own lazy chunk rather
+ * than the initial bundle. It replaces the older runtime approach, where
+ * discovery imported every module and brand-checked each export with
+ * `isPreview`.
+ *
+ * The parse imposes a small authoring convention, which the whole demo already
+ * follows: a preview must be `export const <Name> = createPreview(...)` with
+ * `createPreview` referenced by that name (not aliased), and an explicit label
+ * must be a string literal at the top level of the options object. Anything
+ * else, a bare-function preview, a computed label, or a `label` nested inside
+ * `controls` or `render`, yields `label: null`, and discovery falls back to a
+ * name derived from the export. Exports that are not `createPreview` calls
+ * (helpers, `nav`, re-exports) are simply skipped.
+ */
+export function parsePreviewExports(source: string): ParsedPreview[] {
+  const previews: ParsedPreview[] = []
+
+  PREVIEW_DECLARATION.lastIndex = 0
+  let match: RegExpExecArray | null
+  // biome-ignore lint/suspicious/noAssignInExpressions: the exec/assign loop is the idiom
+  while ((match = PREVIEW_DECLARATION.exec(source)) !== null) {
+    previews.push({
+      exportName: match[1],
+      label: extractOptionsLabel(source, PREVIEW_DECLARATION.lastIndex),
+    })
+  }
+
+  return previews
+}
+
+/**
+ * Reads a string-literal `label` off the options object of a `createPreview`
+ * call, given the index just past its opening `(`.
+ *
+ * Returns null unless the first argument is an object literal carrying a
+ * `label: '...'` at its own top level. The scan skips strings and comments so
+ * their braces and quotes cannot throw off the nesting count, and only accepts
+ * a `label` key at brace-depth 1, so one nested inside `controls` or a `render`
+ * body is ignored.
+ */
+function extractOptionsLabel(source: string, cursor: number): string | null {
+  let i = cursor
+  while (i < source.length && /\s/.test(source[i] ?? '')) i++
+  if (source[i] !== '{') return null // a bare-function preview, or a non-object arg
+
+  let depth = 0
+  while (i < source.length) {
+    const ch = source[i] as string
+    const next = source[i + 1]
+
+    if (ch === '/' && next === '/') {
+      const newline = source.indexOf('\n', i)
+      i = newline === -1 ? source.length : newline + 1
+      continue
+    }
+    if (ch === '/' && next === '*') {
+      const end = source.indexOf('*/', i + 2)
+      i = end === -1 ? source.length : end + 2
+      continue
+    }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      i = skipString(source, i) + 1
+      continue
+    }
+    if (ch === '{' || ch === '[' || ch === '(') {
+      depth++
+      i++
+      continue
+    }
+    if (ch === '}' || ch === ']' || ch === ')') {
+      depth--
+      if (depth === 0) return null // reached the end of the options object
+      i++
+      continue
+    }
+    if (depth === 1 && ch === 'l' && isLabelKey(source, i)) {
+      return readLabelString(source, i)
+    }
+    i++
+  }
+
+  return null
+}
+
+/** True when `label` sits at `i` as a standalone identifier (a key, not part of `labelText`). */
+function isLabelKey(source: string, i: number): boolean {
+  if (!source.startsWith('label', i)) return false
+  const before = source[i - 1]
+  if (before !== undefined && /[\w$]/.test(before)) return false
+  const after = source[i + 5]
+  return after === undefined || !/[\w$]/.test(after)
+}
+
+/** Reads the single- or double-quoted string following a `label` key, or null if the value is not one. */
+function readLabelString(source: string, i: number): string | null {
+  let j = i + 5 // past 'label'
+  while (j < source.length && /\s/.test(source[j] ?? '')) j++
+  if (source[j] !== ':') return null
+  j++
+  while (j < source.length && /\s/.test(source[j] ?? '')) j++
+
+  const quote = source[j]
+  // Only literal quotes count; a template literal is treated as computed.
+  if (quote !== '"' && quote !== "'") return null
+
+  let value = ''
+  for (let k = j + 1; k < source.length; k++) {
+    const ch = source[k] as string
+    if (ch === '\\') {
+      value += source[k + 1] ?? ''
+      k++
+      continue
+    }
+    if (ch === quote) return value
+    value += ch
+  }
+  return null
+}
+
+/** Returns the index of the closing quote of the string starting at `open`. */
+function skipString(source: string, open: number): number {
+  const quote = source[open]
+  for (let k = open + 1; k < source.length; k++) {
+    const ch = source[k]
+    if (ch === '\\') {
+      k++
+      continue
+    }
+    if (ch === quote) return k
+  }
+  return source.length
+}
+
 /** Strips the magic portion off a glob, leaving the deepest static directory. */
 export function globBaseDir(pattern: string): string {
   const segments = pattern.split('/')
