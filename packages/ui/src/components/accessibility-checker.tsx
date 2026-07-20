@@ -1,4 +1,4 @@
-import axe, { type NodeResult } from 'axe-core'
+import type { NodeResult } from 'axe-core'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { accessibilityCheckerStyles } from './accessibility-checker.css'
 import { Badge, type BadgeTone } from './badge'
@@ -54,6 +54,9 @@ export function AccessibilityChecker({
     setIsScanning(true)
 
     try {
+      // Loaded on demand: axe-core is ~1MB and only needed once the checker is
+      // enabled, so it stays out of the initial bundle as its own chunk.
+      const { default: axe } = await import('axe-core')
       const results = await axe.run(targetRef.current)
 
       setViolations(results.violations as Violation[])
