@@ -1,6 +1,6 @@
 import { Checkbox } from '@base-ui/react/checkbox'
-import { createPreview, type NavPath } from '@react-foundry/core'
 import { useState } from 'react'
+import { createPreview, type NavPath } from 'react-foundry'
 
 import { checkbox, layout } from './base-ui.css'
 

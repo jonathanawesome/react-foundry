@@ -2,7 +2,8 @@
   "name": "react-foundry",
   "version": "0.0.1",
   "private": true,
-  "description": "A lightweight, Ladle-like component development environment for React",
+  "license": "MIT",
+  "description": "A lightweight component development environment for React",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
@@ -15,7 +16,9 @@
     "test": "turbo run test",
     "types": "turbo run types",
     "demo": "pnpm --filter demo dev",
-    "validate": "pnpm run types && pnpm run check"
+    "validate": "pnpm run types && pnpm run check",
+    "changeset": "changeset",
+    "release": "bash scripts/verify-tarball.sh && changeset publish"
   },
   "keywords": [
     "react",
@@ -40,6 +43,7 @@
     "typescript": "catalog:"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.4"
+    "@biomejs/biome": "2.4.4",
+    "@changesets/cli": "2.31.1"
   }
 }

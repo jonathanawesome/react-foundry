@@ -1,6 +1,6 @@
 import { Switch } from '@base-ui/react/switch'
-import { createPreview, type NavPath } from '@react-foundry/core'
 import { useState } from 'react'
+import { createPreview, type NavPath } from 'react-foundry'
 
 import { layout, switchStyles } from './base-ui.css'
 

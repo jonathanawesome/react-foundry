@@ -5,7 +5,7 @@ import type { FoundryConfig } from '../types'
  *
  * @example
  * ```ts
- * import { defineConfig } from '@react-foundry/cli'
+ * import { defineConfig } from 'react-foundry'
  *
  * export default defineConfig({
  *   previews: 'src/components/**\/*.preview.tsx',

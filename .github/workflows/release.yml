@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+
+# One release at a time.
+concurrency: release-${{ github.ref }}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # push the version PR and git tags
+      pull-requests: write # open/update the "Version Packages" PR
+      id-token: write # OIDC trusted publishing; without it, OIDC cannot work
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      # Trusted publishing needs npm >= 11.5.1; the Node 22 image ships an older npm.
+      - run: npm install -g npm@latest
+
+      # With pending changesets: opens/updates the "Version Packages" PR (bumps the version,
+      # regenerates the changelog). With none left (that PR just merged): runs `publish`,
+      # which builds, verifies the packed tarball in a clean install, then publishes via
+      # pnpm (so publishConfig.exports maps `.` to dist). Provenance is automatic under OIDC.
+      - uses: changesets/action@v1
+        with:
+          version: pnpm changeset version
+          publish: pnpm release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

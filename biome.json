@@ -37,7 +37,7 @@
   },
   "overrides": [
     {
-      "includes": ["packages/cli/**"],
+      "includes": ["packages/react-foundry/**", "!packages/react-foundry/src/app/**"],
       "linter": {
         "rules": {
           "suspicious": {

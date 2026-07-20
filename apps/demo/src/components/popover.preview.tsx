@@ -1,5 +1,5 @@
 import { Popover } from '@base-ui/react/popover'
-import { createPreview, type NavPath } from '@react-foundry/core'
+import { createPreview, type NavPath } from 'react-foundry'
 import { popover } from './base-ui.css'
 import { Button } from './button'
 

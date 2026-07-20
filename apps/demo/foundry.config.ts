@@ -1,4 +1,4 @@
-import { defineConfig } from '@react-foundry/cli'
+import { defineConfig } from 'react-foundry'
 
 export default defineConfig({
   previews: 'src/**/*.preview.tsx',

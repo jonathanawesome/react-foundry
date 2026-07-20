@@ -1,4 +1,4 @@
-import { createPreview, type NavPath } from '@react-foundry/core'
+import { createPreview, type NavPath } from 'react-foundry'
 
 import { Card } from './card'
 

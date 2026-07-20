@@ -1,0 +1,78 @@
+{
+  "name": "react-foundry",
+  "version": "0.0.1",
+  "description": "A lightweight component development environment for React",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jonathanawesome/react-foundry.git"
+  },
+  "keywords": [
+    "react",
+    "components",
+    "development",
+    "storybook",
+    "ladle",
+    "preview"
+  ],
+  "sideEffects": false,
+  "bin": {
+    "foundry": "./bin/foundry.js"
+  },
+  "exports": {
+    ".": "./src/index.ts",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public",
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./package.json": "./package.json"
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "test": "vitest run",
+    "types": "tsc --noEmit"
+  },
+  "peerDependencies": {
+    "react": "catalog:peers",
+    "react-dom": "catalog:peers"
+  },
+  "dependencies": {
+    "@tanstack/react-router": "catalog:",
+    "@vitejs/plugin-react": "4.7.0",
+    "axe-core": "4.11.0",
+    "cac": "6.7.14",
+    "esbuild": "0.25.12",
+    "glob": "13.0.0",
+    "picocolors": "1.1.1",
+    "vite": "catalog:"
+  },
+  "devDependencies": {
+    "@react-foundry/core": "workspace:*",
+    "@react-foundry/style": "workspace:*",
+    "@react-foundry/ui": "workspace:*",
+    "@tanstack/router-plugin": "catalog:",
+    "@vanilla-extract/css": "catalog:",
+    "@vanilla-extract/vite-plugin": "catalog:",
+    "publint": "0.3.21",
+    "tsdown": "0.22.12",
+    "tsx": "4.21.0",
+    "typescript": "catalog:",
+    "vitest": "catalog:"
+  }
+}

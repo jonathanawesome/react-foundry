@@ -1,6 +1,6 @@
 import { Tabs } from '@base-ui/react/tabs'
-import { createPreview, type NavPath } from '@react-foundry/core'
 import { useState } from 'react'
+import { createPreview, type NavPath } from 'react-foundry'
 
 import { layout, tabs } from './base-ui.css'
 

@@ -1,6 +1,6 @@
 import { Slider } from '@base-ui/react/slider'
-import { createPreview, type NavPath } from '@react-foundry/core'
 import { useState } from 'react'
+import { createPreview, type NavPath } from 'react-foundry'
 
 import { layout, slider } from './base-ui.css'
 

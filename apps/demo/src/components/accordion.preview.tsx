@@ -1,5 +1,5 @@
 import { Accordion } from '@base-ui/react/accordion'
-import { createPreview, type NavPath } from '@react-foundry/core'
+import { createPreview, type NavPath } from 'react-foundry'
 
 import { accordion } from './base-ui.css'
 

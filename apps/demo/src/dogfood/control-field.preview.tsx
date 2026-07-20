@@ -1,7 +1,7 @@
-import type { ControlDef, NavPath } from '@react-foundry/core'
-import { createPreview } from '@react-foundry/core'
 import { ControlField } from '@react-foundry/ui'
 import { useState } from 'react'
+import type { ControlDef, NavPath } from 'react-foundry'
+import { createPreview } from 'react-foundry'
 
 export const nav: NavPath = 'Dogfood/Control Field'
 

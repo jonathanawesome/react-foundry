@@ -1,7 +1,7 @@
 import { Checkbox } from '@base-ui/react/checkbox'
 import { Slider } from '@base-ui/react/slider'
 import { Switch } from '@base-ui/react/switch'
-import { createPreview, type NavPath } from '@react-foundry/core'
+import { createPreview, type NavPath } from 'react-foundry'
 
 import { checkbox, layout, slider, switchStyles } from './base-ui.css'
 
