@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
 import { findLeaf, findNode } from '../src/nav'
-import type { NavNode, Preview, PreviewLeaf } from '../src/types'
+import type { NavNode, PreviewLeaf } from '../src/types'
 
-const previewFn = (() => null) as unknown as Preview
+const load = async () => ({})
 
 function leaf(id: string): PreviewLeaf {
   const exportName = id.split('/').pop() ?? id
-  return { id, label: exportName, exportName, component: previewFn }
+  return { id, label: exportName, exportName, load }
 }
 
 function node(

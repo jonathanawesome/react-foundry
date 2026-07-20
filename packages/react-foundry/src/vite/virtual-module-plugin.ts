@@ -7,44 +7,165 @@ import type { Plugin, ViteDevServer } from 'vite'
 const VIRTUAL_MODULE_ID = 'virtual:react-foundry-previews'
 const RESOLVED_VIRTUAL_MODULE_ID = `\0${VIRTUAL_MODULE_ID}`
 
-/**
- * Matches the start of a value export declaration, capturing its name.
- *
- * Deliberately narrow: `export default` and `export { ... }` re-exports are not
- * previews, and `export type`/`export interface` do not exist at runtime.
- */
-const EXPORT_PATTERN =
-  /^export\s+(?:async\s+)?(?:const|let|var|function\*?|class)\s+([A-Za-z_$][\w$]*)/gm
-
-/**
- * Reads the order exports are written in, which is the order their previews
- * appear in the nav.
- *
- * This cannot be recovered at runtime: the ES spec requires the keys of a
- * module namespace object (`import * as m`) to be sorted alphabetically, so by
- * the time discovery sees the module the authored order is gone. Hence reading
- * it off the source here.
- *
- * Preview files are a narrow, conventional subset of TypeScript, so a pattern
- * match is enough. If that stops holding, swap in `es-module-lexer`, which Vite
- * already depends on.
- */
-export function parseExportOrder(source: string): string[] {
-  return [...source.matchAll(EXPORT_PATTERN)].map((match) => match[1])
-}
-
 /** Matches `export const nav = '...'`, with or without a type annotation. */
 const NAV_PATTERN = /^export\s+const\s+nav\s*(?::[^=]+)?=\s*['"]([^'"]*)['"]/m
 
 /**
  * Reads a file's declared nav path, which decides where its previews sit.
  *
- * Note this value is *not* emitted into the generated module, which carries
- * only paths and export order. Discovery reads `nav` off the preview module
- * itself at runtime. It is parsed here so the watcher can report what changed.
+ * Emitted into the generated module so discovery can place the file without
+ * evaluating it, and read here too so the watcher can report a move.
  */
 export function parseNavPath(source: string): string | null {
   return source.match(NAV_PATTERN)?.[1] ?? null
+}
+
+/** A preview export, as read statically from source. */
+export interface ParsedPreview {
+  exportName: string
+  /** An explicit string-literal label, or null to derive one from the name. */
+  label: string | null
+}
+
+/** Matches `export const <Name> = createPreview(`, capturing the export name. */
+const PREVIEW_DECLARATION =
+  /^export\s+const\s+([A-Za-z_$][\w$]*)\s*(?::[^=]+)?=\s*createPreview\s*\(/gm
+
+/**
+ * Reads the previews a file declares, in the order they are written.
+ *
+ * This is a static parse: it lets the nav tree be built without evaluating any
+ * preview module, which is what keeps each preview in its own lazy chunk rather
+ * than the initial bundle. It replaces the older runtime approach, where
+ * discovery imported every module and brand-checked each export with
+ * `isPreview`.
+ *
+ * The parse imposes a small authoring convention, which the whole demo already
+ * follows: a preview must be `export const <Name> = createPreview(...)` with
+ * `createPreview` referenced by that name (not aliased), and an explicit label
+ * must be a string literal at the top level of the options object. Anything
+ * else, a bare-function preview, a computed label, or a `label` nested inside
+ * `controls` or `render`, yields `label: null`, and discovery falls back to a
+ * name derived from the export. Exports that are not `createPreview` calls
+ * (helpers, `nav`, re-exports) are simply skipped.
+ */
+export function parsePreviewExports(source: string): ParsedPreview[] {
+  const previews: ParsedPreview[] = []
+
+  PREVIEW_DECLARATION.lastIndex = 0
+  let match: RegExpExecArray | null
+  // biome-ignore lint/suspicious/noAssignInExpressions: the exec/assign loop is the idiom
+  while ((match = PREVIEW_DECLARATION.exec(source)) !== null) {
+    previews.push({
+      exportName: match[1],
+      label: extractOptionsLabel(source, PREVIEW_DECLARATION.lastIndex),
+    })
+  }
+
+  return previews
+}
+
+/**
+ * Reads a string-literal `label` off the options object of a `createPreview`
+ * call, given the index just past its opening `(`.
+ *
+ * Returns null unless the first argument is an object literal carrying a
+ * `label: '...'` at its own top level. The scan skips strings and comments so
+ * their braces and quotes cannot throw off the nesting count, and only accepts
+ * a `label` key at brace-depth 1, so one nested inside `controls` or a `render`
+ * body is ignored.
+ */
+function extractOptionsLabel(source: string, cursor: number): string | null {
+  let i = cursor
+  while (i < source.length && /\s/.test(source[i] ?? '')) i++
+  if (source[i] !== '{') return null // a bare-function preview, or a non-object arg
+
+  let depth = 0
+  while (i < source.length) {
+    const ch = source[i] as string
+    const next = source[i + 1]
+
+    if (ch === '/' && next === '/') {
+      const newline = source.indexOf('\n', i)
+      i = newline === -1 ? source.length : newline + 1
+      continue
+    }
+    if (ch === '/' && next === '*') {
+      const end = source.indexOf('*/', i + 2)
+      i = end === -1 ? source.length : end + 2
+      continue
+    }
+    if (ch === '"' || ch === "'" || ch === '`') {
+      i = skipString(source, i) + 1
+      continue
+    }
+    if (ch === '{' || ch === '[' || ch === '(') {
+      depth++
+      i++
+      continue
+    }
+    if (ch === '}' || ch === ']' || ch === ')') {
+      depth--
+      if (depth === 0) return null // reached the end of the options object
+      i++
+      continue
+    }
+    if (depth === 1 && ch === 'l' && isLabelKey(source, i)) {
+      return readLabelString(source, i)
+    }
+    i++
+  }
+
+  return null
+}
+
+/** True when `label` sits at `i` as a standalone identifier (a key, not part of `labelText`). */
+function isLabelKey(source: string, i: number): boolean {
+  if (!source.startsWith('label', i)) return false
+  const before = source[i - 1]
+  if (before !== undefined && /[\w$]/.test(before)) return false
+  const after = source[i + 5]
+  return after === undefined || !/[\w$]/.test(after)
+}
+
+/** Reads the single- or double-quoted string following a `label` key, or null if the value is not one. */
+function readLabelString(source: string, i: number): string | null {
+  let j = i + 5 // past 'label'
+  while (j < source.length && /\s/.test(source[j] ?? '')) j++
+  if (source[j] !== ':') return null
+  j++
+  while (j < source.length && /\s/.test(source[j] ?? '')) j++
+
+  const quote = source[j]
+  // Only literal quotes count; a template literal is treated as computed.
+  if (quote !== '"' && quote !== "'") return null
+
+  let value = ''
+  for (let k = j + 1; k < source.length; k++) {
+    const ch = source[k] as string
+    if (ch === '\\') {
+      value += source[k + 1] ?? ''
+      k++
+      continue
+    }
+    if (ch === quote) return value
+    value += ch
+  }
+  return null
+}
+
+/** Returns the index of the closing quote of the string starting at `open`. */
+function skipString(source: string, open: number): number {
+  const quote = source[open]
+  for (let k = open + 1; k < source.length; k++) {
+    const ch = source[k]
+    if (ch === '\\') {
+      k++
+      continue
+    }
+    if (ch === quote) return k
+  }
+  return source.length
 }
 
 /** Strips the magic portion off a glob, leaving the deepest static directory. */
@@ -64,14 +185,15 @@ export function resolvePreviewsGlob(pattern: string, userRoot: string): string {
 
 export interface PreviewMeta {
   nav: string | null
-  exportOrder: string[]
+  previews: ParsedPreview[]
 }
 
 /**
  * Describes what changed about a preview file, for the reload log.
  *
  * Every case reloads. Vite does not watch the user's project, so nothing else
- * would pick the change up.
+ * would pick the change up. Labels are compared alongside the export set now
+ * that they are read statically and feed the tree, so a label edit is visible.
  */
 export function classifyChange(
   previous: PreviewMeta | undefined,
@@ -81,11 +203,19 @@ export function classifyChange(
   if (!previous) return 'preview added'
   if (next.nav !== previous.nav) return `moved to ${next.nav}`
 
-  const orderChanged =
-    next.exportOrder.length !== previous.exportOrder.length ||
-    next.exportOrder.some((name, index) => name !== previous.exportOrder[index])
+  const structureChanged =
+    next.previews.length !== previous.previews.length ||
+    next.previews.some(
+      (p, index) => p.exportName !== previous.previews[index]?.exportName
+    )
+  if (structureChanged) return 'previews added or reordered'
 
-  return orderChanged ? 'previews added or reordered' : 'edited'
+  const labelChanged = next.previews.some(
+    (p, index) => p.label !== previous.previews[index]?.label
+  )
+  if (labelChanged) return 'label changed'
+
+  return 'edited'
 }
 
 export function createVirtualModulePlugin(
@@ -118,7 +248,7 @@ export function createVirtualModulePlugin(
         if (existsSync(file)) {
           try {
             const source = readFileSync(file, 'utf-8')
-            next = { nav: parseNavPath(source), exportOrder: parseExportOrder(source) }
+            next = { nav: parseNavPath(source), previews: parsePreviewExports(source) }
           } catch {
             // Mid-write; the next event will carry the finished file.
             return
@@ -176,7 +306,7 @@ export function createVirtualModulePlugin(
 
       fileMeta.clear()
 
-      const entries = files.flatMap((file, index) => {
+      const entries = files.flatMap((file) => {
         const normalizedPath = file.split('\\').join('/')
 
         // A file deleted between the glob and this read would otherwise throw
@@ -188,10 +318,22 @@ export function createVirtualModulePlugin(
           return []
         }
 
-        const exportOrder = parseExportOrder(source)
-        fileMeta.set(normalizedPath, { nav: parseNavPath(source), exportOrder })
+        const nav = parseNavPath(source)
+        const previews = parsePreviewExports(source)
+        fileMeta.set(normalizedPath, { nav, previews })
 
-        return [{ normalizedPath, index, exportOrder }]
+        // The static parse only sees `export const X = createPreview(...)`. A
+        // file that calls createPreview some other way (aliased, wrapped, or
+        // re-exported) would silently show no previews, so say so.
+        if (previews.length === 0 && source.includes('createPreview')) {
+          console.log(
+            pc.yellow(
+              `  ${normalizedPath} calls createPreview but no preview was detected. Author each as \`export const X = createPreview(...)\`.`
+            )
+          )
+        }
+
+        return [{ normalizedPath, nav, previews }]
       })
 
       return generateModuleSource(entries)
@@ -201,35 +343,32 @@ export function createVirtualModulePlugin(
 
 export interface ModuleEntry {
   normalizedPath: string
-  index: number
-  exportOrder: string[]
+  nav: string | null
+  previews: ParsedPreview[]
 }
 
 /**
- * Emits the virtual module: one namespace import per file, collected into a map
- * keyed by absolute path.
+ * Emits the virtual module: a map keyed by absolute path, each entry carrying
+ * the file's statically parsed metadata and a `load` thunk that dynamically
+ * imports it.
  *
- * Paths and export names go through `JSON.stringify` so a path containing a
- * quote produces valid source rather than a broken module.
+ * The dynamic `import()` is the point: it is a code-split boundary, so each
+ * preview file becomes its own chunk instead of riding in the initial bundle.
+ * Everything else (nav, previews) is a plain JSON value, so discovery builds the
+ * tree without ever evaluating a preview module.
+ *
+ * Paths and metadata go through `JSON.stringify` so a path containing a quote
+ * produces valid source rather than a broken module.
  */
 export function generateModuleSource(entries: ModuleEntry[]): string {
-  const imports = entries
-    .map(
-      ({ normalizedPath, index }) =>
-        `import * as module${index} from ${JSON.stringify(normalizedPath)};`
-    )
-    .join('\n')
-
   const moduleObject = entries
     .map(
-      ({ normalizedPath, index, exportOrder }) =>
-        `  ${JSON.stringify(normalizedPath)}: { module: module${index}, exportOrder: ${JSON.stringify(exportOrder)} },`
+      ({ normalizedPath, nav, previews }) =>
+        `  ${JSON.stringify(normalizedPath)}: { nav: ${JSON.stringify(nav)}, previews: ${JSON.stringify(previews)}, load: () => import(${JSON.stringify(normalizedPath)}) },`
     )
     .join('\n')
 
-  return `${imports}
-
-const previewModules = {
+  return `const previewModules = {
 ${moduleObject}
 };
 

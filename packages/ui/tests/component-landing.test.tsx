@@ -1,14 +1,14 @@
-import type { NavNode, Preview, PreviewLeaf } from '@react-foundry/core'
+import type { NavNode, PreviewLeaf } from '@react-foundry/core'
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
 import { ComponentLanding } from '../src/components/component-landing'
 import { renderWithRouter } from './test-utils'
 
-const previewFn = (() => null) as unknown as Preview
+const load = async () => ({})
 
 function leaf(id: string, label = id.split('/').pop() ?? id): PreviewLeaf {
-  return { id, label, exportName: label, component: previewFn }
+  return { id, label, exportName: label, load }
 }
 
 function node(
@@ -99,7 +99,7 @@ describe('ComponentLanding', () => {
       id: 'Forms/AllSizes',
       label: 'Every Size',
       exportName: 'AllSizes',
-      component: previewFn,
+      load,
     }
 
     await renderWithRouter(

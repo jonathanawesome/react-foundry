@@ -15,6 +15,7 @@ export type {
   NavNode,
   NavPath,
   Preview,
+  PreviewEntry,
   PreviewFile,
   PreviewLeaf,
   PreviewOptions,
