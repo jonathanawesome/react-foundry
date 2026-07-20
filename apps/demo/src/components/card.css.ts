@@ -2,9 +2,9 @@ import { recipe, themeContract } from '@react-foundry/style'
 
 export const cardStyles = recipe({
   base: {
-    backgroundColor: themeContract.colors.neutral2,
+    backgroundColor: themeContract.colors.panel,
     borderRadius: themeContract.radii.medium,
-    border: `1px solid ${themeContract.colors.neutral4}`,
+    border: `1px solid ${themeContract.colors.border}`,
   },
 
   variants: {

@@ -41,8 +41,8 @@ globalStyle('body', {
   margin: 0,
   fontFamily: themeContract.fonts.sans,
   fontSize: themeContract.px[14],
-  color: themeContract.colors.neutral7,
-  backgroundColor: themeContract.colors.neutral3,
+  color: themeContract.colors.textBody,
+  backgroundColor: themeContract.colors.canvas,
   WebkitFontSmoothing: 'antialiased',
   MozOsxFontSmoothing: 'grayscale',
 })
@@ -145,13 +145,13 @@ globalStyle('::-webkit-scrollbar-track', {
 })
 
 globalStyle('::-webkit-scrollbar-thumb', {
-  background: themeContract.colors.neutral7,
+  background: themeContract.colors.border,
   borderRadius: themeContract.px[6],
   transition: 'background 0.3s ease',
 })
 
 globalStyle('::-webkit-scrollbar-thumb:hover', {
-  background: themeContract.colors.neutral6,
+  background: themeContract.colors.textMuted,
 })
 
 globalStyle('::-webkit-scrollbar-corner', {
@@ -160,5 +160,5 @@ globalStyle('::-webkit-scrollbar-corner', {
 
 globalStyle('html', {
   scrollbarWidth: 'thin',
-  scrollbarColor: `${themeContract.colors.neutral7} transparent`,
+  scrollbarColor: `${themeContract.colors.border} transparent`,
 })

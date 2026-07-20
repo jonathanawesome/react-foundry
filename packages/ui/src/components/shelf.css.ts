@@ -26,8 +26,8 @@ export const shelfStyles = {
 
     paddingTop: 48,
 
-    background: themeContract.colors.neutral1,
-    borderRight: `1px solid ${themeContract.colors.neutral4}`,
+    background: themeContract.colors.panel,
+    borderRight: `1px solid ${themeContract.colors.border}`,
 
     transform: 'translateX(-100%)',
     transition: `transform 0.3s ${themeContract.motion.authentic}`,
@@ -75,20 +75,20 @@ export const shelfStyles = {
     textAlign: 'left',
     fontSize: themeContract.px[14],
     fontWeight: 500,
-    color: themeContract.colors.neutral6,
+    color: themeContract.colors.textMuted,
     background: 'none',
     border: 'none',
     cursor: 'pointer',
     transition: `color 0.2s ${themeContract.motion.authentic}`,
 
     ':hover': {
-      color: themeContract.colors.neutral8,
-      backgroundColor: themeContract.colors.neutral3,
+      color: themeContract.colors.textStrong,
+      backgroundColor: themeContract.colors.stateHover,
     },
 
     selectors: {
       '&[data-expanded="true"]': {
-        color: themeContract.colors.neutral8,
+        color: themeContract.colors.textStrong,
       },
     },
   }),
@@ -107,18 +107,18 @@ export const shelfStyles = {
     textAlign: 'left',
     border: 'none',
     backgroundColor: 'transparent',
-    color: themeContract.colors.neutral6,
+    color: themeContract.colors.textMuted,
     cursor: 'pointer',
     fontSize: themeContract.px[14],
     transition: `background-color 0.2s ${themeContract.motion.authentic}`,
 
     ':hover': {
-      color: themeContract.colors.neutral8,
+      color: themeContract.colors.textStrong,
     },
 
     selectors: {
       '&[data-active="true"]': {
-        color: themeContract.colors.neutral8,
+        color: themeContract.colors.textStrong,
         fontWeight: 600,
       },
     },

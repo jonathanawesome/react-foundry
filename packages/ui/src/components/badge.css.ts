@@ -1,4 +1,6 @@
-import { recipe, themeContract } from '@react-foundry/style'
+import { colorWithAlpha, recipe, themeContract } from '@react-foundry/style'
+
+const c = themeContract.colors
 
 export const badgeStyles = recipe({
   base: {
@@ -15,14 +17,29 @@ export const badgeStyles = recipe({
 
   variants: {
     tone: {
-      danger: { color: '#d93251', backgroundColor: 'rgba(217, 50, 81, 0.1)' },
-      warning: { color: '#e56910', backgroundColor: 'rgba(229, 105, 16, 0.1)' },
-      caution: { color: '#c29a00', backgroundColor: 'rgba(194, 154, 0, 0.1)' },
-      info: { color: '#0077c7', backgroundColor: 'rgba(0, 119, 199, 0.1)' },
-      success: { color: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)' },
+      danger: {
+        color: c.statusCritical,
+        backgroundColor: colorWithAlpha(c.statusCritical, 0.1),
+      },
+      warning: {
+        color: c.statusSerious,
+        backgroundColor: colorWithAlpha(c.statusSerious, 0.1),
+      },
+      caution: {
+        color: c.statusModerate,
+        backgroundColor: colorWithAlpha(c.statusModerate, 0.1),
+      },
+      info: {
+        color: c.statusMinor,
+        backgroundColor: colorWithAlpha(c.statusMinor, 0.1),
+      },
+      success: {
+        color: c.statusSuccess,
+        backgroundColor: colorWithAlpha(c.statusSuccess, 0.1),
+      },
       neutral: {
-        color: themeContract.colors.neutral7,
-        backgroundColor: themeContract.colors.neutral3,
+        color: themeContract.colors.textBody,
+        backgroundColor: themeContract.colors.stateHover,
       },
     },
   },

@@ -8,19 +8,19 @@ export const componentLandingStyles = {
   }),
 
   title: style({
-    color: themeContract.colors.neutral8,
+    color: themeContract.colors.textStrong,
     marginBottom: themeContract.px[8],
   }),
 
   sourcePath: style({
     fontFamily: themeContract.fonts.mono,
     fontSize: themeContract.px[12],
-    color: themeContract.colors.neutral6,
+    color: themeContract.colors.textMuted,
     marginBottom: themeContract.px[32],
   }),
 
   emptyState: style({
-    color: themeContract.colors.neutral6,
+    color: themeContract.colors.textMuted,
     fontStyle: 'italic',
   }),
 
@@ -30,7 +30,7 @@ export const componentLandingStyles = {
 
   sectionTitle: style({
     fontSize: themeContract.px[24],
-    color: themeContract.colors.neutral8,
+    color: themeContract.colors.textStrong,
     marginBottom: themeContract.px[16],
   }),
 
@@ -46,20 +46,20 @@ export const componentLandingStyles = {
   itemLink: style({
     display: 'block',
     padding: `${themeContract.px[12]} ${themeContract.px[16]}`,
-    background: themeContract.colors.neutral3,
+    background: themeContract.colors.stateHover,
     borderRadius: themeContract.radii.medium,
     textDecoration: 'none',
-    color: themeContract.colors.neutral7,
+    color: themeContract.colors.textBody,
     transition: `background-color 0.2s ${themeContract.motion.authentic}`,
 
     ':hover': {
-      background: themeContract.colors.neutral4,
-      color: themeContract.colors.neutral8,
+      background: themeContract.colors.border,
+      color: themeContract.colors.textStrong,
     },
   }),
 
   notFound: style({
     padding: themeContract.px[32],
-    color: themeContract.colors.neutral7,
+    color: themeContract.colors.textBody,
   }),
 }

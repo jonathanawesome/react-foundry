@@ -11,20 +11,20 @@ export const controlFieldStyles = {
   label: style({
     fontSize: themeContract.px[12],
     fontWeight: 600,
-    color: themeContract.colors.neutral7,
+    color: themeContract.colors.textBody,
   }),
 
   input: style({
     height: themeContract.px[32],
     padding: `0 ${themeContract.px[8]}`,
     fontSize: themeContract.px[14],
-    color: themeContract.colors.neutral8,
-    background: themeContract.colors.neutral2,
-    border: `1px solid ${themeContract.colors.neutral5}`,
+    color: themeContract.colors.textStrong,
+    background: themeContract.colors.panel,
+    border: `1px solid ${themeContract.colors.border}`,
     borderRadius: themeContract.radii.small,
 
     ':focus-visible': {
-      outline: `2px solid ${themeContract.colors.brand}`,
+      outline: `2px solid ${themeContract.colors.accent}`,
       outlineOffset: '1px',
     },
   }),
@@ -40,7 +40,7 @@ export const controlFieldStyles = {
   checkbox: style({
     width: themeContract.px[16],
     height: themeContract.px[16],
-    accentColor: themeContract.colors.brand,
+    accentColor: themeContract.colors.accent,
     cursor: 'pointer',
   }),
 
@@ -49,14 +49,14 @@ export const controlFieldStyles = {
     height: themeContract.px[32],
     padding: 0,
     background: 'none',
-    border: `1px solid ${themeContract.colors.neutral5}`,
+    border: `1px solid ${themeContract.colors.border}`,
     borderRadius: themeContract.radii.small,
     cursor: 'pointer',
   }),
 
   range: style({
     width: '100%',
-    accentColor: themeContract.colors.brand,
+    accentColor: themeContract.colors.accent,
     cursor: 'pointer',
   }),
 
@@ -69,7 +69,7 @@ export const controlFieldStyles = {
   rangeValue: style({
     minWidth: themeContract.px[24],
     fontSize: themeContract.px[12],
-    color: themeContract.colors.neutral6,
+    color: themeContract.colors.textMuted,
     textAlign: 'right',
     fontVariantNumeric: 'tabular-nums',
   }),
@@ -85,12 +85,12 @@ export const controlFieldStyles = {
     alignItems: 'center',
     gap: themeContract.px[4],
     fontSize: themeContract.px[14],
-    color: themeContract.colors.neutral8,
+    color: themeContract.colors.textStrong,
     cursor: 'pointer',
   }),
 
   radioInput: style({
-    accentColor: themeContract.colors.brand,
+    accentColor: themeContract.colors.accent,
     cursor: 'pointer',
   }),
 }

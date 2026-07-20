@@ -30,21 +30,21 @@ describe('writeFoundryConfig', () => {
 
   it('serializes dark color overrides', () => {
     const filePath = writeFoundryConfig(
-      { theme: { colors: { dark: { brand: '#0ea5e9', neutral1: 'oklch(10% 0 0)' } } } },
+      { theme: { colors: { dark: { accent: '#0ea5e9', canvas: 'oklch(10% 0 0)' } } } },
       testCacheDir
     )
     const content = readFileSync(filePath, 'utf-8')
-    expect(content).toContain('"dark":{"brand":"#0ea5e9","neutral1":"oklch(10% 0 0)"}')
+    expect(content).toContain('"dark":{"accent":"#0ea5e9","canvas":"oklch(10% 0 0)"}')
     expect(content).toContain('"light":{}')
   })
 
   it('serializes light color overrides', () => {
     const filePath = writeFoundryConfig(
-      { theme: { colors: { light: { neutral1: 'oklch(99% 0 0)' } } } },
+      { theme: { colors: { light: { canvas: 'oklch(99% 0 0)' } } } },
       testCacheDir
     )
     const content = readFileSync(filePath, 'utf-8')
-    expect(content).toContain('"light":{"neutral1":"oklch(99% 0 0)"}')
+    expect(content).toContain('"light":{"canvas":"oklch(99% 0 0)"}')
     expect(content).toContain('"dark":{}')
   })
 
@@ -83,13 +83,13 @@ describe('writeFoundryConfig', () => {
   })
 
   it('overwrites existing file on subsequent calls', () => {
-    writeFoundryConfig({ theme: { colors: { dark: { brand: 'old' } } } }, testCacheDir)
+    writeFoundryConfig({ theme: { colors: { dark: { accent: 'old' } } } }, testCacheDir)
     const filePath = writeFoundryConfig(
-      { theme: { colors: { dark: { brand: 'new' } } } },
+      { theme: { colors: { dark: { accent: 'new' } } } },
       testCacheDir
     )
     const content = readFileSync(filePath, 'utf-8')
-    expect(content).toContain('"brand":"new"')
-    expect(content).not.toContain('"brand":"old"')
+    expect(content).toContain('"accent":"new"')
+    expect(content).not.toContain('"accent":"old"')
   })
 })

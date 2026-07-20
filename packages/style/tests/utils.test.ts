@@ -1,6 +1,25 @@
 import { describe, expect, it } from 'vitest'
 
-import { colorWithAlpha, isRawOklchTriplet, transformColors } from '../src/utils'
+import {
+  arrayToKebabString,
+  colorWithAlpha,
+  isRawOklchTriplet,
+  transformColors,
+} from '../src/utils'
+
+describe('arrayToKebabString', () => {
+  it('joins segments with a leading hyphen', () => {
+    expect(arrayToKebabString(['colors', 'panel'])).toBe('-colors-panel')
+    expect(arrayToKebabString(['px', '12'])).toBe('-px-12')
+  })
+
+  it('kebab-cases camelCase segments so var names stay hyphenated', () => {
+    expect(arrayToKebabString(['colors', 'textMuted'])).toBe('-colors-text-muted')
+    expect(arrayToKebabString(['colors', 'statusCritical'])).toBe(
+      '-colors-status-critical'
+    )
+  })
+})
 
 describe('isRawOklchTriplet', () => {
   it('recognizes standard OKLCH triplets', () => {
@@ -76,17 +95,17 @@ describe('colorWithAlpha', () => {
 
   it('uses color-mix() for hex colors', () => {
     expect(colorWithAlpha('#333', 0.45)).toBe(
-      'color-mix(in oklch, #333 45%, transparent)'
+      'color-mix(in oklab, #333 45%, transparent)'
     )
   })
 
   it('uses color-mix() for named colors', () => {
-    expect(colorWithAlpha('red', 0.2)).toBe('color-mix(in oklch, red 20%, transparent)')
+    expect(colorWithAlpha('red', 0.2)).toBe('color-mix(in oklab, red 20%, transparent)')
   })
 
   it('uses color-mix() for functional notation', () => {
     expect(colorWithAlpha('oklch(62.1% 0.289482 350.9)', 0.35)).toBe(
-      'color-mix(in oklch, oklch(62.1% 0.289482 350.9) 35%, transparent)'
+      'color-mix(in oklab, oklch(62.1% 0.289482 350.9) 35%, transparent)'
     )
   })
 })

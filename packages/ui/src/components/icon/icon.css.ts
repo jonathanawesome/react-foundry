@@ -5,7 +5,7 @@ export const iconClass = recipe({
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: themeContract.colors.neutral6,
+    color: themeContract.colors.textMuted,
     transform: 'rotate(0deg)',
     transition: `all .15s ${themeContract.motion.authentic}`,
   },

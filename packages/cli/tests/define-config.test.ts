@@ -13,13 +13,13 @@ describe('defineConfig', () => {
     const config = defineConfig({
       theme: {
         colors: {
-          dark: { brand: '50% 0.3 270' },
-          light: { brand: '80% 0.2 270' },
+          dark: { accent: '50% 0.3 270' },
+          light: { accent: '80% 0.2 270' },
         },
       },
     })
-    expect(config.theme?.colors?.dark?.brand).toBe('50% 0.3 270')
-    expect(config.theme?.colors?.light?.brand).toBe('80% 0.2 270')
+    expect(config.theme?.colors?.dark?.accent).toBe('50% 0.3 270')
+    expect(config.theme?.colors?.light?.accent).toBe('80% 0.2 270')
   })
 
   it('handles an empty config', () => {

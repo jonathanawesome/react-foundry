@@ -18,8 +18,8 @@ export const propsPanelStyles = {
 
     paddingTop: 48,
 
-    background: themeContract.colors.neutral1,
-    borderLeft: `1px solid ${themeContract.colors.neutral4}`,
+    background: themeContract.colors.panel,
+    borderLeft: `1px solid ${themeContract.colors.border}`,
 
     transform: 'translateX(100%)',
     transition: `transform 0.3s ${themeContract.motion.authentic}`,
@@ -40,7 +40,7 @@ export const propsPanelStyles = {
     fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: themeContract.px[1],
-    color: themeContract.colors.neutral6,
+    color: themeContract.colors.textMuted,
   }),
 
   content: style({
@@ -54,7 +54,7 @@ export const propsPanelStyles = {
 
   empty: style({
     fontSize: themeContract.px[14],
-    color: themeContract.colors.neutral6,
+    color: themeContract.colors.textMuted,
     lineHeight: 1.5,
   }),
 }
