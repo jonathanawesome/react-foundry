@@ -12,19 +12,19 @@ export const iconButtonStyles = style({
   borderRadius: themeContract.radii.small,
   background: 'none',
   border: 'none',
-  color: themeContract.colors.neutral7,
+  color: themeContract.colors.textBody,
   cursor: 'pointer',
   transition: `background 0.15s ${themeContract.motion.authentic}`,
 
   ':hover': {
-    background: themeContract.colors.neutral3,
-    color: themeContract.colors.neutral8,
+    background: themeContract.colors.stateHover,
+    color: themeContract.colors.textStrong,
   },
 
   selectors: {
     '&[data-active="true"]': {
-      background: themeContract.colors.neutral4,
-      color: themeContract.colors.neutral8,
+      background: themeContract.colors.border,
+      color: themeContract.colors.textStrong,
     },
   },
 })

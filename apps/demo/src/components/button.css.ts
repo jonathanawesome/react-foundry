@@ -28,16 +28,16 @@ export const buttonStyles = recipe({
   variants: {
     variant: {
       primary: {
-        backgroundColor: themeContract.colors.brand,
-        color: themeContract.colors.neutral1,
+        backgroundColor: themeContract.colors.accent,
+        color: themeContract.colors.panel,
       },
       secondary: {
-        backgroundColor: themeContract.colors.neutral4,
-        color: themeContract.colors.neutral8,
+        backgroundColor: themeContract.colors.border,
+        color: themeContract.colors.textStrong,
       },
       danger: {
         backgroundColor: '#d93251',
-        color: themeContract.colors.neutral1,
+        color: themeContract.colors.panel,
       },
     },
     size: {

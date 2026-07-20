@@ -11,13 +11,13 @@ export const toolbarStyles = {
 
     display: 'flex',
     alignItems: 'center',
-    gap: themeContract.px[2],
-    padding: themeContract.px[4],
+    gap: themeContract.px[8],
+    padding: themeContract.px[8],
 
-    background: themeContract.colors.neutral1,
-    border: `1px solid ${themeContract.colors.neutral4}`,
+    background: themeContract.colors.panel,
+    border: `1px solid ${themeContract.colors.border}`,
     borderRadius: themeContract.radii.large,
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+    boxShadow: themeContract.shadows.wide,
   }),
 
   // Divides the shelf/panel controls from the view controls.
@@ -25,6 +25,6 @@ export const toolbarStyles = {
     width: '1px',
     height: themeContract.px[16],
     margin: `0 ${themeContract.px[4]}`,
-    background: themeContract.colors.neutral5,
+    background: themeContract.colors.border,
   }),
 }

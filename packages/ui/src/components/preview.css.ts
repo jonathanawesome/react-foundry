@@ -1,4 +1,4 @@
-import { style } from '@react-foundry/style'
+import { style, themeContract } from '@react-foundry/style'
 
 export const previewStyles = {
   previewContainer: style({
@@ -26,7 +26,7 @@ export const previewStyles = {
     alignItems: 'center',
     justifyContent: 'center',
     height: '100%',
-    color: '#999',
+    color: themeContract.colors.textMuted,
     fontSize: '16px',
   }),
 }

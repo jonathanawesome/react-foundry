@@ -41,7 +41,13 @@ export function Preview({
   return (
     <div className={previewStyles.previewContainer}>
       {Component ? (
-        <div className={previewStyles.previewPane} ref={previewPaneRef}>
+        // data-foundry-canvas marks the reset boundary: foundry's appearance resets
+        // (global-styles.css.ts) deliberately do not reach the consumer's component.
+        <div
+          className={previewStyles.previewPane}
+          ref={previewPaneRef}
+          data-foundry-canvas
+        >
           <Component controlValues={controlValues} />
         </div>
       ) : (

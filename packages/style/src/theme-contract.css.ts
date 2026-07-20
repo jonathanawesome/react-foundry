@@ -10,46 +10,49 @@ export const themeContract = createGlobalThemeContract(
     },
 
     colors: {
-      // neutral scale
-      neutral1: null,
-      neutral2: null,
-      neutral3: null,
-      neutral4: null,
-      neutral5: null,
-      neutral6: null,
-      neutral7: null,
-      neutral8: null,
+      // anchors: the two poles plus accent; every neutral derives from these
+      bg: null,
+      fg: null,
+      accent: null,
 
-      // brand
-      brand: null,
+      // surfaces
+      canvas: null,
+      panel: null,
+
+      // border (inputs, dividers, panel edges)
+      border: null,
+
+      // text
+      textMuted: null,
+      textBody: null,
+      textStrong: null,
+
+      // hover/active fill (internal; derived, not consumer-overridable)
+      stateHover: null,
+
+      // status (internal; fixed, not consumer-overridable)
+      statusCritical: null,
+      statusSerious: null,
+      statusModerate: null,
+      statusMinor: null,
+      statusSuccess: null,
     },
 
-    // px to rem scaling
+    // px to rem scaling (pruned to the steps actually used)
     px: {
       1: null,
       2: null,
-      3: null,
       4: null,
-      5: null,
       6: null,
-      7: null,
       8: null,
-      9: null,
-      10: null,
-      11: null,
       12: null,
-      13: null,
       14: null,
-      15: null,
       16: null,
-      17: null,
       18: null,
-      19: null,
       20: null,
       24: null,
       32: null,
       40: null,
-      60: null,
       64: null,
     },
 

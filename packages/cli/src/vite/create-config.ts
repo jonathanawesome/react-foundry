@@ -22,7 +22,7 @@ export function createViteConfig(
 
   // Write config to a real file so vanilla-extract's child compiler can resolve it
   const cacheDir = resolve(root, 'node_modules', '.cache', 'react-foundry')
-  const configFilePath = writeFoundryConfig(
+  const { configPath, themePath } = writeFoundryConfig(
     { theme: config.theme, title: config.title, nav: config.nav },
     cacheDir
   )
@@ -62,7 +62,8 @@ export function createViteConfig(
         ...(typeof userResolve?.alias === 'object' && !Array.isArray(userResolve.alias)
           ? userResolve.alias
           : {}),
-        'virtual:react-foundry-config': configFilePath,
+        'virtual:react-foundry-config': configPath,
+        'virtual:react-foundry-theme': themePath,
       },
     },
     server: {
@@ -90,7 +91,7 @@ export function createViteConfig(
       entries: [resolvePreviewsGlob(config.previews, root)],
       // Generated config lives under node_modules/.cache, so Vite would
       // pre-bundle it and keep serving that copy after it is regenerated.
-      exclude: ['virtual:react-foundry-config'],
+      exclude: ['virtual:react-foundry-config', 'virtual:react-foundry-theme'],
       ...userOptimizeDeps,
     },
     build: {

@@ -9,7 +9,7 @@ import { style, themeContract } from '@react-foundry/style'
  */
 
 const focusRing = {
-  outline: `2px solid ${themeContract.colors.brand}`,
+  outline: `2px solid ${themeContract.colors.accent}`,
   outlineOffset: '2px',
 } as const
 
@@ -30,7 +30,7 @@ export const layout = {
   label: style({
     fontFamily: themeContract.fonts.sans,
     fontSize: themeContract.px[14],
-    color: themeContract.colors.neutral8,
+    color: themeContract.colors.textStrong,
     cursor: 'pointer',
     userSelect: 'none',
   }),
@@ -38,7 +38,7 @@ export const layout = {
   hint: style({
     fontFamily: themeContract.fonts.sans,
     fontSize: themeContract.px[12],
-    color: themeContract.colors.neutral6,
+    color: themeContract.colors.textMuted,
   }),
 }
 
@@ -52,8 +52,8 @@ export const checkbox = {
     padding: 0,
     flexShrink: 0,
     borderRadius: themeContract.radii.small,
-    border: `1px solid ${themeContract.colors.neutral5}`,
-    backgroundColor: themeContract.colors.neutral2,
+    border: `1px solid ${themeContract.colors.border}`,
+    backgroundColor: themeContract.colors.panel,
     cursor: 'pointer',
     transition: `all 0.15s ${themeContract.motion.authentic}`,
 
@@ -61,8 +61,8 @@ export const checkbox = {
 
     selectors: {
       '&[data-checked], &[data-indeterminate]': {
-        backgroundColor: themeContract.colors.brand,
-        borderColor: themeContract.colors.brand,
+        backgroundColor: themeContract.colors.accent,
+        borderColor: themeContract.colors.accent,
       },
       '&[data-disabled]': {
         opacity: 0.5,
@@ -73,7 +73,7 @@ export const checkbox = {
 
   indicator: style({
     display: 'flex',
-    color: themeContract.colors.neutral1,
+    color: themeContract.colors.panel,
 
     selectors: {
       '&[data-unchecked]': {
@@ -92,8 +92,8 @@ export const switchStyles = {
     padding: 0,
     flexShrink: 0,
     borderRadius: themeContract.radii.large,
-    border: `1px solid ${themeContract.colors.neutral5}`,
-    backgroundColor: themeContract.colors.neutral4,
+    border: `1px solid ${themeContract.colors.border}`,
+    backgroundColor: themeContract.colors.border,
     cursor: 'pointer',
     transition: `background-color 0.15s ${themeContract.motion.authentic}`,
 
@@ -101,8 +101,8 @@ export const switchStyles = {
 
     selectors: {
       '&[data-checked]': {
-        backgroundColor: themeContract.colors.brand,
-        borderColor: themeContract.colors.brand,
+        backgroundColor: themeContract.colors.accent,
+        borderColor: themeContract.colors.accent,
       },
       '&[data-disabled]': {
         opacity: 0.5,
@@ -116,7 +116,7 @@ export const switchStyles = {
     width: themeContract.px[18],
     height: themeContract.px[18],
     borderRadius: '50%',
-    backgroundColor: themeContract.colors.neutral1,
+    backgroundColor: themeContract.colors.panel,
     transition: `transform 0.15s ${themeContract.motion.authentic}`,
     transform: `translateX(${themeContract.px[2]})`,
 
@@ -141,7 +141,7 @@ export const slider = {
     display: 'flex',
     justifyContent: 'space-between',
     fontSize: themeContract.px[14],
-    color: themeContract.colors.neutral8,
+    color: themeContract.colors.textStrong,
   }),
 
   control: style({
@@ -156,22 +156,22 @@ export const slider = {
     width: '100%',
     height: themeContract.px[6],
     borderRadius: themeContract.radii.large,
-    backgroundColor: themeContract.colors.neutral4,
+    backgroundColor: themeContract.colors.border,
   }),
 
   indicator: style({
     position: 'absolute',
     height: '100%',
     borderRadius: themeContract.radii.large,
-    backgroundColor: themeContract.colors.brand,
+    backgroundColor: themeContract.colors.accent,
   }),
 
   thumb: style({
     width: themeContract.px[16],
     height: themeContract.px[16],
     borderRadius: '50%',
-    backgroundColor: themeContract.colors.neutral1,
-    border: `2px solid ${themeContract.colors.brand}`,
+    backgroundColor: themeContract.colors.panel,
+    border: `2px solid ${themeContract.colors.accent}`,
 
     ':focus-visible': focusRing,
   }),
@@ -179,8 +179,8 @@ export const slider = {
 
 const surface = {
   borderRadius: themeContract.radii.medium,
-  border: `1px solid ${themeContract.colors.neutral5}`,
-  backgroundColor: themeContract.colors.neutral1,
+  border: `1px solid ${themeContract.colors.border}`,
+  backgroundColor: themeContract.colors.panel,
   boxShadow: themeContract.shadows.wide,
   fontFamily: themeContract.fonts.sans,
 } as const
@@ -207,13 +207,13 @@ export const dialog = {
   title: style({
     fontSize: themeContract.px[18],
     fontWeight: 600,
-    color: themeContract.colors.neutral8,
+    color: themeContract.colors.textStrong,
     marginBottom: themeContract.px[8],
   }),
 
   description: style({
     fontSize: themeContract.px[14],
-    color: themeContract.colors.neutral7,
+    color: themeContract.colors.textBody,
     marginBottom: themeContract.px[20],
     lineHeight: 1.5,
   }),
@@ -231,14 +231,14 @@ export const popover = {
     padding: themeContract.px[16],
     maxWidth: '260px',
     fontSize: themeContract.px[14],
-    color: themeContract.colors.neutral7,
+    color: themeContract.colors.textBody,
     lineHeight: 1.5,
   }),
 
   title: style({
     fontSize: themeContract.px[14],
     fontWeight: 600,
-    color: themeContract.colors.neutral8,
+    color: themeContract.colors.textStrong,
     marginBottom: themeContract.px[4],
   }),
 }
@@ -248,14 +248,14 @@ export const accordion = {
     width: '320px',
     fontFamily: themeContract.fonts.sans,
     borderRadius: themeContract.radii.medium,
-    border: `1px solid ${themeContract.colors.neutral5}`,
+    border: `1px solid ${themeContract.colors.border}`,
     overflow: 'hidden',
   }),
 
   item: style({
     selectors: {
       '& + &': {
-        borderTop: `1px solid ${themeContract.colors.neutral5}`,
+        borderTop: `1px solid ${themeContract.colors.border}`,
       },
     },
   }),
@@ -267,15 +267,15 @@ export const accordion = {
     width: '100%',
     padding: `${themeContract.px[12]} ${themeContract.px[16]}`,
     border: 'none',
-    backgroundColor: themeContract.colors.neutral2,
-    color: themeContract.colors.neutral8,
+    backgroundColor: themeContract.colors.panel,
+    color: themeContract.colors.textStrong,
     fontSize: themeContract.px[14],
     fontWeight: 500,
     textAlign: 'left',
     cursor: 'pointer',
 
     ':hover': {
-      backgroundColor: themeContract.colors.neutral3,
+      backgroundColor: themeContract.colors.stateHover,
     },
     ':focus-visible': focusRing,
   }),
@@ -283,7 +283,7 @@ export const accordion = {
   panel: style({
     padding: `${themeContract.px[12]} ${themeContract.px[16]}`,
     fontSize: themeContract.px[14],
-    color: themeContract.colors.neutral7,
+    color: themeContract.colors.textBody,
     lineHeight: 1.5,
   }),
 }
@@ -298,26 +298,26 @@ export const tabs = {
     position: 'relative',
     display: 'flex',
     gap: themeContract.px[4],
-    borderBottom: `1px solid ${themeContract.colors.neutral5}`,
+    borderBottom: `1px solid ${themeContract.colors.border}`,
   }),
 
   tab: style({
     padding: `${themeContract.px[8]} ${themeContract.px[12]}`,
     border: 'none',
     background: 'none',
-    color: themeContract.colors.neutral6,
+    color: themeContract.colors.textMuted,
     fontSize: themeContract.px[14],
     fontWeight: 500,
     cursor: 'pointer',
 
     ':hover': {
-      color: themeContract.colors.neutral8,
+      color: themeContract.colors.textStrong,
     },
     ':focus-visible': focusRing,
 
     selectors: {
       '&[data-selected]': {
-        color: themeContract.colors.neutral8,
+        color: themeContract.colors.textStrong,
       },
     },
   }),
@@ -327,7 +327,7 @@ export const tabs = {
     bottom: '-1px',
     left: 0,
     height: '2px',
-    backgroundColor: themeContract.colors.brand,
+    backgroundColor: themeContract.colors.accent,
     width: 'var(--active-tab-width)',
     transform: 'translateX(var(--active-tab-left))',
     transition: `all 0.2s ${themeContract.motion.authentic}`,
@@ -336,7 +336,7 @@ export const tabs = {
   panel: style({
     padding: `${themeContract.px[16]} 0`,
     fontSize: themeContract.px[14],
-    color: themeContract.colors.neutral7,
+    color: themeContract.colors.textBody,
     lineHeight: 1.5,
   }),
 }

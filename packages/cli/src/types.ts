@@ -1,15 +1,41 @@
 import type { ColorToken } from '@react-foundry/style'
 import type { UserConfig as ViteUserConfig } from 'vite'
 
+/**
+ * The color tokens a consumer may override: the anchors, surfaces, border, and text.
+ * `stateHover` and the status colors are intentionally not themeable. `satisfies`
+ * keeps this a compile-time subset of the real contract tokens.
+ */
+export const OVERRIDABLE_COLOR_TOKENS = [
+  'bg',
+  'fg',
+  'accent',
+  'canvas',
+  'panel',
+  'border',
+  'textMuted',
+  'textBody',
+  'textStrong',
+] as const satisfies readonly ColorToken[]
+
+export type OverridableColorToken = (typeof OVERRIDABLE_COLOR_TOKENS)[number]
+
 export interface ThemeColors {
   /** Any valid CSS color: hex (#ff0000), rgb(), hsl(), oklch(), named (red), or raw OKLCH triplets (62.1% 0.289482 350.9) */
-  dark?: Partial<Record<ColorToken, string>>
+  dark?: Partial<Record<OverridableColorToken, string>>
   /** Any valid CSS color: hex (#ff0000), rgb(), hsl(), oklch(), named (red), or raw OKLCH triplets (62.1% 0.289482 350.9) */
-  light?: Partial<Record<ColorToken, string>>
+  light?: Partial<Record<OverridableColorToken, string>>
+}
+
+/** Font-family overrides. Mode-agnostic, unlike colors. */
+export interface ThemeFonts {
+  sans?: string
+  mono?: string
 }
 
 export interface ThemeConfig {
   colors?: ThemeColors
+  fonts?: ThemeFonts
 }
 
 /**

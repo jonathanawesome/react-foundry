@@ -2,24 +2,47 @@ import { globalStyle } from '@vanilla-extract/css'
 
 import { themeContract } from './theme-contract.css'
 
-// CSS Reset
+/**
+ * The canvas (marked `data-foundry-canvas`, the element that renders the consumer's
+ * preview) must not receive foundry's appearance-changing resets, or components won't
+ * render the way they do in the consumer's own app. Element-matched resets below are
+ * excluded from the canvas subtree with `:not([data-foundry-canvas] …)`.
+ *
+ * Inherited typography (the body font/size/color) still reaches the canvas; there is no
+ * correct "neutral" value without knowing the consumer's page, so an unstyled component
+ * inherits foundry's sans + text color. Components that set their own type are unaffected.
+ */
+// `:where(...)` inside `:not(...)` contributes ZERO specificity, so each reset keeps its
+// original weight. A bare `:not([data-foundry-canvas] …)` would instead add the argument's
+// specificity and start overriding the component styles it's meant to sit beneath (e.g.
+// `all: unset` beating a shelf button's `display: flex`, which stacked the tree carets).
+const chromeOnly = (selectors: string) =>
+  selectors
+    .split(',')
+    .map((s) => {
+      const sel = s.trim()
+      return `${sel}:not(:where([data-foundry-canvas] ${sel}))`
+    })
+    .join(', ')
+
+// ── Truly global, harmless normalization ──────────────────────────────────────
+
 globalStyle('*, *::before, *::after', {
   boxSizing: 'border-box',
-  margin: 0,
-  padding: 0,
 })
 
 globalStyle('html', {
   lineHeight: 1.15,
   WebkitTextSizeAdjust: '100%',
+  scrollBehavior: 'smooth',
 })
 
 globalStyle('body', {
   margin: 0,
   fontFamily: themeContract.fonts.sans,
   fontSize: themeContract.px[14],
-  color: themeContract.colors.neutral7,
-  backgroundColor: themeContract.colors.neutral3,
+  color: themeContract.colors.textBody,
+  backgroundColor: themeContract.colors.canvas,
   WebkitFontSmoothing: 'antialiased',
   MozOsxFontSmoothing: 'grayscale',
 })
@@ -28,11 +51,26 @@ globalStyle('main', {
   display: 'block',
 })
 
-globalStyle('h1, h2, h3, h4, h5, h6', {
+globalStyle('pre', {
+  overflow: 'auto',
+})
+
+globalStyle('*:focus-visible', {
+  outlineOffset: '2px',
+})
+
+// ── Chrome-only appearance resets (never reach the canvas) ─────────────────────
+
+globalStyle(chromeOnly('*'), {
+  margin: 0,
+  padding: 0,
+})
+
+globalStyle(chromeOnly('h1, h2, h3, h4, h5, h6'), {
   fontFamily: themeContract.fonts.sans,
 })
 
-globalStyle('button', {
+globalStyle(chromeOnly('button'), {
   all: 'unset',
   border: 'none',
   backgroundColor: 'transparent',
@@ -41,102 +79,86 @@ globalStyle('button', {
   boxSizing: 'border-box',
 })
 
-globalStyle('button::-moz-focus-inner', {
+globalStyle(chromeOnly('button::-moz-focus-inner'), {
   borderStyle: 'none',
   padding: 0,
 })
 
-globalStyle('button:-moz-focusring', {
+globalStyle(chromeOnly('button:-moz-focusring'), {
   outline: '1px dotted ButtonText',
 })
 
-globalStyle('input, textarea, select', {
+globalStyle(chromeOnly('input, textarea, select'), {
   fontFamily: 'inherit',
   fontSize: '100%',
   lineHeight: 1.15,
   margin: 0,
 })
 
-globalStyle('input[type="text"], input[type="email"], input[type="password"], textarea', {
-  WebkitAppearance: 'none',
-  MozAppearance: 'none',
-  appearance: 'none',
-})
+globalStyle(
+  chromeOnly('input[type="text"], input[type="email"], input[type="password"], textarea'),
+  {
+    WebkitAppearance: 'none',
+    MozAppearance: 'none',
+    appearance: 'none',
+  }
+)
 
-// Focus styles
-globalStyle('*:focus-visible', {
-  outlineOffset: '2px',
-})
-
-globalStyle('*:focus:not(:focus-visible)', {
+globalStyle(chromeOnly('*:focus:not(:focus-visible)'), {
   outline: 'none',
 })
 
-// Smooth scrolling
-globalStyle('html', {
-  scrollBehavior: 'smooth',
-})
-
-// Code styles
-globalStyle('code, kbd, samp, pre', {
+globalStyle(chromeOnly('code, kbd, samp, pre'), {
   fontFamily: themeContract.fonts.mono,
   fontSize: '1em',
 })
 
-globalStyle('pre', {
-  overflow: 'auto',
-})
-
-// Remove default list styles
-globalStyle('ul, ol', {
+globalStyle(chromeOnly('ul, ol'), {
   listStyle: 'none',
 })
 
-// Image styles
-globalStyle('img', {
+globalStyle(chromeOnly('img'), {
   maxWidth: '100%',
   height: 'auto',
 })
 
-// Table styles
-globalStyle('table', {
+globalStyle(chromeOnly('table'), {
   borderCollapse: 'collapse',
   borderSpacing: 0,
 })
 
-// Disabled state
-globalStyle('[disabled]', {
+globalStyle(chromeOnly('[disabled]'), {
   cursor: 'not-allowed',
   opacity: 0.5,
 })
 
-// Global scrollbar styles for webkit browsers (Chrome, Safari, Edge)
+// ── Global scrollbar styling (chrome-level; fine on the canvas scroll too) ─────
+
 globalStyle('::-webkit-scrollbar', {
-  width: themeContract.px[4], // Width of vertical scrollbar
-  height: themeContract.px[4], // Height of horizontal scrollbar
+  width: themeContract.px[4],
+  height: themeContract.px[4],
 })
 
 globalStyle('::-webkit-scrollbar-track', {
-  background: 'transparent', // Track background
+  background: 'transparent',
   borderRadius: themeContract.px[6],
 })
 
 globalStyle('::-webkit-scrollbar-thumb', {
-  background: themeContract.colors.neutral7, // Scrollbar handle
+  background: themeContract.colors.border,
   borderRadius: themeContract.px[6],
   transition: 'background 0.3s ease',
 })
 
 globalStyle('::-webkit-scrollbar-thumb:hover', {
-  background: themeContract.colors.neutral6, // Darker on hover
+  background: themeContract.colors.textMuted,
 })
 
 globalStyle('::-webkit-scrollbar-corner', {
-  background: 'transparent', // Corner where scrollbars meet
+  background: 'transparent',
 })
 
-// For Firefox (uses different syntax)
 globalStyle('html', {
   scrollbarWidth: 'thin',
-  scrollbarColor: `${themeContract.colors.neutral7} transparent`, // thumb track
+  scrollbarColor: `${themeContract.colors.border} transparent`,
 })

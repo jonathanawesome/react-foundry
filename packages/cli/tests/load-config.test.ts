@@ -43,11 +43,11 @@ describe('loadConfig', () => {
       tempDir,
       'foundry.config.mjs',
       `export default {
-        theme: { colors: { dark: { brand: '50% 0.3 270' } } }
+        theme: { colors: { dark: { accent: '50% 0.3 270' } } }
       };\n`
     )
     const config = await loadConfig(tempDir)
-    expect(config.theme?.colors?.dark?.brand).toBe('50% 0.3 270')
+    expect(config.theme?.colors?.dark?.accent).toBe('50% 0.3 270')
   })
 
   it('preserves title through merge', async () => {

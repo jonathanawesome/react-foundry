@@ -112,7 +112,7 @@ export function AccessibilityChecker({
           onClick={() => setIsExpanded(!isExpanded)}
           aria-expanded={isExpanded}
         >
-          <Icon name="CaretRight" rotate={isExpanded ? undefined : '270'} size={'sm'} />
+          <Icon name="CaretRight" rotate={isExpanded ? '90' : '270'} size={'sm'} />
           <span className={accessibilityCheckerStyles.title}>Accessibility Check</span>
           {isScanning ? (
             <span className={accessibilityCheckerStyles.scanningIndicator}>

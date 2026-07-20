@@ -4,7 +4,7 @@ import { act } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ThemeProvider } from '../src/theme-provider'
-import { darkTheme, lightTheme } from '../src/themes.css'
+import { darkThemeClass, lightThemeClass } from '../src/themes.css'
 import { useTheme } from '../src/use-theme'
 
 const STORAGE_KEY = 'react-foundry-theme'
@@ -148,27 +148,27 @@ describe('ThemeProvider dom class', () => {
     localStorage.setItem(STORAGE_KEY, 'light')
     render(<ThemeProvider>x</ThemeProvider>)
 
-    expect(document.documentElement).toHaveClass(lightTheme)
-    expect(document.documentElement).not.toHaveClass(darkTheme)
+    expect(document.documentElement).toHaveClass(lightThemeClass)
+    expect(document.documentElement).not.toHaveClass(darkThemeClass)
   })
 
   it('applies the dark class on the document element', () => {
     localStorage.setItem(STORAGE_KEY, 'dark')
     render(<ThemeProvider>x</ThemeProvider>)
 
-    expect(document.documentElement).toHaveClass(darkTheme)
-    expect(document.documentElement).not.toHaveClass(lightTheme)
+    expect(document.documentElement).toHaveClass(darkThemeClass)
+    expect(document.documentElement).not.toHaveClass(lightThemeClass)
   })
 
   it('swaps the class when the theme changes', () => {
     localStorage.setItem(STORAGE_KEY, 'light')
     const { result } = renderHook(() => useTheme(), { wrapper })
-    expect(document.documentElement).toHaveClass(lightTheme)
+    expect(document.documentElement).toHaveClass(lightThemeClass)
 
     act(() => result.current.setTheme('dark'))
 
-    expect(document.documentElement).toHaveClass(darkTheme)
-    expect(document.documentElement).not.toHaveClass(lightTheme)
+    expect(document.documentElement).toHaveClass(darkThemeClass)
+    expect(document.documentElement).not.toHaveClass(lightThemeClass)
   })
 
   it('renders its children', () => {

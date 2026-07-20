@@ -1,5 +1,7 @@
 export function arrayToKebabString(arr: string[]): string {
-  return `-${arr.join('-')}`
+  return arr
+    .map((seg) => seg.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase())
+    .reduce((acc, seg) => `${acc}-${seg}`, '')
 }
 
 /**
@@ -19,7 +21,7 @@ export function colorWithAlpha(value: string, alpha: number): string {
   if (isRawOklchTriplet(value)) {
     return `oklch(${value} / ${alpha})`
   }
-  return `color-mix(in oklch, ${value} ${Math.round(alpha * 100)}%, transparent)`
+  return `color-mix(in oklab, ${value} ${Math.round(alpha * 100)}%, transparent)`
 }
 
 export const transformColors = <T extends Record<string, string>>(colorTheme: T) => {

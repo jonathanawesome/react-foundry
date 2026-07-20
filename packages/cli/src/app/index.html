@@ -4,6 +4,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>React Foundry</title>
+    <script>
+      // Set the theme class before first paint so there is no flash of the wrong
+      // theme. ThemeProvider takes over on mount with the same class names.
+      ;(() => {
+        try {
+          const stored = localStorage.getItem('react-foundry-theme')
+          const theme =
+            stored === 'light' || stored === 'dark'
+              ? stored
+              : matchMedia('(prefers-color-scheme: dark)').matches
+                ? 'dark'
+                : 'light'
+          document.documentElement.classList.add(`foundry-${theme}`)
+        } catch {}
+      })()
+    </script>
   </head>
   <body>
     <div id="root"></div>
