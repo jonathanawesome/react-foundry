@@ -18,7 +18,7 @@
     "demo": "pnpm --filter demo dev",
     "validate": "pnpm run types && pnpm run check",
     "changeset": "changeset",
-    "release": "pnpm --filter react-foundry build && bash scripts/verify-tarball.sh && changeset publish"
+    "release": "bash scripts/verify-tarball.sh && changeset publish"
   },
   "keywords": [
     "react",
