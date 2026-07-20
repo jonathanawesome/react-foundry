@@ -1,9 +1,12 @@
-/// <reference path="./virtual-modules.d.ts" />
-import { themeColors } from 'virtual:react-foundry-config'
-import { createTheme } from '@vanilla-extract/css'
+import { createGlobalTheme } from '@vanilla-extract/css'
 
 import { themeContract } from './theme-contract.css'
 import { colorWithAlpha, transformColors } from './utils'
+
+// The theme classes toggled on <html>. Literal strings (not hashed) so the CLI can emit
+// a plain-CSS override sheet keyed on `html.foundry-light` that outranks these defaults.
+export const lightThemeClass = 'foundry-light'
+export const darkThemeClass = 'foundry-dark'
 
 // Anchors: the two poles plus accent, as raw OKLCH triplets (transformColors wraps them
 // in oklch()). Everything neutral derives from bg/fg via color-mix in oklab.
@@ -42,13 +45,14 @@ const { bg, fg } = themeContract.colors
 const mixToFg = (pct: number) => `color-mix(in oklab, ${bg}, ${fg} ${pct}%)`
 
 /**
- * Builds the full color set for a mode: anchors as raw triplets, surface/text tokens as
- * color-mix expressions, status as literals, then overlays the consumer's overrides.
- * Unknown override keys are dropped with a warning rather than crashing createTheme.
+ * The default color set for a mode: anchors as raw triplets, surface/text tokens as
+ * color-mix expressions referencing the anchor vars, status as literals. Consumer
+ * overrides are applied separately as a plain-CSS sheet the CLI emits (see
+ * write-foundry-config), so this stays fully static and precompilable.
  */
 function buildColors(mode: 'dark' | 'light') {
   const a = anchors[mode]
-  const base = {
+  return {
     bg: a.bg,
     fg: a.fg,
     accent: a.accent,
@@ -65,25 +69,6 @@ function buildColors(mode: 'dark' | 'light') {
     statusMinor: status.statusMinor[mode],
     statusSuccess: status.statusSuccess[mode],
   }
-
-  const known = new Set(Object.keys(base))
-  const unknown: string[] = []
-  for (const [key, value] of Object.entries(themeColors[mode] ?? {})) {
-    if (value == null) continue
-    if (known.has(key)) {
-      ;(base as Record<string, string>)[key] = value
-    } else {
-      unknown.push(key)
-    }
-  }
-  if (unknown.length > 0) {
-    // biome-ignore lint/suspicious/noConsole: surface a config typo to the developer
-    console.warn(
-      `[react-foundry] ignoring unknown theme color keys: ${unknown.join(', ')}`
-    )
-  }
-
-  return base
 }
 
 // Shared tokens that don't change between themes
@@ -121,7 +106,7 @@ const sharedTokens = {
   },
 }
 
-export const darkTheme = createTheme(themeContract, {
+createGlobalTheme(`.${darkThemeClass}`, themeContract, {
   colors: transformColors(buildColors('dark')),
 
   ...sharedTokens,
@@ -132,7 +117,7 @@ export const darkTheme = createTheme(themeContract, {
   },
 })
 
-export const lightTheme = createTheme(themeContract, {
+createGlobalTheme(`.${lightThemeClass}`, themeContract, {
   colors: transformColors(buildColors('light')),
 
   ...sharedTokens,

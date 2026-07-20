@@ -1,5 +1,4 @@
 import { readFileSync, watch } from 'node:fs'
-import { resolve } from 'node:path'
 import pc from 'picocolors'
 import { type Plugin, transformWithEsbuild } from 'vite'
 import { findConfigPath } from '../config/load-config'
@@ -53,7 +52,7 @@ export function createConfigHmrPlugin(userRoot: string, cacheDir: string): Plugi
             const configModule = await import(/* @vite-ignore */ dataUrl)
             const userConfig = configModule.default || {}
 
-            writeFoundryConfig(
+            const { configPath: configCachePath, themePath } = writeFoundryConfig(
               {
                 theme: userConfig.theme,
                 title: userConfig.title,
@@ -62,32 +61,17 @@ export function createConfigHmrPlugin(userRoot: string, cacheDir: string): Plugi
               cacheDir
             )
 
-            // Regenerate the NavPath union too. The shelf picks up a nav change
-            // on the reload below, so without this the running app would offer
-            // a path that TypeScript still rejects.
+            // Regenerate the NavPath union too, so the running app doesn't offer a
+            // path TypeScript still rejects.
             writeNavTypes(userConfig.nav, userRoot)
 
-            // Invalidate the generated cache file so Vite re-reads it on reload
-            const cacheFile = resolve(cacheDir, 'react-foundry-config.js')
-            const cacheModules = server.moduleGraph.getModulesByFile(cacheFile)
-            if (cacheModules) {
-              for (const mod of cacheModules) {
-                server.moduleGraph.invalidateModule(mod)
-              }
-            }
-
-            // Invalidate .css.ts modules so vanilla-extract recompiles them.
-            // vanilla-extract's transform consumes the original imports, so
-            // Vite's module graph has no edge from .css.ts → cache file.
-            for (const [file, mods] of server.moduleGraph.fileToModulesMap) {
-              if (file.endsWith('.css.ts')) {
-                for (const mod of mods) {
-                  server.moduleGraph.invalidateModule(mod)
-                }
-              }
-            }
-
-            server.ws.send({ type: 'full-reload' })
+            // Hand both regenerated files to Vite's own HMR pipeline. The theme
+            // sheet is plain CSS, so it hot-swaps with no reload; the config module
+            // (title/nav) updates its importers, or Vite falls back to a reload.
+            // themes.css.ts no longer depends on config, so the old blanket
+            // `.css.ts` invalidation is gone.
+            server.watcher.emit('change', themePath)
+            server.watcher.emit('change', configCachePath)
 
             console.log(pc.green('  Config reloaded'))
           } catch (error) {

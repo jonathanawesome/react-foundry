@@ -14,6 +14,6 @@ export { type ColorToken, themeContract } from './theme-contract.css'
 export type { Theme, ThemeContextValue } from './theme-provider'
 // Theme provider and hook
 export { ThemeContext, ThemeProvider } from './theme-provider'
-export { darkTheme, lightTheme } from './themes.css'
+export { darkThemeClass, lightThemeClass } from './themes.css'
 export { useTheme } from './use-theme'
-export { colorWithAlpha } from './utils'
+export { arrayToKebabString, colorWithAlpha } from './utils'
