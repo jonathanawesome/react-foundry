@@ -7,41 +7,14 @@ import type { Plugin, ViteDevServer } from 'vite'
 const VIRTUAL_MODULE_ID = 'virtual:react-foundry-previews'
 const RESOLVED_VIRTUAL_MODULE_ID = `\0${VIRTUAL_MODULE_ID}`
 
-/**
- * Matches the start of a value export declaration, capturing its name.
- *
- * Deliberately narrow: `export default` and `export { ... }` re-exports are not
- * previews, and `export type`/`export interface` do not exist at runtime.
- */
-const EXPORT_PATTERN =
-  /^export\s+(?:async\s+)?(?:const|let|var|function\*?|class)\s+([A-Za-z_$][\w$]*)/gm
-
-/**
- * Reads the order exports are written in, which is the order their previews
- * appear in the nav.
- *
- * This cannot be recovered at runtime: the ES spec requires the keys of a
- * module namespace object (`import * as m`) to be sorted alphabetically, so by
- * the time discovery sees the module the authored order is gone. Hence reading
- * it off the source here.
- *
- * Preview files are a narrow, conventional subset of TypeScript, so a pattern
- * match is enough. If that stops holding, swap in `es-module-lexer`, which Vite
- * already depends on.
- */
-export function parseExportOrder(source: string): string[] {
-  return [...source.matchAll(EXPORT_PATTERN)].map((match) => match[1])
-}
-
 /** Matches `export const nav = '...'`, with or without a type annotation. */
 const NAV_PATTERN = /^export\s+const\s+nav\s*(?::[^=]+)?=\s*['"]([^'"]*)['"]/m
 
 /**
  * Reads a file's declared nav path, which decides where its previews sit.
  *
- * Note this value is *not* emitted into the generated module, which carries
- * only paths and export order. Discovery reads `nav` off the preview module
- * itself at runtime. It is parsed here so the watcher can report what changed.
+ * Emitted into the generated module so discovery can place the file without
+ * evaluating it, and read here too so the watcher can report a move.
  */
 export function parseNavPath(source: string): string | null {
   return source.match(NAV_PATTERN)?.[1] ?? null
