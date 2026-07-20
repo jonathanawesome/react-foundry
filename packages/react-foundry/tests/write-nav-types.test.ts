@@ -97,28 +97,14 @@ describe('writeNavTypes', () => {
     expect(existsSync(filePath)).toBe(true)
   })
 
-  it('augments the react-foundry module (published) so NavPath resolves through Register', () => {
-    const prev = process.env.FOUNDRY_DEV_SOURCE
-    process.env.FOUNDRY_DEV_SOURCE = '0'
-    try {
-      const content = readFileSync(writeNavTypes([{ label: 'Forms' }], testRoot), 'utf-8')
-      expect(content).toContain("declare module 'react-foundry' {")
-      expect(content).toContain('interface Register {')
-      expect(content).toContain('navPath:')
-    } finally {
-      process.env.FOUNDRY_DEV_SOURCE = prev
-    }
-  })
-
-  it('targets the internal core module in the monorepo (FOUNDRY_DEV_SOURCE)', () => {
-    const prev = process.env.FOUNDRY_DEV_SOURCE
-    process.env.FOUNDRY_DEV_SOURCE = '1'
-    try {
-      const content = readFileSync(writeNavTypes([{ label: 'Forms' }], testRoot), 'utf-8')
-      expect(content).toContain("declare module '@react-foundry/core' {")
-    } finally {
-      process.env.FOUNDRY_DEV_SOURCE = prev
-    }
+  it('augments the react-foundry module so NavPath resolves through Register', () => {
+    // Always `react-foundry`: everyone (consumers and the in-monorepo demo) imports
+    // NavPath from it, and the augmentation merges into its Register either way.
+    const content = readFileSync(writeNavTypes([{ label: 'Forms' }], testRoot), 'utf-8')
+    expect(content).toContain("declare module 'react-foundry' {")
+    expect(content).toContain('interface Register {')
+    expect(content).toContain('navPath:')
+    expect(content).not.toContain('@react-foundry/core')
   })
 
   it('emits every path in the tree as a union member', () => {

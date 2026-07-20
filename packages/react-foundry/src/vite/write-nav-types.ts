@@ -1,7 +1,6 @@
 import { existsSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { isDevSource } from '../dev-source'
 import type { NavItem } from '../types'
 
 export const NAV_TYPES_FILE_NAME = 'foundry-nav.gen.d.ts'
@@ -53,11 +52,11 @@ export function writeNavTypes(nav: NavItem[] | undefined, userRoot: string): str
     ? paths.map((path) => JSON.stringify(path)).join(' | ')
     : 'string'
 
-  // Augment the module the consumer imports `NavPath` from: `react-foundry` when
-  // installed, the internal `@react-foundry/core` for the in-monorepo demo. Both resolve
-  // to the same `Register` symbol (react-foundry re-exports it), so the augmentation
-  // merges either way.
-  const moduleName = isDevSource() ? '@react-foundry/core' : 'react-foundry'
+  // Augment the module everyone imports `NavPath` from: `react-foundry`. The published
+  // `dist/index.d.ts` declares `Register` locally (the dts bundler inlines it), so the
+  // augmentation merges into it and narrows `NavPath`. The in-monorepo demo imports from
+  // `react-foundry` too, so it exercises this exact path.
+  const moduleName = 'react-foundry'
 
   const filePath = resolveNavTypesPath(userRoot)
   const content = [

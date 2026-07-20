@@ -1,5 +1,5 @@
-import { createPreview, defineControls, type NavPath } from '@react-foundry/core'
 import { useState } from 'react'
+import { createPreview, defineControls, type NavPath } from 'react-foundry'
 
 import { Button } from './button'
 

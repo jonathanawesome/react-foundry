@@ -1,6 +1,6 @@
 import { Dialog } from '@base-ui/react/dialog'
-import { createPreview, type NavPath } from '@react-foundry/core'
 import { useState } from 'react'
+import { createPreview, type NavPath } from 'react-foundry'
 import { dialog, layout } from './base-ui.css'
 import { Button } from './button'
 

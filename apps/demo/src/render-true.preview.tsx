@@ -1,4 +1,4 @@
-import { createPreview, type NavPath } from '@react-foundry/core'
+import { createPreview, type NavPath } from 'react-foundry'
 
 export const nav: NavPath = 'Dogfood/Render True'
 

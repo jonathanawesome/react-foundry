@@ -1,6 +1,6 @@
-import { createPreview, type NavPath } from '@react-foundry/core'
 import { IconButton } from '@react-foundry/ui'
 import { useState } from 'react'
+import { createPreview, type NavPath } from 'react-foundry'
 
 export const nav: NavPath = 'Dogfood/Icon Button'
 

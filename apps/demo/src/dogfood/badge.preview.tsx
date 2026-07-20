@@ -1,5 +1,5 @@
-import { createPreview, type NavPath } from '@react-foundry/core'
 import { Badge, type BadgeTone } from '@react-foundry/ui'
+import { createPreview, type NavPath } from 'react-foundry'
 
 export const nav: NavPath = 'Dogfood/Badge'
 
