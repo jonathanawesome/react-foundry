@@ -4,7 +4,7 @@ export const nav: NavPath = 'Dogfood/Render True'
 
 /**
  * A render-true probe: raw, unstyled HTML that leans entirely on browser defaults.
- * If foundry's chrome reset leaks into the canvas, these lose their defaults —
+ * If foundry's chrome reset leaks into the canvas, these lose their defaults:
  * the button goes flat, the lists lose their markers, the input loses its border,
  * the paragraph loses its margin. If the canvas is clean, they look like the
  * browser's own rendering.
@@ -22,12 +22,12 @@ export const RawElements = createPreview({
       <button type="button">A native, unstyled button</button>
 
       <ul>
-        <li>Unordered item — should show a bullet</li>
+        <li>Unordered item, should show a bullet</li>
         <li>Another bulleted item</li>
       </ul>
 
       <ol>
-        <li>Ordered item — should show a number</li>
+        <li>Ordered item, should show a number</li>
         <li>Second numbered item</li>
       </ol>
 

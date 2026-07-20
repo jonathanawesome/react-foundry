@@ -61,8 +61,8 @@ export default defineConfig({
   ],
   theme: {
     colors: {
-      light: { brand: '#0ea5e9' },
-      dark: { brand: 'oklch(70% 0.15 240)' },
+      light: { accent: '#0ea5e9' },
+      dark: { accent: 'oklch(70% 0.15 240)' },
     },
   },
 })
@@ -97,17 +97,40 @@ foundry.config.ts
 .foundry/config.ts
 ```
 
-### Theme colors
+### Theming
 
-Overridable tokens are `neutral1` through `neutral8` plus `brand`, each settable independently for `light` and `dark`. Values accept any valid CSS color (hex, `rgb()`, `hsl()`, `oklch()`, named colors) or a raw OKLCH triplet:
+Foundry's shell derives its palette from a few role-named tokens, set independently for `light` and `dark`. Values accept any CSS color (hex, `rgb()`, `hsl()`, `oklch()`, named colors) or a bare OKLCH triplet.
+
+**Anchors**, set these to shift the whole ramp at once:
+
+| Token | Role |
+| --- | --- |
+| `bg` | base surface / paper pole |
+| `fg` | strong text / ink pole |
+| `accent` | focus rings, links, active states |
+
+**Surfaces and text**, derived from the anchors by default; override any one for precision:
+
+| Token | Role |
+| --- | --- |
+| `canvas` | the backdrop behind your preview |
+| `panel` | shelf, props panel, and dock backgrounds |
+| `border` | inputs, dividers, panel edges |
+| `textMuted` / `textBody` / `textStrong` | secondary / body / emphasis text |
 
 ```ts
 theme: {
   colors: {
-    light: { brand: '62.1% 0.289482 350.9' },
+    light: { canvas: '#faf9f7', accent: '#0ea5e9' },
+    dark: { canvas: '#0b0b0c', accent: '#38bdf8' },
   },
+  fonts: { sans: 'Inter, sans-serif' },
 }
 ```
+
+Overriding an **anchor** (`bg`/`fg`/`accent`) recomputes every derived token in the browser, so the whole shell shifts from one or two values. Overriding a **specific token** (like `canvas`) pins just that one. The surfaces and text mix in OKLCH internally, but you never have to: pass plain hex.
+
+**Fonts** (`sans`, `mono`) are mode-agnostic: one value for both themes. Foundry bundles Instrument Sans; if you point `sans` at another family, make sure it is actually available (a system font, your own `@font-face`, or a font-host link), since foundry can't bundle it for you.
 
 ## Creating Component Previews
 

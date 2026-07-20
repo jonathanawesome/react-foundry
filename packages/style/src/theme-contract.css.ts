@@ -10,7 +10,7 @@ export const themeContract = createGlobalThemeContract(
     },
 
     colors: {
-      // anchors — the two poles plus accent; every neutral derives from these
+      // anchors: the two poles plus accent; every neutral derives from these
       bg: null,
       fg: null,
       accent: null,
