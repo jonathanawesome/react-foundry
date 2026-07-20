@@ -26,8 +26,11 @@ jobs:
 
       - run: pnpm install --frozen-lockfile
 
-      # Trusted publishing needs npm >= 11.5.1; the Node 22 image ships an older npm.
-      - run: npm install -g npm@latest
+      # Trusted publishing needs npm >= 11.5.1. Pinned to 11.x on purpose: npm 12 turned
+      # the `--no-git-checks` that `changeset publish` forwards through pnpm into a hard
+      # EUNKNOWNCONFIG error. On 11.x it's a harmless warning. Revisit once pnpm stops
+      # forwarding that flag.
+      - run: npm install -g npm@11.18.0
 
       # With pending changesets: opens/updates the "Version Packages" PR (bumps the version,
       # regenerates the changelog). With none left (that PR just merged): runs `publish`,
