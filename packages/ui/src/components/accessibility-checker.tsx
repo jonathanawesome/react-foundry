@@ -1,26 +1,29 @@
 import axe, { type NodeResult } from 'axe-core'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { accessibilityCheckerStyles } from './accessibility-checker.css'
+import { Badge, type BadgeTone } from './badge'
 import { Icon } from './icon/icon'
 
 interface AccessibilityCheckerProps {
   targetRef: React.RefObject<HTMLDivElement | null>
   isEnabled: boolean
   isShelfOpen?: boolean
+  isPanelOpen?: boolean
 }
 
-export function getImpactColor(impact: string | null) {
+/** Maps an axe impact level to the badge tone used to show it. */
+export function impactTone(impact: string | null): BadgeTone {
   switch (impact) {
     case 'critical':
-      return accessibilityCheckerStyles.impactCritical
+      return 'danger'
     case 'serious':
-      return accessibilityCheckerStyles.impactSerious
+      return 'warning'
     case 'moderate':
-      return accessibilityCheckerStyles.impactModerate
+      return 'caution'
     case 'minor':
-      return accessibilityCheckerStyles.impactMinor
+      return 'info'
     default:
-      return ''
+      return 'neutral'
   }
 }
 
@@ -37,6 +40,7 @@ export function AccessibilityChecker({
   targetRef,
   isEnabled,
   isShelfOpen = false,
+  isPanelOpen = false,
 }: AccessibilityCheckerProps) {
   const [violations, setViolations] = useState<Violation[]>([])
   const [isExpanded, setIsExpanded] = useState(true)
@@ -84,17 +88,23 @@ export function AccessibilityChecker({
     }
   }, [isEnabled, runAccessibilityCheck])
 
-  if (!isEnabled) return null
-
   const totalViolations = violations.reduce(
     (sum, violation) => sum + violation.nodes.length,
     0
   )
 
+  // Width tracks the shelf/panel regardless of open state, so toggling the
+  // checker is a pure vertical slide rather than a width change.
+  const containerClass = [
+    accessibilityCheckerStyles.container,
+    isShelfOpen && accessibilityCheckerStyles.containerWithShelf,
+    isPanelOpen && accessibilityCheckerStyles.containerWithPanel,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
-    <div
-      className={`${accessibilityCheckerStyles.container} ${isShelfOpen ? accessibilityCheckerStyles.containerWithShelf : ''}`}
-    >
+    <div className={containerClass} data-open={isEnabled} aria-hidden={!isEnabled}>
       <div className={accessibilityCheckerStyles.header}>
         <button
           type="button"
@@ -111,11 +121,11 @@ export function AccessibilityChecker({
           ) : (
             <>
               {violations.length > 0 && (
-                <span className={accessibilityCheckerStyles.violationCount}>
+                <Badge tone="danger" className={accessibilityCheckerStyles.pushRight}>
                   {violations.length} issue{violations.length !== 1 ? 's' : ''} (
                   {totalViolations} instance
                   {totalViolations !== 1 ? 's' : ''})
-                </span>
+                </Badge>
               )}
               {violations.length === 0 && lastScanTime && (
                 <span className={accessibilityCheckerStyles.passedIndicator}>
@@ -150,19 +160,10 @@ export function AccessibilityChecker({
             <details key={violation.id} className={accessibilityCheckerStyles.violation}>
               <summary className={accessibilityCheckerStyles.violationSummary}>
                 <div className={accessibilityCheckerStyles.violationHeader}>
-                  <span className={getImpactColor(violation.impact)}>
-                    <Icon name="Circle" weight="fill" size={'sm'} />
-                  </span>
                   <span className={accessibilityCheckerStyles.violationTitle}>
                     {violation.help}
                   </span>
-                  <span
-                    className={`${accessibilityCheckerStyles.impact} ${getImpactColor(
-                      violation.impact
-                    )}`}
-                  >
-                    {violation.impact}
-                  </span>
+                  <Badge tone={impactTone(violation.impact)}>{violation.impact}</Badge>
                   <span className={accessibilityCheckerStyles.nodeCount}>
                     {violation.nodes.length} instance
                     {violation.nodes.length !== 1 ? 's' : ''}

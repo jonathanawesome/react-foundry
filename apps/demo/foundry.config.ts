@@ -1,12 +1,23 @@
 import { defineConfig } from '@react-foundry/cli'
 
 export default defineConfig({
-  previews: 'src/components/**/*.preview.tsx',
+  previews: 'src/**/*.preview.tsx',
   port: 5173,
   title: 'Demo Components',
   nav: [
+    // Foundry previewing its own presentational primitives.
     {
-      label: 'Components',
+      label: 'Dogfood',
+      children: [
+        { label: 'Badge' },
+        { label: 'Control Field' },
+        { label: 'Icon' },
+        { label: 'Icon Button' },
+      ],
+    },
+    // Example components built on Base UI, showing the authoring surface.
+    {
+      label: 'Demo',
       children: [
         {
           label: 'Inputs',
@@ -24,6 +35,5 @@ export default defineConfig({
         },
       ],
     },
-    { label: 'Another Top Level Item -- currently not in use' },
   ],
 })

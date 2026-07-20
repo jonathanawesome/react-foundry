@@ -3,7 +3,7 @@ import { createPreview, type NavPath } from '@react-foundry/core'
 import { popover } from './base-ui.css'
 import { Button } from './button'
 
-export const nav: NavPath = 'Components/Overlays/Popover'
+export const nav: NavPath = 'Demo/Overlays/Popover'
 
 export const Default = createPreview(() => (
   <Popover.Root>

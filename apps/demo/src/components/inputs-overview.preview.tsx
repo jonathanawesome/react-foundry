@@ -7,7 +7,7 @@ import { checkbox, layout, slider, switchStyles } from './base-ui.css'
 
 // Sits on `Components/Inputs`, which also has children: this group shows its own
 // previews and nests Checkbox, Switch, and Slider beneath it.
-export const nav: NavPath = 'Components/Inputs'
+export const nav: NavPath = 'Demo/Inputs'
 
 export const AllInputs = createPreview({
   label: 'Everything Together',

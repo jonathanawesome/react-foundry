@@ -2,7 +2,7 @@ import type { ReactElement } from 'react'
 import { describe, expect, it } from 'vitest'
 
 import { createPreview, isPreview } from '../src/create-preview'
-import { PREVIEW } from '../src/types'
+import { type ControlSchema, PREVIEW } from '../src/types'
 
 /** Stand-in for a rendered element; core has no React runtime to render with. */
 const element = { type: 'div', props: {}, key: null } as unknown as ReactElement
@@ -36,6 +36,40 @@ describe('createPreview', () => {
     const preview = createPreview({ render: () => element })
 
     expect(preview.label).toBeUndefined()
+  })
+
+  it('exposes the controls schema from the options form', () => {
+    const controls: ControlSchema = {
+      variant: { type: 'select', options: ['a', 'b'] },
+    }
+    const preview = createPreview({ controls, render: () => element })
+
+    expect(preview.controls).toBe(controls)
+  })
+
+  it('leaves controls undefined for the bare form', () => {
+    expect(createPreview(() => element).controls).toBeUndefined()
+  })
+
+  it('forwards control values from its props to render', () => {
+    const seen: unknown[] = []
+    const preview = createPreview({
+      controls: { variant: { type: 'text' } },
+      render: (v) => {
+        seen.push(v)
+        return element
+      },
+    })
+
+    preview({ controlValues: { variant: 'danger' } })
+
+    expect(seen).toEqual([{ variant: 'danger' }])
+  })
+
+  it('renders a zero-arg preview even when called with no props', () => {
+    const preview = createPreview(() => element)
+
+    expect(preview()).toBe(element)
   })
 
   // The wrap-don't-tag rule: `createPreview` must never touch a value the caller

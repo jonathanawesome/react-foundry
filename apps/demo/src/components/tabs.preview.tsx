@@ -4,7 +4,7 @@ import { useState } from 'react'
 
 import { layout, tabs } from './base-ui.css'
 
-export const nav: NavPath = 'Components/Disclosure/Tabs'
+export const nav: NavPath = 'Demo/Disclosure/Tabs'
 
 export const Default = createPreview(() => (
   <Tabs.Root className={tabs.root} defaultValue="overview">

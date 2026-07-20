@@ -1,7 +1,16 @@
-export { createPreview, isPreview } from './create-preview'
+export {
+  coerceControlValues,
+  defaultValues,
+  encodeControlValues,
+} from './controls'
+export { createPreview, defineControls, isPreview } from './create-preview'
 export { createDiscovery, deCamelCase, navPathFromFilename } from './discovery'
 export { findLeaf, findNode } from './nav'
 export type {
+  ControlDef,
+  ControlSchema,
+  ControlValue,
+  ControlValues,
   NavItem,
   NavNode,
   NavPath,

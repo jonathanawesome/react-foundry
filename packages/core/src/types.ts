@@ -37,18 +37,72 @@ export type NavPath = ResolveNavPath<Register>
  */
 export const PREVIEW: unique symbol = Symbol.for('react-foundry.preview')
 
-/** `ReactNode`, not `ReactElement`, so fragments and arrays are valid previews. */
-export type RenderFn = () => ReactNode
+/**
+ * One editable control on a preview, drawn as an input in the props panel.
+ *
+ * `options` is `readonly` so a schema declared `as const` or through
+ * {@link defineControls} keeps its literal option types, which lets a select's
+ * value narrow to the union of its options rather than plain `string`.
+ */
+export type ControlDef =
+  | { type: 'text'; default?: string }
+  | { type: 'boolean'; default?: boolean }
+  | { type: 'select'; options: readonly string[]; default?: string }
+  | { type: 'radio'; options: readonly string[]; default?: string }
+  | { type: 'number'; default?: number; min?: number; max?: number; step?: number }
+  | { type: 'range'; default?: number; min?: number; max?: number; step?: number }
+  | { type: 'color'; default?: string }
+
+export type ControlSchema = Record<string, ControlDef>
+
+/**
+ * The value type a single control resolves to. A select/radio narrows to the
+ * union of its options when those options are literal, else `string`.
+ */
+export type ControlValue<D extends ControlDef> = D extends { type: 'boolean' }
+  ? boolean
+  : D extends { type: 'number' | 'range' }
+    ? number
+    : D extends { type: 'select' | 'radio'; options: readonly (infer O)[] }
+      ? O
+      : string
+
+/**
+ * The values object a controlled preview's `render` receives, typed from its
+ * schema so `v.variant` autocompletes and a typo or wrong-type use is a compile
+ * error. A control declared but never read is not flagged: TypeScript has no
+ * unused-property check.
+ */
+export type ControlValues<S extends ControlSchema = ControlSchema> = {
+  [K in keyof S]: ControlValue<S[K]>
+}
+
+/**
+ * A preview's render function. `ReactNode`, not `ReactElement`, so fragments and
+ * arrays are valid. The values arg is optional so an uncontrolled
+ * `() => <Button/>` stays assignable.
+ */
+export type RenderFn = (values?: ControlValues) => ReactNode
 
 export interface PreviewOptions {
   /** Overrides the label derived from the export name. */
   label?: string
+  /** Editable controls, drawn in the props panel and fed to `render`. */
+  controls?: ControlSchema
   render: RenderFn
 }
 
-export type Preview = RenderFn & {
+/**
+ * The branded value `createPreview` returns.
+ *
+ * As a React component it takes a single private props bag carrying the control
+ * values, deliberately *not* `RenderFn`'s shape: if the values were the props
+ * bag directly, control names would collide with `children`/`key`/`ref`.
+ */
+export type Preview = ((props?: { controlValues?: ControlValues }) => ReactNode) & {
   [PREVIEW]: true
   label?: string
+  controls?: ControlSchema
 }
 
 /** One navigable preview: a leaf of the nav tree. */

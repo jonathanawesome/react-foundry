@@ -1,35 +1,35 @@
 import { createPreview } from '@react-foundry/core'
-import { render, screen } from '@testing-library/react'
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { Preview } from '../src/components/preview'
 import { useUIStore } from '../src/state'
+import { renderWithRouter } from './test-utils'
 
 describe('Preview', () => {
   beforeEach(() => {
     useUIStore.setState({
       isAccessibilityEnabled: false,
       isShelfOpen: true,
-      isShelfPinned: true,
     })
   })
 
-  it('renders the given preview', () => {
-    render(<Preview preview={createPreview(() => <p>Hello</p>)} />)
+  it('renders the given preview', async () => {
+    await renderWithRouter(<Preview preview={createPreview(() => <p>Hello</p>)} />)
 
     expect(screen.getByText('Hello')).toBeInTheDocument()
   })
 
-  it('renders the empty state when nothing is selected', () => {
-    render(<Preview preview={null} />)
+  it('renders the empty state when nothing is selected', async () => {
+    await renderWithRouter(<Preview preview={null} />)
 
     expect(screen.getByText('Select a preview from the sidebar')).toBeInTheDocument()
   })
 
-  it('accepts a custom empty message', () => {
-    render(<Preview preview={null} emptyMessage="Nothing here" />)
+  it('accepts a custom empty message', async () => {
+    await renderWithRouter(<Preview preview={null} emptyMessage="Nothing here" />)
 
     expect(screen.getByText('Nothing here')).toBeInTheDocument()
   })
@@ -52,7 +52,7 @@ describe('Preview', () => {
       )
     })
 
-    render(<Preview preview={Counter} />)
+    await renderWithRouter(<Preview preview={Counter} />)
 
     const button = screen.getByRole('button', { name: 'Clicked 0' })
     await userEvent.click(button)
@@ -60,11 +60,22 @@ describe('Preview', () => {
     expect(screen.getByRole('button', { name: 'Clicked 1' })).toBeInTheDocument()
   })
 
-  it('supports a preview built with the options form', () => {
+  it('supports a preview built with the options form', async () => {
     const preview = createPreview({ label: 'Every Size', render: () => <p>Sizes</p> })
 
-    render(<Preview preview={preview} />)
+    await renderWithRouter(<Preview preview={preview} />)
 
     expect(screen.getByText('Sizes')).toBeInTheDocument()
+  })
+
+  it('feeds coerced URL search values into a controlled preview', async () => {
+    const preview = createPreview({
+      controls: { variant: { type: 'select', options: ['primary', 'danger'] } },
+      render: (v) => <p>variant: {v?.variant}</p>,
+    })
+
+    await renderWithRouter(<Preview preview={preview} />, '/Forms/Button?variant=danger')
+
+    expect(screen.getByText('variant: danger')).toBeInTheDocument()
   })
 })

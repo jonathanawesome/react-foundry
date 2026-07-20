@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { dialog, layout } from './base-ui.css'
 import { Button } from './button'
 
-export const nav: NavPath = 'Components/Overlays/Dialog'
+export const nav: NavPath = 'Demo/Overlays/Dialog'
 
 export const Default = createPreview(() => (
   <Dialog.Root>

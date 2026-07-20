@@ -1,6 +1,6 @@
 # React Foundry
 
-A lightweight, Ladle-like component development environment for React. Write a preview as a plain React component and it shows up on a canvas, in a navigation tree you define.
+A lightweight component development environment for React. Write a preview as a plain React component and it shows up on a canvas, in a navigation tree you define.
 
 ## Features
 
@@ -190,7 +190,3 @@ pnpm check      # lint and format check (biome)
 pnpm check:fix  # apply lint and format fixes
 pnpm validate   # types + check
 ```
-
-Linting and formatting are handled by [Biome](https://biomejs.dev), not ESLint/Prettier.
-
-Shared dependency versions live in the `catalog:` block of `pnpm-workspace.yaml`, pinned exactly. Reference them with `catalog:` rather than a literal range so a dependency never resolves to two versions; [Renovate](https://docs.renovatebot.com) raises upgrades there after a cooldown.

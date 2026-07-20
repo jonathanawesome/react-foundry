@@ -36,11 +36,6 @@ export const shelfStyles = {
       '&[data-open="true"]': {
         transform: 'translateX(0)',
       },
-      '&[data-pinned="true"]': {
-        transform: 'translateX(0)',
-        transition: 'none',
-        borderRight: `1px solid ${themeContract.colors.neutral4}`,
-      },
     },
   }),
 

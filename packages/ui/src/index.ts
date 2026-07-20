@@ -1,12 +1,15 @@
 export { AccessibilityChecker } from './components/accessibility-checker'
+export { Badge, type BadgeProps, type BadgeTone } from './components/badge'
 export { ComponentLanding } from './components/component-landing'
-
+export { ControlField } from './components/control-field'
 // Components
 export { Icon, type IconName, type IconProps } from './components/icon/icon'
+export { IconButton, type IconButtonProps } from './components/icon-button'
 export { Layout } from './components/layout'
-export { Navigation } from './components/navigation'
 export { Preview } from './components/preview'
+export { PropsPanel } from './components/props-panel'
 export { Shelf } from './components/shelf'
+export { Toolbar } from './components/toolbar'
 
 // State
 export { useUIStore } from './state'
