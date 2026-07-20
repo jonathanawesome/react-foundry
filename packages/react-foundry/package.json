@@ -69,6 +69,7 @@
     "@tanstack/router-plugin": "catalog:",
     "@vanilla-extract/css": "catalog:",
     "@vanilla-extract/vite-plugin": "catalog:",
+    "publint": "0.3.21",
     "tsdown": "0.22.12",
     "tsx": "4.21.0",
     "typescript": "catalog:",
