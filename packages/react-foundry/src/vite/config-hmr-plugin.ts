@@ -39,7 +39,10 @@ export function createConfigHmrPlugin(userRoot: string, cacheDir: string): Plugi
 
             // Regenerate the NavPath union too, so the running app doesn't offer a
             // path TypeScript still rejects.
-            writeNavTypes(userConfig.nav as never, userRoot)
+            writeNavTypes(userConfig.nav as never, userRoot, {
+              previews: userConfig.previews as string | undefined,
+              navTypesPath: userConfig.navTypesPath as string | undefined,
+            })
 
             // Hand both regenerated files to Vite's own HMR pipeline. The theme sheet
             // is plain CSS, so it hot-swaps with no reload; the config module (title/

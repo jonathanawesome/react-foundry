@@ -93,6 +93,18 @@ export interface FoundryConfig {
   theme?: ThemeConfig
 
   /**
+   * Where to write the generated `foundry-nav.gen.d.ts` (the `NavPath` union),
+   * as an exact file path resolved against the config root.
+   *
+   * By default the file lands next to your previews (inferred from the `previews`
+   * glob base), which is what makes typed `NavPath` work when previews live in a
+   * different package than the config. Set this only when that inference can't
+   * reach the right place. Must be gitignored.
+   * Requires server restart.
+   */
+  navTypesPath?: string
+
+  /**
    * Custom Vite config overrides.
    * Requires server restart.
    */
@@ -100,8 +112,11 @@ export interface FoundryConfig {
 }
 
 export interface ResolvedFoundryConfig
-  extends Required<Omit<FoundryConfig, 'viteConfig' | 'theme' | 'title'>> {
+  extends Required<
+    Omit<FoundryConfig, 'viteConfig' | 'theme' | 'title' | 'navTypesPath'>
+  > {
   viteConfig: ViteUserConfig
   theme?: ThemeConfig
   title?: string
+  navTypesPath?: string
 }

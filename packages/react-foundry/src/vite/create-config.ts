@@ -32,7 +32,12 @@ export async function createViteConfig(
   )
 
   // Emit the NavPath union so preview files typecheck their `nav` against the tree.
-  writeNavTypes(config.nav, root)
+  // Pass the previews glob so the file lands next to previews that live in another
+  // package, and any explicit override.
+  writeNavTypes(config.nav, root, {
+    previews: config.previews,
+    navTypesPath: config.navTypesPath,
+  })
 
   const {
     plugins: userPlugins,

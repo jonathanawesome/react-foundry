@@ -99,6 +99,7 @@ export default defineConfig({
 | `host` | `'localhost'` | Dev server host. Requires restart. |
 | `title` | none | Display title for the instance. Hot-reloadable. |
 | `theme` | none | Theme customization. Hot-reloadable. |
+| `navTypesPath` | inferred | Exact path for the generated `NavPath` types. Defaults next to your previews; override for layouts the inference can't reach. Requires restart. |
 | `viteConfig` | none | Vite config overrides. Requires restart. |
 
 Config files are resolved in this order, first match wins:
@@ -127,6 +128,30 @@ the wrong place. **Add that file to your `.gitignore`.**
 `nav` values your previews declare, sorted alphabetically. A preview whose path is not in the
 config still appears, appended at the end with a warning, so nothing is ever silently
 dropped.
+
+#### Monorepo layouts
+
+Declaration merging only narrows `NavPath` inside a TypeScript project that compiles both the
+generated file and your `.preview.tsx` files. When your config lives in one package but the
+previews live in another (say the config is in `apps/foundry` and previews in
+`packages/react/src`), Foundry writes `foundry-nav.gen.d.ts` **next to the previews** by
+inferring the directory from the `previews` glob base, so the previews' own tsconfig picks up
+the augmentation with no extra setup.
+
+If that inference can't reach the right place, set `navTypesPath` to the exact output file,
+resolved against the config root:
+
+```ts
+export default defineConfig({
+  previews: '../../packages/react/src/**/*.preview.tsx',
+  navTypesPath: '../../packages/react/src/foundry-nav.gen.d.ts',
+})
+```
+
+Either way, **add the generated file to that package's `.gitignore`.** And when the previews
+package is a symlinked workspace dependency, allow Vite to read across the symlink with
+`viteConfig.server.fs.allow` pointing at the workspace root (or the previews package), or the
+dev server will refuse to serve those files.
 
 ### Theming
 
