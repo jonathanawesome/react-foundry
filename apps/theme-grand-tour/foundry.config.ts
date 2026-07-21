@@ -11,26 +11,21 @@ export default defineConfig({
   theme: {
     colors: {
       // Straight off the Lidl-Trek jersey: blue panels, red canvas, yellow text.
+      // `fg` alone drives the whole text ramp, so the text tiers aren't pinned.
       light: {
         bg: '#ffffff', // white paper the preview card sits on
-        fg: '#fff200', // Lidl yellow ink
+        fg: '#fff200', // Lidl yellow ink; tints every text tier
         accent: '#fff200', // Lidl yellow highlights
         canvas: '#ee1c25', // Lidl red backdrop
         panel: '#015aa2', // Lidl blue shelf, toolbar, props panel
-        textMuted: '#ffe680',
-        textBody: '#fff200',
-        textStrong: '#fff200',
       },
       // Visma-Lease a Bike: yellow canvas, black panels, red text.
       dark: {
         bg: '#0a0a0a', // black base
-        fg: '#ee1c25', // red ink
+        fg: '#ee1c25', // red ink; tints every text tier
         accent: '#ee1c25', // red highlights
         canvas: '#ffe500', // Visma yellow backdrop
         panel: '#0a0a0a', // black shelf, toolbar, props panel
-        textMuted: '#ee1c25',
-        textBody: '#ee1c25',
-        textStrong: '#ee1c25',
       },
     },
   },
