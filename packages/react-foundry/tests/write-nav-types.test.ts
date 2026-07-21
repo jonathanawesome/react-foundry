@@ -84,9 +84,9 @@ describe('resolveNavTypesPath', () => {
   it('keeps the src target when the previews glob stays inside root', () => {
     mkdirSync(resolve(testRoot, 'src'), { recursive: true })
 
-    expect(
-      resolveNavTypesPath(testRoot, { previews: 'src/**/*.preview.tsx' })
-    ).toBe(resolve(testRoot, 'src', 'foundry-nav.gen.d.ts'))
+    expect(resolveNavTypesPath(testRoot, { previews: 'src/**/*.preview.tsx' })).toBe(
+      resolve(testRoot, 'src', 'foundry-nav.gen.d.ts')
+    )
   })
 
   // The monorepo case: config in apps/foundry, previews in a sibling package. The

@@ -42,7 +42,9 @@ export function resolveNavTypesPath(
 ): string {
   if (navTypesPath) return resolve(userRoot, navTypesPath)
 
-  const base = globBaseDir(resolvePreviewsGlob(previews ?? DEFAULT_CONFIG.previews, userRoot))
+  const base = globBaseDir(
+    resolvePreviewsGlob(previews ?? DEFAULT_CONFIG.previews, userRoot)
+  )
   if (isOutside(userRoot, base)) return resolve(base, NAV_TYPES_FILE_NAME)
 
   const srcDir = resolve(userRoot, 'src')
