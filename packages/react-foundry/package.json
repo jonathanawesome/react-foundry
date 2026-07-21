@@ -54,7 +54,7 @@
   },
   "dependencies": {
     "@tanstack/react-router": "catalog:",
-    "@vitejs/plugin-react": "4.7.0",
+    "@vitejs/plugin-react": "6.0.3",
     "axe-core": "4.11.0",
     "cac": "6.7.14",
     "esbuild": "0.25.12",
