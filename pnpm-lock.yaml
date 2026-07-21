@@ -215,6 +215,9 @@ importers:
       '@tanstack/react-router':
         specifier: 'catalog:'
         version: 1.170.18(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      '@tanstack/react-store':
+        specifier: 0.9.3
+        version: 0.9.3(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
       '@vitejs/plugin-react':
         specifier: 6.0.3
         version: 6.0.3(vite@8.1.5(@types/node@24.10.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.21.0))
@@ -239,6 +242,9 @@ importers:
       react-dom:
         specifier: catalog:peers
         version: 19.2.1(react@19.2.1)
+      use-sync-external-store:
+        specifier: 1.6.0
+        version: 1.6.0(react@19.2.1)
       vite:
         specifier: 'catalog:'
         version: 8.1.5(@types/node@24.10.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.21.0)
