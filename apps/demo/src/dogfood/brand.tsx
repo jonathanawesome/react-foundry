@@ -4,12 +4,14 @@ interface Brand {
   name: string
   /** Accent color, chosen per foundry's resolved theme so previews track its toggle. */
   accent: string
+  /** Foundry's resolved theme, so a preview can read and display the live mode. */
+  mode: 'light' | 'dark'
 }
 
 const BrandContext = createContext<Brand | null>(null)
 
 /**
- * Reads the brand a consumer's `foundry.providers.tsx` supplies. Throws without it,
+ * Reads the `Brand` context a consumer's `foundry.providers.tsx` supplies. Throws without it,
  * exactly like a real design-system hook, which is the point: the component below cannot
  * render outside its provider, yet foundry previews it because the provider wraps it.
  */
@@ -23,13 +25,15 @@ export function useBrand(): Brand {
 
 export function BrandProvider({
   accent,
+  mode,
   children,
 }: {
   accent: string
+  mode: 'light' | 'dark'
   children: ReactNode
 }) {
   return (
-    <BrandContext.Provider value={{ name: 'Acme', accent }}>
+    <BrandContext.Provider value={{ name: 'Acme', accent, mode }}>
       {children}
     </BrandContext.Provider>
   )
