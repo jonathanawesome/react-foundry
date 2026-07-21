@@ -28,7 +28,7 @@ catalog:
   jsdom: 29.1.1
   react: 19.2.1
   react-dom: 19.2.1
-  typescript: 5.9.3
+  typescript: 6.0.3
   vite: 8.1.5
   vitest: 4.1.10
 
