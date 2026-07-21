@@ -1,5 +1,11 @@
 # react-foundry
 
+## 0.0.5
+
+### Patch Changes
+
+- e31cd97: Fix two pnpm-monorepo dev-server issues: pre-bundle and dedupe foundry's own app-shell runtime, and confine foundry's CSS to its chrome so previews render as they do in the consumer's app.
+
 ## 0.0.4
 
 ### Patch Changes
