@@ -3,7 +3,7 @@ import { defineConfig } from 'react-foundry'
 export default defineConfig({
   previews: 'src/**/*.preview.tsx',
   port: 5173,
-  title: 'Demo Components',
+  title: 'Foundry Demo - Base',
   nav: [
     // Foundry previewing its own presentational primitives.
     {
