@@ -1,4 +1,4 @@
-import { createPreview } from '@react-foundry/core'
+import { createPreview, type FoundryProvider } from '@react-foundry/core'
 import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
@@ -77,5 +77,23 @@ describe('Preview', () => {
     await renderWithRouter(<Preview preview={preview} />, '/Forms/Button?variant=danger')
 
     expect(screen.getByText('variant: danger')).toBeInTheDocument()
+  })
+
+  // The consumer's global provider wraps the preview inside the canvas, and receives
+  // foundry's resolved mode. Outside a ThemeProvider that mode defaults to light.
+  it('wraps the preview in the given Provider and passes the resolved theme', async () => {
+    const Provider: FoundryProvider = ({ children, theme }) => (
+      <div data-testid="consumer-provider" data-theme={theme}>
+        {children}
+      </div>
+    )
+
+    await renderWithRouter(
+      <Preview preview={createPreview(() => <p>Inside</p>)} Provider={Provider} />
+    )
+
+    const wrapper = screen.getByTestId('consumer-provider')
+    expect(wrapper).toHaveAttribute('data-theme', 'light')
+    expect(wrapper).toContainElement(screen.getByText('Inside'))
   })
 })
