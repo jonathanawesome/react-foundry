@@ -11,4 +11,9 @@ declare module 'virtual:react-foundry-config' {
   export const foundryNav: NavItem[]
 }
 
+declare module 'virtual:react-foundry-providers' {
+  import type { FoundryProvider } from '@react-foundry/core'
+  export const Provider: FoundryProvider
+}
+
 declare module 'virtual:react-foundry-theme' {}

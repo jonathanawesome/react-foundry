@@ -23,6 +23,19 @@ function aliasFor(
   return alias.find((a) => a.find === find)?.replacement
 }
 
+/** Collects plugin names, flattening the nested arrays plugins like `react()` return. */
+function pluginNames(plugins: unknown): string[] {
+  const names: string[] = []
+  const walk = (plugin: unknown) => {
+    if (Array.isArray(plugin)) plugin.forEach(walk)
+    else if (plugin && typeof plugin === 'object' && 'name' in plugin) {
+      names.push((plugin as { name: string }).name)
+    }
+  }
+  walk(plugins)
+  return names
+}
+
 // Exercise the published-package wiring (strict fs, client aliases, no dev plugins),
 // which is what ships. FOUNDRY_DEV_SOURCE=0 forces it regardless of the .ts test runner.
 let prevDevSource: string | undefined
@@ -49,6 +62,21 @@ describe('createViteConfig', () => {
   it('excludes the generated config from dependency optimization', async () => {
     const vite = await createViteConfig(config(), testRoot)
     expect(vite.optimizeDeps?.exclude).toContain('virtual:react-foundry-config')
+  })
+
+  it('registers the providers virtual module plugin', async () => {
+    const vite = await createViteConfig(config(), testRoot)
+
+    expect(pluginNames(vite.plugins)).toContain('react-foundry:virtual-providers')
+  })
+
+  it('keeps the providers plugin when the user supplies their own plugins', async () => {
+    const vite = await createViteConfig(
+      config({ viteConfig: { plugins: [{ name: 'user-plugin' }] } }),
+      testRoot
+    )
+
+    expect(pluginNames(vite.plugins)).toContain('react-foundry:virtual-providers')
   })
 
   it('ignores the user project in the watcher', async () => {

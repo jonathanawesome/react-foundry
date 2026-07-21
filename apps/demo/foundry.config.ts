@@ -13,6 +13,7 @@ export default defineConfig({
         { label: 'Control Field' },
         { label: 'Icon' },
         { label: 'Icon Button' },
+        { label: 'Providers' },
         { label: 'Render True' },
       ],
     },

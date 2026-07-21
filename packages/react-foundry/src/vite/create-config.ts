@@ -5,6 +5,7 @@ import type { InlineConfig, PluginOption } from 'vite'
 import { isDevSource } from '../dev-source'
 import type { ResolvedFoundryConfig } from '../types'
 import { createConfigHmrPlugin } from './config-hmr-plugin'
+import { createProvidersVirtualModulePlugin } from './providers-virtual-module-plugin'
 import { createVirtualModulePlugin, resolvePreviewsGlob } from './virtual-module-plugin'
 import { writeFoundryConfig } from './write-foundry-config'
 import { writeNavTypes } from './write-nav-types'
@@ -45,6 +46,7 @@ export async function createViteConfig(
   const plugins: PluginOption[] = [
     createConfigHmrPlugin(root, cacheDir),
     createVirtualModulePlugin(config.previews, root),
+    createProvidersVirtualModulePlugin(root),
     react(),
   ]
 

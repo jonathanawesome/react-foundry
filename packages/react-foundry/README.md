@@ -243,13 +243,51 @@ export const Playground = createPreview({
     disabled: { type: 'boolean', default: false },
     label: { type: 'text', default: 'Click me' },
   }),
-  render: (v) => <Button variant={v.variant} disabled={v.disabled}>{v.label}</Button>,
+  render: (values) => (
+    <Button variant={values.variant} disabled={values.disabled}>
+      {values.label}
+    </Button>
+  ),
 })
 ```
 
-Values are typed from the schema, so `v.variant` narrows to `'primary' | 'danger'` and a
-typo is a compile error. Control types: `text`, `boolean`, `number`, `range`, `select`,
+Values are typed from the schema, so `values.variant` narrows to `'primary' | 'danger'`
+and a typo is a compile error. Control types: `text`, `boolean`, `number`, `range`, `select`,
 `radio`, `color`.
+
+## Providers
+
+Your components often rely on app-wide React context: a design-system theme provider, a
+data client, i18n, a router. Give foundry a `foundry.providers.tsx` at your project root
+that exports a `Provider`, and it wraps every preview in it, so components render the same
+way they do in your real app.
+
+```tsx
+import type { FoundryProvider } from 'react-foundry'
+import { ThemeProvider } from '@my/design-system'
+import { QueryClientProvider } from '@my/data'
+
+export const Provider: FoundryProvider = ({ children, theme }) => (
+  <ThemeProvider mode={theme}>
+    <QueryClientProvider>{children}</QueryClientProvider>
+  </ThemeProvider>
+)
+```
+
+- **`theme`** is foundry's resolved mode (`'light' | 'dark'`), so a design-system provider
+  can track foundry's own light/dark toggle. Ignore it if you don't need it.
+- The provider wraps **inside** the preview canvas, so it reaches your components without
+  foundry's own chrome resets touching them.
+- The file is **optional**. Without it, previews render unchanged.
+
+The file may be `foundry.providers.{tsx,jsx,ts,js}`. Editing it hot-reloads. Two things to
+know for a real project:
+
+- The first time you add the file, foundry pulls its new dependencies into the graph, so
+  Vite may re-optimize and reload once more than usual. That is expected, not a bug.
+- If your provider imports **workspace** packages symlinked outside your project root,
+  foundry's strict file-serving will block them. Add your workspace root to the allow-list
+  via `viteConfig.server.fs.allow`.
 
 ## Extending Vite
 

@@ -1,3 +1,4 @@
+import { Provider } from 'virtual:react-foundry-providers'
 import { findLeaf, findNode, isPreview } from '@react-foundry/core'
 import { ComponentLanding, Preview } from '@react-foundry/ui'
 import { createFileRoute } from '@tanstack/react-router'
@@ -48,7 +49,7 @@ export const Route = createFileRoute('/$')({
 function NavPathRoute() {
   const { component, node, path } = Route.useLoaderData()
 
-  if (component) return <Preview preview={component} />
+  if (component) return <Preview preview={component} Provider={Provider} />
 
   return <ComponentLanding node={node} path={path} />
 }

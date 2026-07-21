@@ -11,6 +11,8 @@ export type {
   ControlSchema,
   ControlValue,
   ControlValues,
+  FoundryProvider,
+  FoundryProviderProps,
   NavPath,
   Preview,
   PreviewOptions,
