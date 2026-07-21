@@ -1,7 +1,7 @@
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import react from '@vitejs/plugin-react'
-import type { InlineConfig, PluginOption } from 'vite'
+import { type InlineConfig, type PluginOption, searchForWorkspaceRoot } from 'vite'
 import { isDevSource } from '../dev-source'
 import type { ResolvedFoundryConfig } from '../types'
 import { createConfigHmrPlugin } from './config-hmr-plugin'
@@ -125,9 +125,12 @@ export async function createViteConfig(
             ...userServer?.fs,
           }
         : {
-            // Serve the user's previews/config, the emitted cache files, and the
-            // package's own dist (app tree + client bundle). Nothing else.
-            allow: [root, cacheDir, packageDistRoot],
+            // Serve the user's previews/config, the emitted cache files, the
+            // package's own dist (app tree + client bundle), and the monorepo
+            // workspace root so symlinked workspace previews/providers resolve
+            // without hand-adding it. searchForWorkspaceRoot is Vite's own
+            // lockfile/.git walk and returns `root` unchanged outside a workspace.
+            allow: [root, cacheDir, packageDistRoot, searchForWorkspaceRoot(root)],
             strict: true,
             ...userServer?.fs,
           },

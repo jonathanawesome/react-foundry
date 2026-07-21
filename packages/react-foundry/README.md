@@ -138,6 +138,11 @@ previews live in another (say the config is in `apps/foundry` and previews in
 inferring the directory from the `previews` glob base, so the previews' own tsconfig picks up
 the augmentation with no extra setup.
 
+Because that augmentation binds during the **previews' package** compilation, `react-foundry`
+must be a dependency of that package too, not only the app that holds `foundry.config.ts`. Add
+it as a `devDependency` where the previews live, or `createPreview` and `NavPath` resolve to
+`Cannot find module 'react-foundry'` (TS2307) across every preview file.
+
 If that inference can't reach the right place, set `navTypesPath` to the exact output file,
 resolved against the config root:
 
@@ -148,10 +153,10 @@ export default defineConfig({
 })
 ```
 
-Either way, **add the generated file to that package's `.gitignore`.** And when the previews
-package is a symlinked workspace dependency, allow Vite to read across the symlink with
-`viteConfig.server.fs.allow` pointing at the workspace root (or the previews package), or the
-dev server will refuse to serve those files.
+Either way, **add the generated file to that package's `.gitignore`.** Symlinked workspace
+previews are served with no extra config: foundry detects your workspace root and adds it to
+Vite's file-serving allow-list automatically. Only reach for `viteConfig.server.fs.allow` if
+previews live outside that detected root.
 
 ### Theming
 
@@ -311,8 +316,8 @@ know for a real project:
 - The first time you add the file, foundry pulls its new dependencies into the graph, so
   Vite may re-optimize and reload once more than usual. That is expected, not a bug.
 - If your provider imports **workspace** packages symlinked outside your project root,
-  foundry's strict file-serving will block them. Add your workspace root to the allow-list
-  via `viteConfig.server.fs.allow`.
+  foundry serves them automatically by allow-listing your detected workspace root. Only if
+  they live outside that root do you need to extend `viteConfig.server.fs.allow`.
 
 ## Extending Vite
 
