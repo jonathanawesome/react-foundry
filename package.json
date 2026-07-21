@@ -16,6 +16,8 @@
     "test": "turbo run test",
     "types": "turbo run types",
     "demo": "pnpm --filter demo dev",
+    "theme-grand-tour": "pnpm --filter theme-grand-tour dev",
+    "theme-warm": "pnpm --filter theme-warm dev",
     "validate": "pnpm run types && pnpm run check",
     "changeset": "changeset",
     "release": "bash scripts/verify-tarball.sh && changeset publish"

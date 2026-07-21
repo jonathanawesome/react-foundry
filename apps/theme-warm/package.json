@@ -1,0 +1,25 @@
+{
+  "name": "theme-warm",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "foundry dev",
+    "build": "foundry build",
+    "preview": "foundry preview",
+    "types": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-foundry/core": "workspace:*",
+    "@react-foundry/style": "workspace:*",
+    "@react-foundry/ui": "workspace:*",
+    "react": "catalog:",
+    "react-dom": "catalog:",
+    "react-foundry": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/react": "catalog:",
+    "@types/react-dom": "catalog:",
+    "typescript": "catalog:"
+  }
+}
