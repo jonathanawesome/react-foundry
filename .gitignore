@@ -8,3 +8,6 @@ dist
 
 # Regenerated from the `nav` tree in foundry config on every server start
 foundry-nav.gen.d.ts
+
+# TanStack Router plugin's generated route-tree cache and temp files
+.tanstack
