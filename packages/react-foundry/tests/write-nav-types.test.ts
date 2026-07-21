@@ -78,6 +78,36 @@ describe('resolveNavTypesPath', () => {
   it('falls back to the project root for projects with no src directory', () => {
     expect(resolveNavTypesPath(testRoot)).toBe(resolve(testRoot, 'foundry-nav.gen.d.ts'))
   })
+
+  // The single-package default: previews inside root keep today's <root>/src target,
+  // so existing projects see no change in where the file lands.
+  it('keeps the src target when the previews glob stays inside root', () => {
+    mkdirSync(resolve(testRoot, 'src'), { recursive: true })
+
+    expect(
+      resolveNavTypesPath(testRoot, { previews: 'src/**/*.preview.tsx' })
+    ).toBe(resolve(testRoot, 'src', 'foundry-nav.gen.d.ts'))
+  })
+
+  // The monorepo case: config in apps/foundry, previews in a sibling package. The
+  // file has to land in the sibling so *its* tsconfig augments Register.
+  it('infers a sibling package dir when the previews glob reaches outside root', () => {
+    const root = resolve(testRoot, 'apps', 'foundry')
+
+    expect(
+      resolveNavTypesPath(root, { previews: '../../packages/x/src/**/*.preview.tsx' })
+    ).toBe(resolve(testRoot, 'packages', 'x', 'src', 'foundry-nav.gen.d.ts'))
+  })
+
+  // The escape hatch for layouts the glob-base heuristic can't guess.
+  it('lets navTypesPath pin the exact file, overriding inference', () => {
+    expect(
+      resolveNavTypesPath(testRoot, {
+        previews: '../../packages/x/src/**/*.preview.tsx',
+        navTypesPath: 'types/nav.gen.d.ts',
+      })
+    ).toBe(resolve(testRoot, 'types', 'nav.gen.d.ts'))
+  })
 })
 
 describe('writeNavTypes', () => {
@@ -183,5 +213,23 @@ describe('writeNavTypes', () => {
     )
 
     expect(content).toContain('"Forms" | "Layout"')
+  })
+
+  // End to end for the monorepo layout: config root is apps/foundry, previews
+  // live in a sibling package, and the generated file has to actually be written
+  // into that sibling's src so its tsconfig compiles it alongside the previews.
+  it('writes the file into a sibling package when previews live there', () => {
+    const root = resolve(testRoot, 'apps', 'foundry')
+    const siblingSrc = resolve(testRoot, 'packages', 'x', 'src')
+    mkdirSync(root, { recursive: true })
+    mkdirSync(siblingSrc, { recursive: true })
+
+    const filePath = writeNavTypes([{ label: 'Forms' }], root, {
+      previews: '../../packages/x/src/**/*.preview.tsx',
+    })
+
+    expect(filePath).toBe(resolve(siblingSrc, 'foundry-nav.gen.d.ts'))
+    expect(existsSync(filePath)).toBe(true)
+    expect(readFileSync(filePath, 'utf-8')).toContain('navPath: "Forms"')
   })
 })
