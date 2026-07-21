@@ -119,6 +119,26 @@ export interface PreviewEntry {
   label: string | null
 }
 
+/**
+ * The props a consumer's global `Provider` receives.
+ *
+ * `theme` is foundry's resolved mode, so a design-system provider can track
+ * foundry's light/dark toggle.
+ */
+export interface FoundryProviderProps {
+  children: ReactNode
+  theme: 'light' | 'dark'
+}
+
+/**
+ * A consumer's global provider, exported as `Provider` from `foundry.providers.tsx`.
+ *
+ * Foundry wraps every preview in it, so the app-wide React context a component
+ * relies on (a design-system theme provider, a data client, i18n) reaches
+ * previews the same way it reaches the real app.
+ */
+export type FoundryProvider = (props: FoundryProviderProps) => ReactNode
+
 /** One navigable preview: a leaf of the nav tree. */
 export interface PreviewLeaf {
   /** Url path, built from the nav path and the export name. */
