@@ -1,4 +1,5 @@
 import type { NavNode } from '@react-foundry/core'
+import { chromeSurface } from '@react-foundry/style'
 import { Link } from '@tanstack/react-router'
 
 import { componentLandingStyles as styles } from './component-landing.css'
@@ -17,7 +18,7 @@ interface ComponentLandingProps {
 export const ComponentLanding = ({ node, path }: ComponentLandingProps) => {
   if (!node) {
     return (
-      <div className={styles.notFound}>
+      <div className={`${chromeSurface} ${styles.notFound}`}>
         <h1>Not found</h1>
         <p>Nothing is registered at &quot;{path}&quot;.</p>
         <Link to="/">← Back to home</Link>
@@ -28,7 +29,7 @@ export const ComponentLanding = ({ node, path }: ComponentLandingProps) => {
   const isEmpty = node.leaves.length === 0 && node.children.length === 0
 
   return (
-    <div className={styles.container}>
+    <div className={`${chromeSurface} ${styles.container}`}>
       <h1 className={styles.title}>{node.label}</h1>
       <p className={styles.sourcePath}>{node.path}</p>
 

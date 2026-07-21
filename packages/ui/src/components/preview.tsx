@@ -3,7 +3,7 @@ import {
   type FoundryProvider,
   type Preview as PreviewComponent,
 } from '@react-foundry/core'
-import { ThemeContext } from '@react-foundry/style'
+import { chromeSurface, ThemeContext } from '@react-foundry/style'
 import { useSearch } from '@tanstack/react-router'
 import { useContext, useRef } from 'react'
 
@@ -68,7 +68,9 @@ export function Preview({
           </Provider>
         </div>
       ) : (
-        <div className={previewStyles.noSelection}>{emptyMessage}</div>
+        <div className={`${chromeSurface} ${previewStyles.noSelection}`}>
+          {emptyMessage}
+        </div>
       )}
 
       <AccessibilityChecker

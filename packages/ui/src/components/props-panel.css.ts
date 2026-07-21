@@ -43,9 +43,9 @@ export const propsPanelStyles = {
     color: themeContract.colors.textMuted,
   }),
 
+  // Rendered by the Scrollable component, which supplies overflow + scrollbar styling.
   content: style({
     flex: 1,
-    overflow: 'auto',
     padding: themeContract.px[20],
     display: 'flex',
     flexDirection: 'column',

@@ -1,4 +1,4 @@
-import { useTheme } from '@react-foundry/style'
+import { chromeSurface, useTheme } from '@react-foundry/style'
 
 import { useUIStore } from '../state'
 import { IconButton } from './icon-button'
@@ -27,7 +27,7 @@ export const Toolbar = () => {
   }
 
   return (
-    <div className={toolbarStyles.container}>
+    <div className={`${chromeSurface} ${toolbarStyles.container}`}>
       <IconButton
         icon="Notebook"
         onClick={toggleShelf}

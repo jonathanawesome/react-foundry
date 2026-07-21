@@ -15,6 +15,7 @@ export default defineConfig({
         { label: 'Icon Button' },
         { label: 'Providers' },
         { label: 'Render True' },
+        { label: 'Scrollable' },
       ],
     },
     // Example components built on Base UI, showing the authoring surface.

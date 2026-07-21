@@ -1,8 +1,10 @@
+import { chromeSurface } from '@react-foundry/style'
 import type { NodeResult } from 'axe-core'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { accessibilityCheckerStyles } from './accessibility-checker.css'
 import { Badge, type BadgeTone } from './badge'
 import { Icon } from './icon/icon'
+import { Scrollable } from './scrollable'
 
 interface AccessibilityCheckerProps {
   targetRef: React.RefObject<HTMLDivElement | null>
@@ -99,6 +101,7 @@ export function AccessibilityChecker({
   // Width tracks the shelf/panel regardless of open state, so toggling the
   // checker is a pure vertical slide rather than a width change.
   const containerClass = [
+    chromeSurface,
     accessibilityCheckerStyles.container,
     isShelfOpen && accessibilityCheckerStyles.containerWithShelf,
     isPanelOpen && accessibilityCheckerStyles.containerWithPanel,
@@ -151,7 +154,7 @@ export function AccessibilityChecker({
       </div>
 
       {isExpanded && (
-        <div className={accessibilityCheckerStyles.content}>
+        <Scrollable className={accessibilityCheckerStyles.content}>
           {violations.length === 0 && !isScanning && lastScanTime && (
             <div className={accessibilityCheckerStyles.noViolations}>
               <Icon name="Circle" weight="fill" size={'sm'} />
@@ -203,7 +206,7 @@ export function AccessibilityChecker({
               </div>
             </details>
           ))}
-        </div>
+        </Scrollable>
       )}
     </div>
   )
