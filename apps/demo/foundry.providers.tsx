@@ -6,7 +6,10 @@ import { BrandProvider } from './src/dogfood/brand'
 // app. The accent is chosen from foundry's resolved theme, so a preview that reads the
 // brand tracks foundry's own light/dark toggle.
 export const Provider: FoundryProvider = ({ children, theme }) => (
-  <BrandProvider accent={theme === 'dark' ? 'mediumspringgreen' : 'sandybrown'}>
+  <BrandProvider
+    accent={theme === 'dark' ? 'mediumspringgreen' : 'sandybrown'}
+    mode={theme}
+  >
     {children}
   </BrandProvider>
 )

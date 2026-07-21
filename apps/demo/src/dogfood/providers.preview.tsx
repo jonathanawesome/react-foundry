@@ -32,3 +32,20 @@ export const BrandedButton = createPreview({
     )
   },
 })
+
+// Reads the resolved theme foundry supplies to the provider and prints it as text, so
+// flipping foundry's light/dark toggle flips this readout from "light" to "dark". Like
+// the button above, the preview never receives the mode as a prop; it comes entirely
+// from the provider context foundry wraps around every preview.
+export const ThemeReadout = createPreview({
+  label: 'Reads Resolved Theme',
+  render: () => {
+    const { mode } = useBrand()
+
+    return (
+      <p style={{ font: 'inherit', margin: 0 }}>
+        Current theme: <strong>{mode}</strong>
+      </p>
+    )
+  },
+})
