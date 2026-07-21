@@ -112,7 +112,12 @@ describe('createViteConfig', () => {
     const vite = await createViteConfig(config(), testRoot)
 
     expect(vite.resolve?.dedupe).toEqual(
-      expect.arrayContaining(['react', 'react-dom', '@tanstack/react-router', '@tanstack/react-store'])
+      expect.arrayContaining([
+        'react',
+        'react-dom',
+        '@tanstack/react-router',
+        '@tanstack/react-store',
+      ])
     )
     expect(vite.optimizeDeps?.include).toEqual(
       expect.arrayContaining([
