@@ -112,9 +112,9 @@ export const accessibilityCheckerStyles = {
     },
   }),
 
+  // Rendered by the Scrollable component, which supplies overflow + scrollbar styling.
   content: style({
     flex: 1,
-    overflowY: 'auto',
     padding: '16px',
   }),
 

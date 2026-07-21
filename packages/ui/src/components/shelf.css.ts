@@ -39,15 +39,13 @@ export const shelfStyles = {
     },
   }),
 
+  // Rendered by the Scrollable component, which supplies overflow + scrollbar styling.
   content: style({
     flex: 1,
-    overflow: 'auto',
     padding: themeContract.px[20],
   }),
 
-  sidebar: style({
-    overflowY: 'auto',
-  }),
+  sidebar: style({}),
 
   // The tree nests to arbitrary depth, so indentation comes from nesting the
   // lists rather than from a per-level style. Depth 0 sits flush.

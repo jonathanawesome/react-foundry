@@ -4,12 +4,14 @@ import {
   coerceControlValues,
   encodeControlValues,
 } from '@react-foundry/core'
+import { chromeSurface } from '@react-foundry/style'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 
 import { useUIStore } from '../state'
 import { ControlField } from './control-field'
 import { propsPanelStyles } from './props-panel.css'
+import { Scrollable } from './scrollable'
 
 type ControlValue = string | number | boolean
 
@@ -92,15 +94,18 @@ export function PropsPanel({ controls }: PropsPanelProps) {
   const hasControls = controls && Object.keys(controls).length > 0
 
   return (
-    <aside className={propsPanelStyles.panel} data-open={isPanelOpen}>
+    <aside
+      className={`${chromeSurface} ${propsPanelStyles.panel}`}
+      data-open={isPanelOpen}
+    >
       <div className={propsPanelStyles.header}>Controls</div>
-      <div className={propsPanelStyles.content}>
+      <Scrollable className={propsPanelStyles.content}>
         {hasControls ? (
           <PanelControls key={splat} controls={controls} splat={splat} />
         ) : (
           <p className={propsPanelStyles.empty}>This preview has no controls.</p>
         )}
-      </div>
+      </Scrollable>
     </aside>
   )
 }

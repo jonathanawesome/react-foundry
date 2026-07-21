@@ -17,6 +17,39 @@ import { writeNavTypes } from './write-nav-types'
 const here = dirname(fileURLToPath(import.meta.url))
 const packageDistRoot = here
 
+// Foundry's own app-shell runtime. The dev server must pre-bundle and dedupe these so a
+// consumer whose previews live in a separate workspace package (isolated pnpm node_modules)
+// ends up with a single instance of each, shared between foundry's shell and the previews.
+// Without it, in a non-hoisted layout: `react-dom/client` and the use-sync-external-store
+// shim are CJS whose named ESM exports (`createRoot`, `useSyncExternalStoreWithSelector`)
+// resolve to nothing unless pre-bundled, and `@tanstack/react-router` gets a second copy in
+// the optimized preview chunk, giving the router two React contexts. All are resolvable from
+// foundry's own tree — react/react-dom via the peer, react-store and the shim via direct
+// deps — so dedupe/include work regardless of how the consumer hoists.
+const FOUNDRY_DEDUPE = [
+  'react',
+  'react-dom',
+  '@tanstack/react-router',
+  '@tanstack/react-store',
+]
+
+const FOUNDRY_OPTIMIZE_INCLUDE = [
+  'react',
+  'react-dom',
+  'react-dom/client',
+  'react/jsx-runtime',
+  'react/jsx-dev-runtime',
+  '@tanstack/react-router',
+  '@tanstack/react-store',
+  'use-sync-external-store/shim/with-selector',
+]
+
+/** `optimizeDeps.entries` may be a string or an array; normalize to an array so it can merge. */
+function toEntryArray(entries: string | readonly string[] | undefined): string[] {
+  if (!entries) return []
+  return Array.isArray(entries) ? [...entries] : [entries as string]
+}
+
 export async function createViteConfig(
   config: ResolvedFoundryConfig,
   root: string
@@ -107,6 +140,10 @@ export async function createViteConfig(
     plugins,
     resolve: {
       ...userResolve,
+      // Force a single instance of foundry's shared runtime, then the consumer's own
+      // dedupe on top. Prevents the previews (resolved from a sibling package) and
+      // foundry's shell from each getting their own router/react copy.
+      dedupe: [...FOUNDRY_DEDUPE, ...(userResolve?.dedupe ?? [])],
       alias: [
         ...clientAliases,
         { find: 'virtual:react-foundry-config', replacement: configPath },
@@ -142,9 +179,21 @@ export async function createViteConfig(
       },
     },
     optimizeDeps: {
-      entries: [resolvePreviewsGlob(config.previews, root)],
-      exclude: ['virtual:react-foundry-config', 'virtual:react-foundry-theme'],
       ...userOptimizeDeps,
+      // Scan foundry's own app shell (index.html -> main.tsx -> routes) alongside the
+      // consumer's previews. Vite's dep scanner only follows the entries it is given, so
+      // without the app entry foundry's own runtime deps are never discovered or deduped.
+      entries: [
+        resolve(cliAppDir, 'index.html'),
+        resolvePreviewsGlob(config.previews, root),
+        ...toEntryArray(userOptimizeDeps?.entries),
+      ],
+      include: [...FOUNDRY_OPTIMIZE_INCLUDE, ...(userOptimizeDeps?.include ?? [])],
+      exclude: [
+        'virtual:react-foundry-config',
+        'virtual:react-foundry-theme',
+        ...(userOptimizeDeps?.exclude ?? []),
+      ],
     },
     build: {
       outDir: resolve(root, 'dist'),

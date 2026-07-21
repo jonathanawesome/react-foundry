@@ -12,7 +12,7 @@ export const nav: NavPath = 'Dogfood/Providers'
 export const BrandedButton = createPreview({
   label: 'Consumes Brand Context',
   render: () => {
-    const { name, accent } = useBrand()
+    const { accent } = useBrand()
 
     return (
       <button
@@ -27,7 +27,7 @@ export const BrandedButton = createPreview({
           cursor: 'pointer',
         }}
       >
-        {name} action
+        Toggle Foundry theme to see accent overrides
       </button>
     )
   },

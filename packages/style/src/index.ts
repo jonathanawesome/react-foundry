@@ -4,7 +4,7 @@ export { globalStyle, keyframes, style } from '@vanilla-extract/css'
 export { type RecipeVariants, recipe } from '@vanilla-extract/recipes'
 
 // Global styles
-import './global-styles.css'
+export { chromeSurface } from './global-styles.css'
 
 // Fonts
 import './fonts.css'

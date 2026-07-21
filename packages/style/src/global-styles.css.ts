@@ -1,16 +1,18 @@
-import { globalStyle } from '@vanilla-extract/css'
+import { globalStyle, style } from '@vanilla-extract/css'
 
 import { themeContract } from './theme-contract.css'
 
 /**
  * The canvas (marked `data-foundry-canvas`, the element that renders the consumer's
- * preview) must not receive foundry's appearance-changing resets, or components won't
- * render the way they do in the consumer's own app. Element-matched resets below are
- * excluded from the canvas subtree with `:not([data-foundry-canvas] …)`.
+ * preview) must receive nothing from foundry, so a component renders exactly as it does
+ * in the consumer's own app. Foundry's styling is confined to its chrome two ways:
  *
- * Inherited typography (the body font/size/color) still reaches the canvas; there is no
- * correct "neutral" value without knowing the consumer's page, so an unstyled component
- * inherits foundry's sans + text color. Components that set their own type are unaffected.
+ *   - Element-matched resets are excluded from the canvas subtree with
+ *     `:not([data-foundry-canvas] …)` via {@link chromeOnly}.
+ *   - Inherited typography (font, size, line-height, color) is never set on `body`/`html`,
+ *     which are canvas ancestors the component would inherit them from. It is anchored on
+ *     each chrome surface via {@link chromeSurface} instead, leaving the canvas to inherit
+ *     only the consumer's document (or, unstyled, the UA default).
  */
 // `:where(...)` inside `:not(...)` contributes ZERO specificity, so each reset keeps its
 // original weight. A bare `:not([data-foundry-canvas] …)` would instead add the argument's
@@ -25,41 +27,53 @@ const chromeOnly = (selectors: string) =>
     })
     .join(', ')
 
-// ── Truly global, harmless normalization ──────────────────────────────────────
-
-globalStyle('*, *::before, *::after', {
-  boxSizing: 'border-box',
+/**
+ * Foundry's base typography, composed onto each chrome surface root rather than set on
+ * `body`/`html`. Chrome must anchor its own type: `body` and `html` are ancestors of the
+ * canvas, so anything set there would be inherited by the consumer's component. Anchoring
+ * per-surface keeps foundry's type on foundry's UI while the canvas inherits only the
+ * consumer's document (or the UA default), so the isolation is total in both directions.
+ */
+export const chromeSurface = style({
+  fontFamily: themeContract.fonts.sans,
+  fontSize: themeContract.px[14],
+  lineHeight: 1.15,
+  color: themeContract.colors.textBody,
+  WebkitFontSmoothing: 'antialiased',
+  MozOsxFontSmoothing: 'grayscale',
 })
 
+// ── Page-level rules that never reach the canvas ───────────────────────────────
+// Only non-inherited, non-appearance properties live at the document level. Anything
+// the consumer's component could inherit (typography, color) is anchored on chrome
+// surfaces via `chromeSurface` instead, so the canvas is left to the consumer's document.
+
 globalStyle('html', {
-  lineHeight: 1.15,
-  WebkitTextSizeAdjust: '100%',
   scrollBehavior: 'smooth',
 })
 
 globalStyle('body', {
   margin: 0,
-  fontFamily: themeContract.fonts.sans,
-  fontSize: themeContract.px[14],
-  color: themeContract.colors.textBody,
   backgroundColor: themeContract.colors.canvas,
-  WebkitFontSmoothing: 'antialiased',
-  MozOsxFontSmoothing: 'grayscale',
 })
 
-globalStyle('main', {
+// ── Chrome-only resets (never reach the canvas) ────────────────────────────────
+
+globalStyle(chromeOnly('*, *::before, *::after'), {
+  boxSizing: 'border-box',
+})
+
+globalStyle(chromeOnly('main'), {
   display: 'block',
 })
 
-globalStyle('pre', {
+globalStyle(chromeOnly('pre'), {
   overflow: 'auto',
 })
 
-globalStyle('*:focus-visible', {
+globalStyle(chromeOnly('*:focus-visible'), {
   outlineOffset: '2px',
 })
-
-// ── Chrome-only appearance resets (never reach the canvas) ─────────────────────
 
 globalStyle(chromeOnly('*'), {
   margin: 0,
@@ -132,33 +146,5 @@ globalStyle(chromeOnly('[disabled]'), {
   opacity: 0.5,
 })
 
-// ── Global scrollbar styling (chrome-level; fine on the canvas scroll too) ─────
-
-globalStyle('::-webkit-scrollbar', {
-  width: themeContract.px[4],
-  height: themeContract.px[4],
-})
-
-globalStyle('::-webkit-scrollbar-track', {
-  background: 'transparent',
-  borderRadius: themeContract.px[6],
-})
-
-globalStyle('::-webkit-scrollbar-thumb', {
-  background: themeContract.colors.border,
-  borderRadius: themeContract.px[6],
-  transition: 'background 0.3s ease',
-})
-
-globalStyle('::-webkit-scrollbar-thumb:hover', {
-  background: themeContract.colors.textMuted,
-})
-
-globalStyle('::-webkit-scrollbar-corner', {
-  background: 'transparent',
-})
-
-globalStyle('html', {
-  scrollbarWidth: 'thin',
-  scrollbarColor: `${themeContract.colors.border} transparent`,
-})
+// Scrollbar styling is intentionally not global: it lives on the `Scrollable` component
+// (packages/ui) so it scopes to foundry's own scroll containers and never the canvas.

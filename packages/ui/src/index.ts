@@ -8,6 +8,7 @@ export { IconButton, type IconButtonProps } from './components/icon-button'
 export { Layout } from './components/layout'
 export { Preview } from './components/preview'
 export { PropsPanel } from './components/props-panel'
+export { Scrollable, type ScrollableProps } from './components/scrollable'
 export { Shelf } from './components/shelf'
 export { Toolbar } from './components/toolbar'
 

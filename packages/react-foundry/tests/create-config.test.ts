@@ -96,9 +96,37 @@ describe('createViteConfig', () => {
       testRoot
     )
 
-    expect(vite.optimizeDeps?.entries).toEqual([
-      resolve(testRoot, 'src/**/*.preview.tsx'),
-    ])
+    const entries = vite.optimizeDeps?.entries as string[]
+    expect(entries).toContain(resolve(testRoot, 'src/**/*.preview.tsx'))
+  })
+
+  it('scans foundry’s own app entry so its runtime deps are discovered', async () => {
+    const vite = await createViteConfig(config(), testRoot)
+
+    const entries = vite.optimizeDeps?.entries as string[]
+    // The app entry must come first so foundry's shell is scanned, not only the previews.
+    expect(entries[0]?.endsWith('app/index.html')).toBe(true)
+  })
+
+  it('dedupes and pre-bundles foundry’s shared runtime', async () => {
+    const vite = await createViteConfig(config(), testRoot)
+
+    expect(vite.resolve?.dedupe).toEqual(
+      expect.arrayContaining([
+        'react',
+        'react-dom',
+        '@tanstack/react-router',
+        '@tanstack/react-store',
+      ])
+    )
+    expect(vite.optimizeDeps?.include).toEqual(
+      expect.arrayContaining([
+        'react-dom/client',
+        '@tanstack/react-router',
+        '@tanstack/react-store',
+        'use-sync-external-store/shim/with-selector',
+      ])
+    )
   })
 
   describe('user vite overrides', () => {
@@ -139,6 +167,38 @@ describe('createViteConfig', () => {
 
       expect(vite.optimizeDeps?.exclude).toContain('virtual:react-foundry-config')
       expect(vite.optimizeDeps?.force).toBe(true)
+    })
+
+    it('merges user optimizeDeps include/entries with foundry’s, not replacing them', async () => {
+      const vite = await createViteConfig(
+        config({
+          viteConfig: {
+            optimizeDeps: {
+              include: ['my-lib'],
+              entries: 'extra/**/*.tsx',
+            },
+          },
+        }),
+        testRoot
+      )
+
+      expect(vite.optimizeDeps?.include).toEqual(
+        expect.arrayContaining(['@tanstack/react-router', 'my-lib'])
+      )
+      const entries = vite.optimizeDeps?.entries as string[]
+      expect(entries[0]?.endsWith('app/index.html')).toBe(true)
+      expect(entries).toContain('extra/**/*.tsx')
+    })
+
+    it('merges user resolve.dedupe with foundry’s', async () => {
+      const vite = await createViteConfig(
+        config({ viteConfig: { resolve: { dedupe: ['my-lib'] } } }),
+        testRoot
+      )
+
+      expect(vite.resolve?.dedupe).toEqual(
+        expect.arrayContaining(['@tanstack/react-router', 'my-lib'])
+      )
     })
 
     it('keeps the build outDir when the user sets other build keys', async () => {
