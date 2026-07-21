@@ -42,3 +42,16 @@ jobs:
       # Lint the package's published shape (exports, types, files). Uses the dist the
       # tarball script just built.
       - run: pnpm --filter react-foundry exec publint
+
+      # Verify the emitted .d.ts resolve for consumers (node16-ESM + bundler), gating
+      # declaration drift that publint (structure only) and the runtime tarball test
+      # (transpile only) cannot catch. Pack with pnpm from the package dir so
+      # publishConfig + catalog: are applied (attw's own --pack shells out to `npm pack`,
+      # which mangles both); the root package shares the `react-foundry` name, so
+      # `--filter` would pack the wrong one. esm-only profile: the package is
+      # intentionally ESM-only, so node10 / CJS non-resolution is expected.
+      - name: attw (declaration resolution)
+        working-directory: packages/react-foundry
+        run: |
+          tarball="$(pnpm pack --pack-destination "$RUNNER_TEMP" | tail -1)"
+          pnpm exec attw "$tarball" --profile esm-only
