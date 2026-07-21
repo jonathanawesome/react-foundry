@@ -1,5 +1,12 @@
 # react-foundry
 
+## 0.0.4
+
+### Patch Changes
+
+- 3134fcc: The `viteConfig` field on `FoundryConfig` is now typed against Vite 8's`UserConfig`, so plugins and config from a Vite 8 consumer type-check againstthe Vite version foundry actually runs.
+- 885a266: Foundry now detects your monorepo workspace root (via Vite's own searchForWorkspaceRoot) and adds it to server.fs.allow automatically, so previews and providers that import symlinked workspace packages are served without hand-adding server.fs.allow to viteConfig. Outside a workspace this is a no-op.
+
 ## 0.0.3
 
 ### Patch Changes
