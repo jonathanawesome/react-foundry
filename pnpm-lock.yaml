@@ -49,8 +49,8 @@ catalogs:
       specifier: 19.2.1
       version: 19.2.1
     typescript:
-      specifier: 5.9.3
-      version: 5.9.3
+      specifier: 6.0.3
+      version: 6.0.3
     vite:
       specifier: 8.1.5
       version: 8.1.5
@@ -89,7 +89,7 @@ importers:
         version: 2.6.3
       typescript:
         specifier: 'catalog:'
-        version: 5.9.3
+        version: 6.0.3
     devDependencies:
       '@biomejs/biome':
         specifier: 2.4.4
@@ -133,7 +133,7 @@ importers:
         version: 19.2.3(@types/react@19.2.7)
       typescript:
         specifier: 'catalog:'
-        version: 5.9.3
+        version: 6.0.3
 
   apps/theme-grand-tour:
     dependencies:
@@ -164,7 +164,7 @@ importers:
         version: 19.2.3(@types/react@19.2.7)
       typescript:
         specifier: 'catalog:'
-        version: 5.9.3
+        version: 6.0.3
 
   apps/theme-warm:
     dependencies:
@@ -195,7 +195,7 @@ importers:
         version: 19.2.3(@types/react@19.2.7)
       typescript:
         specifier: 'catalog:'
-        version: 5.9.3
+        version: 6.0.3
 
   packages/core:
     dependencies:
@@ -269,13 +269,13 @@ importers:
         version: 0.3.21
       tsdown:
         specifier: 0.22.12
-        version: 0.22.12(@arethetypeswrong/core@0.18.5)(publint@0.3.21)(tsx@4.21.0)(typescript@5.9.3)
+        version: 0.22.12(@arethetypeswrong/core@0.18.5)(publint@0.3.21)(tsx@4.21.0)(typescript@6.0.3)
       tsx:
         specifier: 4.21.0
         version: 4.21.0
       typescript:
         specifier: 'catalog:'
-        version: 5.9.3
+        version: 6.0.3
       vitest:
         specifier: 'catalog:'
         version: 4.1.10(@types/node@24.10.1)(jsdom@29.1.1)(vite@8.1.5(@types/node@24.10.1)(esbuild@0.28.1)(jiti@2.7.0)(tsx@4.21.0))
@@ -2981,8 +2981,8 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
-  typescript@5.9.3:
-    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
+  typescript@6.0.3:
+    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -5339,7 +5339,7 @@ snapshots:
 
   reusify@1.1.0: {}
 
-  rolldown-plugin-dts@0.27.12(rolldown@1.2.0)(typescript@5.9.3):
+  rolldown-plugin-dts@0.27.12(rolldown@1.2.0)(typescript@6.0.3):
     dependencies:
       dts-resolver: 3.0.0
       get-tsconfig: 5.0.0-beta.5
@@ -5349,7 +5349,7 @@ snapshots:
       yuku-codegen: 0.7.0
       yuku-parser: 0.7.0
     optionalDependencies:
-      typescript: 5.9.3
+      typescript: 6.0.3
     transitivePeerDependencies:
       - oxc-resolver
 
@@ -5546,7 +5546,7 @@ snapshots:
 
   tree-kill@1.2.2: {}
 
-  tsdown@0.22.12(@arethetypeswrong/core@0.18.5)(publint@0.3.21)(tsx@4.21.0)(typescript@5.9.3):
+  tsdown@0.22.12(@arethetypeswrong/core@0.18.5)(publint@0.3.21)(tsx@4.21.0)(typescript@6.0.3):
     dependencies:
       ansis: 4.3.1
       cac: 7.0.0
@@ -5557,7 +5557,7 @@ snapshots:
       obug: 2.1.4
       picomatch: 4.0.5
       rolldown: 1.2.0
-      rolldown-plugin-dts: 0.27.12(rolldown@1.2.0)(typescript@5.9.3)
+      rolldown-plugin-dts: 0.27.12(rolldown@1.2.0)(typescript@6.0.3)
       tinyexec: 1.2.4
       tinyglobby: 0.2.17
       tree-kill: 1.2.2
@@ -5567,7 +5567,7 @@ snapshots:
       '@arethetypeswrong/core': 0.18.5
       publint: 0.3.21
       tsx: 4.21.0
-      typescript: 5.9.3
+      typescript: 6.0.3
     transitivePeerDependencies:
       - '@typescript/native-preview'
       - '@volar/typescript'
@@ -5613,7 +5613,7 @@ snapshots:
 
   typescript@5.6.1-rc: {}
 
-  typescript@5.9.3: {}
+  typescript@6.0.3: {}
 
   ufo@1.6.1: {}
 
