@@ -63,6 +63,7 @@
     "vite": "catalog:"
   },
   "devDependencies": {
+    "@arethetypeswrong/cli": "0.18.5",
     "@react-foundry/core": "workspace:*",
     "@react-foundry/style": "workspace:*",
     "@react-foundry/ui": "workspace:*",
