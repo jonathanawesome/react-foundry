@@ -1,5 +1,11 @@
 # react-foundry
 
+## 0.0.6
+
+### Patch Changes
+
+- 449088a: Fix router basepath
+
 ## 0.0.5
 
 ### Patch Changes
