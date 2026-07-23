@@ -9,7 +9,11 @@ import 'virtual:react-foundry-theme'
 
 import { routeTree } from './routeTree.gen'
 
-const router = createRouter({ routeTree })
+// Match the router basepath to Vite's `base` so deep links carry the deploy
+// sub-path (e.g. a GitHub Pages project site at /repo-name/). Without it,
+// generated hrefs sit at the server root and a refresh or copied URL 404s.
+// Vite injects BASE_URL as the resolved `base`, defaulting to '/'.
+const router = createRouter({ routeTree, basepath: import.meta.env.BASE_URL })
 
 declare module '@tanstack/react-router' {
   interface Register {
