@@ -124,9 +124,10 @@ export function AccessibilityChecker({
   scanKey,
 }: AccessibilityCheckerProps) {
   const [violations, setViolations] = useState<Violation[]>([])
-  // axe's third bucket: rules it ran but could not reach a verdict on. Contrast lands
-  // here whenever the element is outside the viewport, since the background color is
-  // sampled by hit-testing and that only works on screen.
+  // axe's third bucket: rules it ran but could not reach a verdict on, such as text over
+  // a background image or a 1:1 ratio it cannot attribute. Note this is NOT where
+  // off-screen contrast goes; `color-contrast` matches on `isVisibleOnScreen`, which
+  // excludes those before the rule evaluates, so they land in no bucket at all.
   const [incomplete, setIncomplete] = useState<Violation[]>([])
   /** Whether the canvas overflowed at scan time, so contrast covered only part of it. */
   const [canvasScrolls, setCanvasScrolls] = useState(false)
