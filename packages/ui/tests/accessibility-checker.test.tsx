@@ -3,7 +3,6 @@ import { createRef } from 'react'
 import { describe, expect, it } from 'vitest'
 
 import { AccessibilityChecker, impactTone } from '../src/components/accessibility-checker'
-import { accessibilityCheckerStyles } from '../src/components/accessibility-checker.css'
 
 describe('impactTone', () => {
   it('maps each axe impact level to a badge tone', () => {
@@ -20,7 +19,7 @@ describe('impactTone', () => {
 })
 
 describe('AccessibilityChecker', () => {
-  // Stays mounted so it can slide out, but marks itself closed and hidden.
+  // Stays mounted so it can animate closed, but marks itself closed and hidden.
   it('is present but closed while disabled', () => {
     const { container } = render(
       <AccessibilityChecker targetRef={createRef<HTMLDivElement>()} isEnabled={false} />
@@ -37,48 +36,6 @@ describe('AccessibilityChecker', () => {
     )
 
     expect(container.firstElementChild).toHaveAttribute('data-open', 'true')
-  })
-
-  // The bar spans the canvas: inset from the left by the shelf and from the
-  // right by the panel, only while each is open.
-  describe('bar width', () => {
-    const s = accessibilityCheckerStyles
-
-    function bar(isShelfOpen: boolean, isPanelOpen: boolean) {
-      const { container } = render(
-        <AccessibilityChecker
-          targetRef={createRef<HTMLDivElement>()}
-          isEnabled
-          isShelfOpen={isShelfOpen}
-          isPanelOpen={isPanelOpen}
-        />
-      )
-      return container.firstElementChild as HTMLElement
-    }
-
-    it('insets both edges when the shelf and panel are open', () => {
-      const el = bar(true, true)
-      expect(el).toHaveClass(s.containerWithShelf)
-      expect(el).toHaveClass(s.containerWithPanel)
-    })
-
-    it('insets only the right when the shelf is closed', () => {
-      const el = bar(false, true)
-      expect(el).not.toHaveClass(s.containerWithShelf)
-      expect(el).toHaveClass(s.containerWithPanel)
-    })
-
-    it('insets only the left when the panel is closed', () => {
-      const el = bar(true, false)
-      expect(el).toHaveClass(s.containerWithShelf)
-      expect(el).not.toHaveClass(s.containerWithPanel)
-    })
-
-    it('spans full width when both are closed', () => {
-      const el = bar(false, false)
-      expect(el).not.toHaveClass(s.containerWithShelf)
-      expect(el).not.toHaveClass(s.containerWithPanel)
-    })
   })
 
   // Slow by design: drives a real axe-core scan against real bad DOM, on top of the

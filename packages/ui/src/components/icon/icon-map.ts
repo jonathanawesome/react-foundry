@@ -1,6 +1,7 @@
 import {
   CaretRightIcon as CaretRight,
   CircleIcon as Circle,
+  CrosshairIcon as Crosshair,
   MoonIcon as Moon,
   NotebookIcon as Notebook,
   PushPinIcon as PushPin,
@@ -12,6 +13,7 @@ import {
 export const IconMap = {
   CaretRight,
   Circle,
+  Crosshair,
   Notebook,
   Moon,
   PushPin,

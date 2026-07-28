@@ -9,6 +9,7 @@ export default defineConfig({
     {
       label: 'Dogfood',
       children: [
+        { label: 'Accessibility Violations' },
         { label: 'Badge' },
         { label: 'Control Field' },
         { label: 'Icon' },

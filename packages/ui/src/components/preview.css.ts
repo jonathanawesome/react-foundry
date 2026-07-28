@@ -12,20 +12,28 @@ export const previewStyles = {
     flexDirection: 'column',
   }),
 
+  // `safe center` rather than `center`: plain centering splits negative free space across
+  // both sides, so a preview taller or wider than the pane has its top and left edges
+  // pushed outside the scrollport, where no amount of scrolling can reach them (scroll
+  // offsets cannot go negative). `safe` falls back to start-alignment once it overflows,
+  // which keeps the whole preview reachable while still centering anything that fits.
   previewPane: style({
     flex: 1,
     padding: '32px',
     display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'safe center',
+    justifyContent: 'safe center',
     overflow: 'auto',
   }),
 
+  // `flex: 1` rather than `height: 100%`, matching previewPane: the checker panel is a
+  // sibling row in this column, so a percentage height states the wrong intent even
+  // though flex-shrink happens to save it.
   noSelection: style({
+    flex: 1,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%',
     color: themeContract.colors.textMuted,
     fontSize: '16px',
   }),
