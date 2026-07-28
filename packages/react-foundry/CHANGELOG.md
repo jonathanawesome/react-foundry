@@ -1,5 +1,12 @@
 # react-foundry
 
+## 0.0.7
+
+### Patch Changes
+
+- 9a50835: Document the a11y checker and style isolation
+- ec0ad5e: Locate accessibility violations in the preview canvas, and reporthonestly on what was measured.
+
 ## 0.0.6
 
 ### Patch Changes
