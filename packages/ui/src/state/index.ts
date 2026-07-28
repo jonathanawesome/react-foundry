@@ -71,7 +71,7 @@ const uiStore = create<UIStore>()(
       name: 'react-foundry-ui',
 
       // Editing a preview file reloads the page, so without persistence the
-      // shelf would collapse and unpin on every save.
+      // shelf and panel would collapse, and the tree would fold shut, on every save.
       partialize: (state) => ({
         isAccessibilityEnabled: state.isAccessibilityEnabled,
         isShelfOpen: state.isShelfOpen,

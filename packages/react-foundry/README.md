@@ -9,7 +9,8 @@ config of your own.
 - **One primitive** — a preview is just a React component, hooks and all
 - **Typed nav paths** — a misplaced preview is a compile error, with autocomplete
 - **Theming** — light/dark/system, driven by a few role-named color tokens
-- **Accessibility** — an integrated axe-core checker
+- **Accessibility** — an axe-core checker that highlights the offending node on the canvas
+- **Style isolation** — foundry's own CSS stops at the canvas, so components render as they do in your app
 - **Fast** — built on Vite; the chrome ships precompiled, so nothing builds in your `node_modules`
 
 ## Install
@@ -285,6 +286,28 @@ Values are typed from the schema, so `values.variant` narrows to `'primary' | 'd
 and a typo is a compile error. Control types: `text`, `boolean`, `number`, `range`, `select`,
 `radio`, `color`.
 
+## Accessibility
+
+Foundry runs [axe-core](https://github.com/dequelabs/axe-core) against the canvas, scoped to
+your preview and nothing else: none of foundry's own chrome is in the scan.
+
+Once enabled, the panel below the canvas scans on its own: on navigation, on a control change,
+and on a theme flip, each after a short debounce so the preview has settled before axe reads it
+back. Collapsing the panel suspends scanning... **re-run check** forces a scan whenever you want one.
+
+Each violation lists the nodes that tripped it. The crosshair on a node outlines it in the
+canvas and scrolls it to center; click again to clear, or hover the button to preview the
+outline without committing to it.
+
+Two things the panel reports rather than hides:
+
+- **Could not be checked** is axe's third bucket: rules it ran but could not reach a verdict
+  on, like text over a background image. They are counted separately so a clean **Passed**
+  never claims more than was actually checked.
+- **Contrast is measured from rendered pixels**, which bounds it twice. It describes the theme
+  that was active at scan time, so the mode is labeled in the header, and it covers only the
+  part of an overflowing canvas that was on screen. Scroll the rest into view and re-run.
+
 ## Providers
 
 Your components often rely on app-wide React context: a design-system theme provider, a
@@ -306,8 +329,9 @@ export const Provider: FoundryProvider = ({ children, theme }) => (
 
 - **`theme`** is foundry's resolved mode (`'light' | 'dark'`), so a design-system provider
   can track foundry's own light/dark toggle. Ignore it if you don't need it.
-- The provider wraps **inside** the preview canvas, so it reaches your components without
-  foundry's own chrome resets touching them.
+- The provider wraps **inside** the preview canvas, so app context reaches your components
+  while foundry's styling stays on foundry's side of that boundary. Nothing foundry sets,
+  resets, or inherits crosses into the canvas, in either direction.
 - The file is **optional**. Without it, previews render unchanged.
 
 The file may be `foundry.providers.{tsx,jsx,ts,js}`. Editing it hot-reloads. Two things to
