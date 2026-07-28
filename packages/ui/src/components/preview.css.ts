@@ -26,11 +26,14 @@ export const previewStyles = {
     overflow: 'auto',
   }),
 
+  // `flex: 1` rather than `height: 100%`, matching previewPane: the checker panel is a
+  // sibling row in this column, so a percentage height states the wrong intent even
+  // though flex-shrink happens to save it.
   noSelection: style({
+    flex: 1,
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    height: '100%',
     color: themeContract.colors.textMuted,
     fontSize: '16px',
   }),

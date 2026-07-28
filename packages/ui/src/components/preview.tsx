@@ -111,6 +111,7 @@ export function Preview({
       <HighlightOverlay
         target={pinnedTarget ?? hoveredTarget}
         pinned={pinnedTarget !== null}
+        clipTo={previewPaneRef}
       />
     </div>
   )

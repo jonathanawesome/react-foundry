@@ -13,15 +13,19 @@ export const highlightOverlayStyles = style({
   zIndex: 999,
   pointerEvents: 'none',
 
+  // A border rather than an outline: the component clips itself to the canvas with
+  // `clip-path`, which clips to the border box, and an outline paints outside that box so
+  // it would be cut away even when the target is fully visible. `border` keeps the dashed
+  // and solid states that `box-shadow` could not express.
+  boxSizing: 'border-box',
   borderRadius: themeContract.radii.small,
-  outline: `2px dashed ${themeContract.colors.accent}`,
-  outlineOffset: '2px',
+  border: `2px dashed ${themeContract.colors.accent}`,
   backgroundColor: colorWithAlpha(themeContract.colors.accent, 0.08),
 
   selectors: {
     // Pinned is the committed state, hover is a preview, so pinned reads louder.
     '&[data-pinned="true"]': {
-      outlineStyle: 'solid',
+      borderStyle: 'solid',
       backgroundColor: colorWithAlpha(themeContract.colors.accent, 0.16),
     },
   },
