@@ -98,5 +98,44 @@ describe('useUIStore', () => {
 
       expect(useUIStore.getState().expandedNodes).toBe(before)
     })
+
+    // Nothing else ever removes a path, so renaming a nav folder would otherwise
+    // strand its old paths in storage for good.
+    describe('pruning', () => {
+      it('drops paths the tree no longer has, keeping the rest', () => {
+        useUIStore.getState().expandNodes(['Bricks', 'Bricks/Editor', 'Exported'])
+
+        useUIStore.getState().pruneNodes(['Bricks', 'Bricks/Editor'])
+
+        expect(useUIStore.getState().expandedNodes).toEqual(['Bricks', 'Bricks/Editor'])
+      })
+
+      it('clears everything when no path is valid', () => {
+        useUIStore.getState().expandNodes(['a', 'a/b'])
+
+        useUIStore.getState().pruneNodes([])
+
+        expect(useUIStore.getState().expandedNodes).toEqual([])
+      })
+
+      it('ignores valid paths that were never expanded', () => {
+        useUIStore.getState().expandNodes(['a'])
+
+        useUIStore.getState().pruneNodes(['a', 'b', 'c'])
+
+        expect(useUIStore.getState().expandedNodes).toEqual(['a'])
+      })
+
+      // Pruning runs on every boot, so a no-op must not write. Losing this
+      // guard costs a re-render and a storage write each load, silently.
+      it('keeps the same array reference when nothing is stale', () => {
+        useUIStore.getState().expandNodes(['a', 'a/b'])
+        const before = useUIStore.getState().expandedNodes
+
+        useUIStore.getState().pruneNodes(['a', 'a/b'])
+
+        expect(useUIStore.getState().expandedNodes).toBe(before)
+      })
+    })
   })
 })

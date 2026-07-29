@@ -22,3 +22,15 @@ export function findLeaf(nav: NavNode[], path: string): PreviewLeaf | null {
 export function findNode(nav: NavNode[], path: string): NavNode | null {
   return walk(nav, (node) => (node.path === path ? node : undefined)) ?? null
 }
+
+/**
+ * Every node path in the tree, at every depth.
+ *
+ * Leaves are not nodes, so their ids are deliberately absent: only a `NavNode`
+ * can be expanded, which makes this exactly the set of valid expansion keys.
+ * Recurses directly rather than reusing `walk`, which short-circuits on the
+ * first result and so cannot collect.
+ */
+export function collectNodePaths(nav: NavNode[]): string[] {
+  return nav.flatMap((node) => [node.path, ...collectNodePaths(node.children)])
+}

@@ -21,6 +21,8 @@ type UIStore = {
   expandedNodes: string[]
   toggleNode: (path: string) => void
   expandNodes: (paths: string[]) => void
+  /** Drops expanded paths that no longer name a node, e.g. a renamed folder. */
+  pruneNodes: (validPaths: string[]) => void
 }
 
 const uiStore = create<UIStore>()(
@@ -65,6 +67,18 @@ const uiStore = create<UIStore>()(
         if (missing.length === 0) return
 
         return set({ expandedNodes: [...expandedNodes, ...missing] })
+      },
+
+      pruneNodes: (validPaths) => {
+        const expandedNodes = get().expandedNodes
+        const valid = new Set(validPaths)
+        const kept = expandedNodes.filter((path) => valid.has(path))
+
+        // Same contract as expandNodes: when nothing was stale, keep the array
+        // reference, or every boot re-renders the shelf and rewrites storage.
+        if (kept.length === expandedNodes.length) return
+
+        return set({ expandedNodes: kept })
       },
     }),
     {

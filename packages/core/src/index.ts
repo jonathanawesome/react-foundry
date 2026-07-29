@@ -5,7 +5,7 @@ export {
 } from './controls'
 export { createPreview, defineControls, isPreview } from './create-preview'
 export { createDiscovery, deCamelCase, navPathFromFilename } from './discovery'
-export { findLeaf, findNode } from './nav'
+export { collectNodePaths, findLeaf, findNode } from './nav'
 export type {
   ControlDef,
   ControlSchema,
