@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { findLeaf, findNode } from '../src/nav'
+import { collectNodePaths, findLeaf, findNode } from '../src/nav'
 import type { NavNode, PreviewLeaf } from '../src/types'
 
 const load = async () => ({})
@@ -83,5 +83,21 @@ describe('findNode', () => {
 
     expect(found?.leaves).toHaveLength(1)
     expect(found?.children).toHaveLength(1)
+  })
+})
+
+describe('collectNodePaths', () => {
+  it('collects every node at every depth, parents before their children', () => {
+    expect(collectNodePaths(tree)).toEqual(['Forms', 'Forms/Button', 'Layout'])
+  })
+
+  // A leaf cannot be expanded, so counting its id as a valid path would let
+  // stale expansion entries survive a prune.
+  it('leaves out leaf ids', () => {
+    expect(collectNodePaths(tree)).not.toContain('Forms/Button/Primary')
+  })
+
+  it('returns nothing for an empty tree', () => {
+    expect(collectNodePaths([])).toEqual([])
   })
 })
