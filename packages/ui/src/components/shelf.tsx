@@ -1,4 +1,4 @@
-import type { NavNode } from '@react-foundry/core'
+import { collectNodePaths, type NavNode } from '@react-foundry/core'
 import { chromeSurface } from '@react-foundry/style'
 import { Link, useParams } from '@tanstack/react-router'
 import { useEffect } from 'react'
@@ -28,10 +28,22 @@ export function ancestorPaths(leafId: string): string[] {
  * persisted store because editing a preview file reloads the page, and losing
  * the whole tree's open state on every save is worse than the edit is worth.
  */
-function useExpandState(activeLeafId: string | null) {
+function useExpandState(nav: NavNode[], activeLeafId: string | null) {
   const expandedNodes = useUIStore.use.expandedNodes()
   const toggle = useUIStore.use.toggleNode()
   const expandNodes = useUIStore.use.expandNodes()
+  const prune = useUIStore.use.pruneNodes()
+
+  useEffect(() => {
+    // Paths are persisted, so renaming or deleting a folder strands an entry
+    // that nothing will ever match or remove again. Reconcile against the live
+    // tree, the only thing that knows the current names. An empty tree means
+    // nothing has been discovered yet far more often than it means every
+    // preview was deleted, so leave the list alone rather than wiping it.
+    if (nav.length === 0) return
+
+    prune(collectNodePaths(nav))
+  }, [nav, prune])
 
   useEffect(() => {
     if (!activeLeafId) return
@@ -117,7 +129,7 @@ export const Shelf = ({ nav }: ShelfProps) => {
   const params = useParams({ strict: false })
   const activeLeafId = '_splat' in params ? ((params._splat as string) ?? null) : null
 
-  const { isExpanded, toggle } = useExpandState(activeLeafId)
+  const { isExpanded, toggle } = useExpandState(nav, activeLeafId)
 
   return (
     <aside className={`${chromeSurface} ${shelfStyles.shelf}`} data-open={isShelfOpen}>

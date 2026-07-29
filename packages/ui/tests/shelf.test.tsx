@@ -212,4 +212,26 @@ describe('Shelf', () => {
 
     expect(shelf).toHaveAttribute('data-open', 'false')
   })
+
+  // Expansion outlives the tree it describes, so a consumer renaming a nav
+  // folder would otherwise leave its old paths in storage forever.
+  describe('pruning stale expansion', () => {
+    it('drops paths the tree no longer has, keeping the rest', async () => {
+      useUIStore.setState({ expandedNodes: ['Bricks', 'Exported', 'Exported/Editor'] })
+
+      await renderWithRouter(<Shelf nav={[node('Bricks')]} />)
+
+      expect(useUIStore.getState().expandedNodes).toEqual(['Bricks'])
+    })
+
+    // An empty tree usually means discovery has not run, not that every preview
+    // was deleted, so this must not be mistaken for "nothing is valid".
+    it('leaves expansion alone when the tree is empty', async () => {
+      useUIStore.setState({ expandedNodes: ['Bricks'] })
+
+      await renderWithRouter(<Shelf nav={[]} />)
+
+      expect(useUIStore.getState().expandedNodes).toEqual(['Bricks'])
+    })
+  })
 })
