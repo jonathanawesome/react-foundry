@@ -24,6 +24,12 @@ const packageDistRoot = here
 // use-sync-external-store shim are CJS whose named ESM exports (`createRoot`,
 // `useSyncExternalStoreWithSelector`) resolve to nothing unless pre-bundled.
 //
+// The shim entry is load-bearing rather than defensive: vite.client.config.ts externalizes
+// use-sync-external-store, so dist/client/client.js carries a bare
+// `use-sync-external-store/shim/with-selector` import (via the bundled router's
+// @tanstack/react-store) that this list is what gives CJS interop to. Drop one and the
+// other stops making sense.
+//
 // Only react and react-dom are deduped, and only because they are peers: the consumer
 // supplies them, and chrome and canvas genuinely have to share one instance. Nothing of
 // ours belongs here. Deduping resolves a bare id from Vite root, which is inside the

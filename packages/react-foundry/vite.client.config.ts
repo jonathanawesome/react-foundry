@@ -9,6 +9,17 @@ import { defineConfig } from 'vite'
 // single instance of each. The router is deliberately NOT external: leaving it bare here
 // would put a `@tanstack/react-router` import in a file the consumer's Vite resolves,
 // which is what makes the router theirs to satisfy rather than our implementation detail.
+//
+// use-sync-external-store is the one exception to that rule, and it has to be. It arrives
+// transitively through the bundled router (@tanstack/react-store imports
+// `use-sync-external-store/shim/with-selector`), and it is CJS. Inlined, its
+// `require("react")` has no external React to bind to at bundle time, so rolldown emits its
+// require helper, which throws on the consumer's first page load; the inlined path also
+// bakes in whichever React the monorepo resolved at build time, for a package whose React
+// is a peer. Bare is safe here precisely where it is not for the router: the shim is a
+// direct dependency of react-foundry, so it resolves from our own install and never becomes
+// the consumer's to satisfy. FOUNDRY_OPTIMIZE_INCLUDE in src/vite/create-config.ts
+// pre-bundles it so the CJS gets proper named-export interop.
 export default defineConfig({
   plugins: [vanillaExtractPlugin(), react()],
   build: {
@@ -28,7 +39,12 @@ export default defineConfig({
     emptyOutDir: true,
     assetsDir: 'assets',
     rollupOptions: {
-      external: [/^react(\/|$)/, /^react-dom(\/|$)/, 'axe-core'],
+      external: [
+        /^react(\/|$)/,
+        /^react-dom(\/|$)/,
+        /^use-sync-external-store(\/|$)/,
+        'axe-core',
+      ],
       output: {
         // The single stylesheet lands at dist/client/client.css (un-hashed) so the app
         // alias can target it; the font is inlined, so it's the only asset.

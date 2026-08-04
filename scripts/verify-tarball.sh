@@ -43,6 +43,22 @@ BARE_TANSTACK="$(grep -rlE "from ['\"]@tanstack/" "$DIST" || true)"
 [ -z "$BARE_TANSTACK" ] || fail "a bare @tanstack import survives in dist: $BARE_TANSTACK"
 pass "dist carries no bare @tanstack import"
 
+# A CJS dependency lands inlined in dist/client only when it was left off the external list
+# in vite.client.config.ts, and a CJS module that require()s an externalized package makes
+# rolldown emit its require helper, which throws the moment the browser reaches it. Both are
+# runtime failures on the consumer's very first page load, and both are invisible to build,
+# pack, and every check below: the demos alias to workspace source, so nothing else in the
+# repo ever loads this bundle. use-sync-external-store shipped inlined this way in 0.0.8,
+# arriving through the bundled router's @tanstack/react-store.
+CJS_REGION="$(grep -rlE '//#region .*/cjs/' "$DIST/client" || true)"
+[ -z "$CJS_REGION" ] || fail "an inlined CJS region survives in dist/client: $CJS_REGION"
+pass "dist/client carries no inlined CJS region"
+
+# Matched on the helper's error string: its identifier is minified and renames every build.
+REQUIRE_HELPER="$(grep -rlF "doesn't expose the \`require\` function" "$DIST/client" || true)"
+[ -z "$REQUIRE_HELPER" ] || fail "a rolldown require helper survives in dist/client: $REQUIRE_HELPER"
+pass "dist/client carries no require helper"
+
 # --- 2. Scaffold a consumer OUTSIDE the monorepo -------------------------------
 echo "==> scaffolding a consumer in $WORK"
 cd "$WORK"
