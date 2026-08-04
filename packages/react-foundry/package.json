@@ -57,7 +57,7 @@
     "axe-core": "4.11.0",
     "cac": "6.7.14",
     "esbuild": "0.28.1",
-    "glob": "13.0.0",
+    "glob": "13.0.6",
     "picocolors": "1.1.1",
     "use-sync-external-store": "1.6.0",
     "vite": "catalog:"
