@@ -13,8 +13,8 @@ await rm(dist, { recursive: true, force: true })
 //    dist/client (one JS per entry + client.css with the inlined font).
 run('vite build -c vite.client.config.ts')
 
-// 2. The app tree ships as raw tsx/ts (it's the consumer's Vite input). Copied verbatim,
-//    including the pre-generated routeTree.gen.ts, so nothing regenerates at runtime.
+// 2. The app tree ships as raw tsx/ts (it's the consumer's Vite input). Copied verbatim:
+//    the route tree is hand-written, so nothing is generated here or at runtime.
 await cp(resolve(pkgRoot, 'src/app'), resolve(dist, 'app'), { recursive: true })
 
 // 3. Node side: the side-effect-free public index (+ types) and the CLI, bundled.

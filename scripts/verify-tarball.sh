@@ -4,7 +4,8 @@
 # throwaway project OUTSIDE the monorepo (a flat npm layout, the opposite of the strict
 # pnpm workspace) and driving `foundry dev | build | preview`. Every assertion maps to a
 # packaging landmine: the .css.ts-in-node_modules failure, the monorepo path assumptions,
-# fs.strict, the routeTree/cacheDir writes, and the cli.parse split.
+# fs.strict, the cacheDir writes, the cli.parse split, and foundry's own runtime deps
+# leaking into the consumer's module graph.
 #
 # Usage: bash scripts/verify-tarball.sh
 # Requires: node, npm, pnpm. Exits non-zero on the first failure.
@@ -32,6 +33,15 @@ pnpm --filter react-foundry build >/dev/null
 TARBALL="$(cd "$REPO_ROOT/packages/react-foundry" && pnpm pack --pack-destination "$WORK" 2>/dev/null | tail -1)"
 [ -f "$TARBALL" ] || fail "pack did not produce a tarball ($TARBALL)"
 pass "packed $(basename "$TARBALL")"
+
+# The app tree is compiled by the consumer's Vite and the client bundle is imported by it,
+# so a bare specifier in either is one their resolver has to satisfy. The router is bundled
+# into dist/client precisely so it never becomes their problem. main.tsx's `declare module`
+# is exempt: it is type-only and erases at transform, so it has no `from` clause to match.
+DIST="$REPO_ROOT/packages/react-foundry/dist"
+BARE_TANSTACK="$(grep -rlE "from ['\"]@tanstack/" "$DIST" || true)"
+[ -z "$BARE_TANSTACK" ] || fail "a bare @tanstack import survives in dist: $BARE_TANSTACK"
+pass "dist carries no bare @tanstack import"
 
 # --- 2. Scaffold a consumer OUTSIDE the monorepo -------------------------------
 echo "==> scaffolding a consumer in $WORK"
@@ -66,6 +76,13 @@ npm install --no-audit --no-fund react react-dom "$TARBALL" >/dev/null 2>&1 \
   || fail "npm install of the tarball failed"
 pass "installed react-foundry + react + react-dom"
 
+# The cleanest single proof that foundry's shell is not the consumer's problem. Foundry is
+# built on TanStack Router, and a consumer who uses it themselves must get their own copy
+# and their own context; one who does not should never see it.
+[ ! -e node_modules/@tanstack ] \
+  || fail "installing react-foundry pulled in @tanstack: $(ls node_modules/@tanstack)"
+pass "the install pulled in no @tanstack package"
+
 # Snapshot the installed package to prove nothing writes into it at runtime.
 snapshot() { find node_modules/react-foundry -type f -exec shasum {} \; | sort | shasum; }
 BEFORE="$(snapshot)"
@@ -98,7 +115,11 @@ pass "dev server serving on :$DEV_PORT"
 # landmine failures (they surface as these strings).
 kill "$SERVER_PID" 2>/dev/null || true; SERVER_PID=""
 sleep 1
-for bad in "/@fs//" "Cannot find module" "was not allowed" "outside of Vite serving allow list"; do
+# "process is not defined" covers the router now being inlined into the client bundle
+# rather than prebundled from the consumer's node_modules: its `process.env.NODE_ENV`
+# guards are no longer substituted by esbuild, and rely on Vite's dev env shim instead.
+for bad in "/@fs//" "Cannot find module" "was not allowed" \
+  "outside of Vite serving allow list" "process is not defined"; do
   grep -qF "$bad" "$DEV_LOG" && { cat "$DEV_LOG"; fail "dev log contains '$bad'"; } || true
 done
 pass "no path / fs.strict / resolve errors in the dev log"
@@ -132,7 +153,7 @@ kill "$SERVER_PID" 2>/dev/null || true; SERVER_PID=""
 
 # --- 7. the installed package is unchanged ------------------------------------
 AFTER="$(snapshot)"
-[ "$BEFORE" = "$AFTER" ] || fail "node_modules/react-foundry was mutated at runtime (routeTree / cacheDir wrote into the package)"
+[ "$BEFORE" = "$AFTER" ] || fail "node_modules/react-foundry was mutated at runtime (cacheDir wrote into the package)"
 pass "installed package unchanged after dev + build + preview"
 
 echo "PASS: react-foundry tarball verified in a clean consumer install."

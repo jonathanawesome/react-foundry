@@ -2,13 +2,20 @@
 
 import { foundryTitle } from 'virtual:react-foundry-config'
 import { ThemeProvider } from '@react-foundry/style'
-import { Layout, PropsPanel, Shelf, Toolbar } from '@react-foundry/ui'
-import { createRootRoute, Outlet, useMatch } from '@tanstack/react-router'
+import {
+  createRootRoute,
+  Layout,
+  Outlet,
+  PropsPanel,
+  Shelf,
+  Toolbar,
+  useMatch,
+} from '@react-foundry/ui'
 import { useEffect } from 'react'
 
 import { discoverNav } from '../nav'
 
-export const Route = createRootRoute({
+export const rootRoute = createRootRoute({
   component: RootComponent,
 })
 

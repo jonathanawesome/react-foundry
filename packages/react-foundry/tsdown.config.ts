@@ -24,14 +24,12 @@ export default defineConfig({
   deps: {
     // Bundle the workspace packages (core + the pure utils it uses) into the output.
     alwaysBundle: [/^@react-foundry\//],
-    // Prefix regexes so subpath imports are externalized too. `@tanstack/router-plugin/vite`
+    // Prefix regexes so subpath imports are externalized too. `@vanilla-extract/vite-plugin`
     // is the one that matters: an exact-string external misses the subpath, so rolldown
-    // bundles it and drags in vite + prettier's entire parser set (~7 MB).
+    // bundles it and drags in vite's entire dependency set.
     neverBundle: [
       /^vite(\/|$)/,
       /^@vitejs\/plugin-react(\/|$)/,
-      /^@tanstack\/react-router(\/|$)/,
-      /^@tanstack\/router-plugin(\/|$)/,
       /^@vanilla-extract\/vite-plugin(\/|$)/,
       /^esbuild(\/|$)/,
       /^cac(\/|$)/,

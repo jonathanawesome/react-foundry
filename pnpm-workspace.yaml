@@ -15,7 +15,6 @@ packages:
 # in one place after a cooldown period rather than resolving silently on install.
 catalog:
   '@tanstack/react-router': 1.170.18
-  '@tanstack/router-plugin': 1.168.23
   '@testing-library/dom': 10.4.1
   '@testing-library/jest-dom': 6.9.1
   '@testing-library/react': 16.3.2
