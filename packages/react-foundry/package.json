@@ -69,7 +69,6 @@
     "@react-foundry/core": "workspace:*",
     "@react-foundry/style": "workspace:*",
     "@react-foundry/ui": "workspace:*",
-    "@tanstack/router-plugin": "catalog:",
     "@vanilla-extract/css": "catalog:",
     "@vanilla-extract/vite-plugin": "catalog:",
     "publint": "0.3.21",

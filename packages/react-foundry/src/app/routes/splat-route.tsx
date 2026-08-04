@@ -1,9 +1,10 @@
 import { Provider } from 'virtual:react-foundry-providers'
 import { findLeaf, findNode, isPreview } from '@react-foundry/core'
 import { ComponentLanding, Preview } from '@react-foundry/ui'
-import { createFileRoute } from '@tanstack/react-router'
+import { createRoute } from '@tanstack/react-router'
 
 import { discoverNav } from '../nav'
+import { rootRoute } from './root-route'
 
 /**
  * One splat route for the whole tree, since a nav path is arbitrarily deep.
@@ -11,7 +12,9 @@ import { discoverNav } from '../nav'
  * The path either names a preview, which renders on the canvas, or a group,
  * which renders a landing listing what sits under it.
  */
-export const Route = createFileRoute('/$')({
+export const splatRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/$',
   component: NavPathRoute,
   // Permissive: the valid params depend on which preview is loaded, so search
   // can't be a fixed schema. Coercion happens per-preview against its controls.
@@ -47,7 +50,7 @@ export const Route = createFileRoute('/$')({
 })
 
 function NavPathRoute() {
-  const { component, node, path } = Route.useLoaderData()
+  const { component, node, path } = splatRoute.useLoaderData()
 
   if (component) return <Preview preview={component} Provider={Provider} />
 

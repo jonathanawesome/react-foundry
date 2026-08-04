@@ -8,7 +8,7 @@ import { useEffect } from 'react'
 
 import { discoverNav } from '../nav'
 
-export const Route = createRootRoute({
+export const rootRoute = createRootRoute({
   component: RootComponent,
 })
 

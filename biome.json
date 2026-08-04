@@ -48,6 +48,6 @@
     }
   ],
   "files": {
-    "includes": ["**", "!**/*.gen.ts"]
+    "includes": ["**"]
   }
 }

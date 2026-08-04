@@ -89,20 +89,11 @@ export async function createViteConfig(
   ]
 
   if (devSource) {
-    // vanilla-extract + router codegen are build-time only and dropped from the published
-    // deps, so they load lazily and only in the monorepo, where the .css.ts and route
-    // sources are compiled fresh. A consumer using .css.ts adds VE via viteConfig.plugins.
-    const [{ vanillaExtractPlugin }, { tanstackRouter }] = await Promise.all([
-      import('@vanilla-extract/vite-plugin'),
-      import('@tanstack/router-plugin/vite'),
-    ])
-    plugins.push(
-      tanstackRouter({
-        routesDirectory: resolve(cliAppDir, 'routes'),
-        generatedRouteTree: resolve(cliAppDir, 'routeTree.gen.ts'),
-      }),
-      vanillaExtractPlugin()
-    )
+    // vanilla-extract is build-time only and dropped from the published deps, so it loads
+    // lazily and only in the monorepo, where the .css.ts sources are compiled fresh. A
+    // consumer using .css.ts adds VE via viteConfig.plugins.
+    const { vanillaExtractPlugin } = await import('@vanilla-extract/vite-plugin')
+    plugins.push(vanillaExtractPlugin())
   }
 
   plugins.push(...(userPlugins ?? []))
