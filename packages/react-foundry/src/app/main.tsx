@@ -17,7 +17,9 @@ const router = createRouter({ routeTree, basepath: import.meta.env.BASE_URL })
 
 // Type-only module augmentation: it erases at transform, so this specifier is never
 // resolved by the consumer's bundler even though this file is their Vite input. It is the
-// one mention of `@tanstack/react-router` the app tree is allowed to keep.
+// one mention of `@tanstack/react-router` the app tree is allowed to keep. Augmenting a
+// module TypeScript cannot resolve is an error, so the router stays a devDependency of
+// this package to satisfy `tsc --noEmit`. Consumers never install it.
 declare module '@tanstack/react-router' {
   interface Register {
     router: typeof router

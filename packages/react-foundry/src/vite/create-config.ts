@@ -18,20 +18,19 @@ const here = dirname(fileURLToPath(import.meta.url))
 const packageDistRoot = here
 
 // Foundry's own app-shell runtime. The dev server must pre-bundle and dedupe these so a
-// consumer whose previews live in a separate workspace package (isolated pnpm node_modules)
-// ends up with a single instance of each, shared between foundry's shell and the previews.
-// Without it, in a non-hoisted layout: `react-dom/client` and the use-sync-external-store
-// shim are CJS whose named ESM exports (`createRoot`, `useSyncExternalStoreWithSelector`)
-// resolve to nothing unless pre-bundled, and `@tanstack/react-router` gets a second copy in
-// the optimized preview chunk, giving the router two React contexts. All are resolvable from
-// foundry's own tree — react/react-dom via the peer, react-store and the shim via direct
-// deps — so dedupe/include work regardless of how the consumer hoists.
-const FOUNDRY_DEDUPE = [
-  'react',
-  'react-dom',
-  '@tanstack/react-router',
-  '@tanstack/react-store',
-]
+// consumer whose previews live in a separate workspace package (isolated pnpm
+// node_modules) ends up with a single instance of each, shared between foundry's shell
+// and the previews. Without it, in a non-hoisted layout, `react-dom/client` and the
+// use-sync-external-store shim are CJS whose named ESM exports (`createRoot`,
+// `useSyncExternalStoreWithSelector`) resolve to nothing unless pre-bundled.
+//
+// Only react and react-dom are deduped, and only because they are peers: the consumer
+// supplies them, and chrome and canvas genuinely have to share one instance. Nothing of
+// ours belongs here. Deduping resolves a bare id from Vite root, which is inside the
+// installed package, so listing one of our own dependencies silently overrides whatever
+// the consumer had. The router used to be on both lists; it is bundled into the client
+// now and never reaches their graph.
+const FOUNDRY_DEDUPE = ['react', 'react-dom']
 
 const FOUNDRY_OPTIMIZE_INCLUDE = [
   'react',
@@ -39,8 +38,6 @@ const FOUNDRY_OPTIMIZE_INCLUDE = [
   'react-dom/client',
   'react/jsx-runtime',
   'react/jsx-dev-runtime',
-  '@tanstack/react-router',
-  '@tanstack/react-store',
   'use-sync-external-store/shim/with-selector',
 ]
 

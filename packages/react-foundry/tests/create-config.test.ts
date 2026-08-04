@@ -111,22 +111,25 @@ describe('createViteConfig', () => {
   it('dedupes and pre-bundles foundry’s shared runtime', async () => {
     const vite = await createViteConfig(config(), testRoot)
 
-    expect(vite.resolve?.dedupe).toEqual(
-      expect.arrayContaining([
-        'react',
-        'react-dom',
-        '@tanstack/react-router',
-        '@tanstack/react-store',
-      ])
-    )
+    expect(vite.resolve?.dedupe).toEqual(['react', 'react-dom'])
     expect(vite.optimizeDeps?.include).toEqual(
       expect.arrayContaining([
         'react-dom/client',
-        '@tanstack/react-router',
-        '@tanstack/react-store',
+        'react/jsx-runtime',
         'use-sync-external-store/shim/with-selector',
       ])
     )
+  })
+
+  // Dedupe resolves a bare id from Vite root, which sits inside the installed package, so
+  // listing one of foundry's own dependencies overrides the consumer's copy of it. The
+  // router was the case that mattered: a previewed component calling `useParams()` would
+  // bind to foundry's provider and read the shell's splat params instead of throwing.
+  it('claims nothing beyond the react peers', async () => {
+    const vite = await createViteConfig(config(), testRoot)
+
+    expect(vite.resolve?.dedupe).not.toContain('@tanstack/react-router')
+    expect(vite.optimizeDeps?.include).not.toContain('@tanstack/react-router')
   })
 
   describe('user vite overrides', () => {
@@ -183,7 +186,7 @@ describe('createViteConfig', () => {
       )
 
       expect(vite.optimizeDeps?.include).toEqual(
-        expect.arrayContaining(['@tanstack/react-router', 'my-lib'])
+        expect.arrayContaining(['react-dom/client', 'my-lib'])
       )
       const entries = vite.optimizeDeps?.entries as string[]
       expect(entries[0]?.endsWith('app/index.html')).toBe(true)
@@ -197,7 +200,7 @@ describe('createViteConfig', () => {
       )
 
       expect(vite.resolve?.dedupe).toEqual(
-        expect.arrayContaining(['@tanstack/react-router', 'my-lib'])
+        expect.arrayContaining(['react', 'react-dom', 'my-lib'])
       )
     })
 

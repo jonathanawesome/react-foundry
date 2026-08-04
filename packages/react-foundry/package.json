@@ -53,8 +53,6 @@
     "react-dom": "catalog:peers"
   },
   "dependencies": {
-    "@tanstack/react-router": "catalog:",
-    "@tanstack/react-store": "0.9.3",
     "@vitejs/plugin-react": "6.0.3",
     "axe-core": "4.11.0",
     "cac": "6.7.14",
@@ -69,6 +67,7 @@
     "@react-foundry/core": "workspace:*",
     "@react-foundry/style": "workspace:*",
     "@react-foundry/ui": "workspace:*",
+    "@tanstack/react-router": "catalog:",
     "@vanilla-extract/css": "catalog:",
     "@vanilla-extract/vite-plugin": "catalog:",
     "publint": "0.3.21",

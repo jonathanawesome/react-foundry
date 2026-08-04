@@ -30,7 +30,6 @@ export default defineConfig({
     neverBundle: [
       /^vite(\/|$)/,
       /^@vitejs\/plugin-react(\/|$)/,
-      /^@tanstack\/react-router(\/|$)/,
       /^@vanilla-extract\/vite-plugin(\/|$)/,
       /^esbuild(\/|$)/,
       /^cac(\/|$)/,
