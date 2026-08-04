@@ -5,8 +5,10 @@ import { defineConfig } from 'vite'
 // Runs INSIDE the monorepo, where the vanilla-extract plugin can compile the `.css.ts`
 // files. Produces the client bundle the published app tree aliases to: one JS per entry
 // plus a single `client.css` (global + fonts + themes + the ui component styles) and the
-// hashed woff2. react / react-dom / router / axe stay external so the consumer's build
-// resolves a single instance of each.
+// hashed woff2. react / react-dom / axe stay external so the consumer's build resolves a
+// single instance of each. The router is deliberately NOT external: leaving it bare here
+// would put a `@tanstack/react-router` import in a file the consumer's Vite resolves,
+// which is what makes the router theirs to satisfy rather than our implementation detail.
 export default defineConfig({
   plugins: [vanillaExtractPlugin(), react()],
   build: {
@@ -26,12 +28,7 @@ export default defineConfig({
     emptyOutDir: true,
     assetsDir: 'assets',
     rollupOptions: {
-      external: [
-        /^react(\/|$)/,
-        /^react-dom(\/|$)/,
-        /^@tanstack\/react-router/,
-        'axe-core',
-      ],
+      external: [/^react(\/|$)/, /^react-dom(\/|$)/, 'axe-core'],
       output: {
         // The single stylesheet lands at dist/client/client.css (un-hashed) so the app
         // alias can target it; the font is inlined, so it's the only asset.

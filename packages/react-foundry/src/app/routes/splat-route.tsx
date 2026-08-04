@@ -1,7 +1,6 @@
 import { Provider } from 'virtual:react-foundry-providers'
 import { findLeaf, findNode, isPreview } from '@react-foundry/core'
-import { ComponentLanding, Preview } from '@react-foundry/ui'
-import { createRoute } from '@tanstack/react-router'
+import { ComponentLanding, createRoute, Preview } from '@react-foundry/ui'
 
 import { discoverNav } from '../nav'
 import { rootRoute } from './root-route'

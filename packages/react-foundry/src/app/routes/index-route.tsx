@@ -1,5 +1,4 @@
-import { Preview } from '@react-foundry/ui'
-import { createRoute } from '@tanstack/react-router'
+import { createRoute, Preview } from '@react-foundry/ui'
 
 import { rootRoute } from './root-route'
 
