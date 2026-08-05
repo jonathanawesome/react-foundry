@@ -376,26 +376,54 @@ export default previewModules;
 `
 }
 
+/** The shape of a module graph node this file needs: an id and its importers. */
+interface GraphModule {
+  id: string | null
+  importers: Set<GraphModule>
+}
+
 /**
- * Drops the modules Vite holds for a file on disk, returning how many.
+ * Drops a module and everything that imports it, recording each id in `seen`.
  *
- * Vite does not watch the user's project, so without this it serves a stale
- * transform even across a full page reload.
+ * Importers matter because foundry's app memoizes at module scope: discovery
+ * reads the generated modules once and caches the tree, so leaving an importer
+ * cached serves the old structure even after a refresh.
+ */
+function invalidateWithImporters(
+  server: ViteDevServer,
+  mod: GraphModule,
+  seen: Set<string>
+): void {
+  if (!mod.id || seen.has(mod.id)) return
+  seen.add(mod.id)
+
+  server.moduleGraph.invalidateModule(mod as never)
+  for (const importer of mod.importers) invalidateWithImporters(server, importer, seen)
+}
+
+/**
+ * Drops the modules Vite holds for a file on disk, and their importers,
+ * returning how many.
+ *
+ * Vite does not watch the user's project (nor the cache dir the config module is
+ * written into), so without this it serves a stale transform even across a full
+ * page reload.
  */
 export function invalidateFile(server: ViteDevServer, file: string): number {
   const mods = server.moduleGraph.getModulesByFile(file)
   if (!mods) return 0
 
-  for (const mod of mods) server.moduleGraph.invalidateModule(mod)
+  const seen = new Set<string>()
+  for (const mod of mods) {
+    invalidateWithImporters(server, mod as unknown as GraphModule, seen)
+  }
 
-  return mods.size
+  return seen.size
 }
 
 /**
- * Drops the generated module and everything that imports it, returning how many.
- *
- * Importers matter: discovery reads the module once and memoizes the tree, so
- * leaving those cached serves the old structure even after a refresh.
+ * Drops the generated previews module and everything that imports it, returning
+ * how many.
  */
 export function invalidateVirtualModule(server: ViteDevServer): number {
   const mod =
@@ -405,15 +433,7 @@ export function invalidateVirtualModule(server: ViteDevServer): number {
   if (!mod) return 0
 
   const seen = new Set<string>()
+  invalidateWithImporters(server, mod as unknown as GraphModule, seen)
 
-  const invalidate = (target: typeof mod) => {
-    if (!target.id || seen.has(target.id)) return
-    seen.add(target.id)
-
-    server.moduleGraph.invalidateModule(target)
-    for (const importer of target.importers) invalidate(importer)
-  }
-
-  invalidate(mod)
   return seen.size
 }
