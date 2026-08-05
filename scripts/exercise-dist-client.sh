@@ -41,10 +41,24 @@ CLI="$REPO_ROOT/packages/react-foundry/dist/cli.js"
 CLIENT="$REPO_ROOT/packages/react-foundry/dist/client/client.js"
 
 echo "==> building react-foundry"
-pnpm --filter react-foundry build >/dev/null
+# Held rather than sent to /dev/null: the build reports most of its trouble on stdout, so
+# discarding it means `set -e` exits a failed build having printed nothing at all.
+BUILD_LOG="$(mktemp "${TMPDIR:-/tmp}/rf-dist-build.XXXXXX")"
+trap 'rm -f "$BUILD_LOG"' EXIT
+
+if ! pnpm --filter react-foundry build >"$BUILD_LOG" 2>&1; then
+  cat "$BUILD_LOG" >&2
+  echo "FAIL: react-foundry build failed" >&2
+  exit 1
+fi
 
 [ -f "$CLI" ] || { echo "FAIL: no compiled CLI at $CLI" >&2; exit 1; }
 [ -f "$CLIENT" ] || { echo "FAIL: no client bundle at $CLIENT" >&2; exit 1; }
+
+# Cleared by hand, not by the trap: the `exec` below replaces this shell, so EXIT never
+# fires from here on.
+rm -f "$BUILD_LOG"
+trap - EXIT
 
 echo "==> running the demo in published mode ($MODE)"
 cd "$REPO_ROOT/apps/demo"
