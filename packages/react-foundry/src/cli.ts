@@ -3,6 +3,7 @@ import cac from 'cac'
 import { build } from './commands/build'
 import { dev } from './commands/dev'
 import { preview } from './commands/preview'
+import { readPackageVersion } from './version'
 
 const cli = cac('foundry')
 
@@ -25,6 +26,6 @@ cli
   })
 
 cli.help()
-cli.version('0.0.1')
+cli.version(readPackageVersion())
 
 cli.parse()

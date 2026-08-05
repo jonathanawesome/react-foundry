@@ -48,10 +48,18 @@ export const splatRoute = createRoute({
   },
 })
 
+// One render path for both cases, so the Provider is mounted on a group landing as well
+// as on a preview. The landing itself stays outside the Provider: it is foundry's own
+// chrome and needs foundry's nav data, so putting it inside consumer context would invert
+// the isolation the canvas boundary exists to keep.
 function NavPathRoute() {
   const { component, node, path } = splatRoute.useLoaderData()
 
-  if (component) return <Preview preview={component} Provider={Provider} />
-
-  return <ComponentLanding node={node} path={path} />
+  return (
+    <Preview
+      preview={component}
+      Provider={Provider}
+      fallback={<ComponentLanding node={node} path={path} />}
+    />
+  )
 }

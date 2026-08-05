@@ -39,7 +39,7 @@ function createNode(label: string, path: string): NavNode {
 
 /** Builds the declared skeleton, recording every node by path as it goes. */
 function buildSkeleton(
-  items: NavItem[],
+  items: readonly NavItem[],
   index: Map<string, NavNode>,
   prefix = ''
 ): NavNode[] {
@@ -135,7 +135,7 @@ function collectLeaves(navPath: string, file: PreviewFile): PreviewLeaf[] {
  */
 export function createDiscovery(
   previewModules: Record<string, PreviewFile>,
-  navConfig: NavItem[] = []
+  navConfig: readonly NavItem[] = []
 ) {
   let cache: NavNode[] | null = null
 

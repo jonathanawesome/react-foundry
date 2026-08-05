@@ -1,7 +1,9 @@
 import { Icon, type IconName } from '@react-foundry/ui'
-import { createPreview, type NavPath } from 'react-foundry'
+import { createPreview } from 'react-foundry'
 
-export const nav: NavPath = 'Components/Icons'
+import type { WarmNavPath } from '../foundry.config'
+
+export const nav: WarmNavPath = 'Components/Icons'
 
 const names: IconName[] = [
   'CaretRight',

@@ -14,11 +14,12 @@ export type {
   FoundryProvider,
   FoundryProviderProps,
   NavPath,
+  NavPathsOf,
   Preview,
   PreviewOptions,
   Register,
   RenderFn,
   ResolveNavPath,
 } from '@react-foundry/core/types'
-export { defineConfig } from './config/define-config'
-export type { FoundryConfig, ThemeColors, ThemeConfig } from './types'
+export { defineConfig, defineNav } from './config/define-config'
+export type { FoundryConfig, NavItem, ThemeColors, ThemeConfig } from './types'

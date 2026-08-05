@@ -30,6 +30,58 @@ export type ResolveNavPath<R> = R extends { navPath: infer P extends string } ? 
  */
 export type NavPath = ResolveNavPath<Register>
 
+/** Joins a nav path prefix to a label, matching how the tree builds paths. */
+type JoinNavPath<Prefix extends string, Label extends string> = Prefix extends ''
+  ? Label
+  : `${Prefix}/${Label}`
+
+/** Walks a declared tree depth first, emitting every prefix. See {@link NavPathsOf}. */
+type FlattenNavItems<
+  Items,
+  Prefix extends string = '',
+> = Items extends readonly (infer Item)[]
+  ? Item extends { label: infer Label extends string }
+    ?
+        | JoinNavPath<Prefix, Label>
+        | (Item extends { children: infer Children }
+            ? FlattenNavItems<Children, JoinNavPath<Prefix, Label>>
+            : never)
+    : never
+  : never
+
+/**
+ * The union of every path in a declared nav tree, parents included, so a preview
+ * can sit on `'Forms'` as well as `'Forms/Button'`.
+ *
+ * The type-level twin of the codegen behind {@link NavPath}: it derives the same union
+ * straight from the config, with no generated file to place, gitignore, or exempt from
+ * a linter, and no question of whether types were emitted before `tsc` ran. The cost is
+ * a project-local type rather than an ambient one, which is arguably clearer since its
+ * origin is visible at the import.
+ *
+ * Accepts either the config or the tree itself. Both need literal types to say anything,
+ * which is what `defineNav` (or `as const`) is for:
+ *
+ * ```ts
+ * // foundry.config.ts
+ * const nav = defineNav([{ label: 'Forms', children: [{ label: 'Button' }] }])
+ *
+ * const config = defineConfig({ nav })
+ * export default config
+ * export type AppNavPath = NavPathsOf<typeof config> // 'Forms' | 'Forms/Button'
+ * ```
+ *
+ * Anything it cannot read a tree out of collapses to `string`: widened labels, and a
+ * config with no `nav` at all. That is the same degradation {@link NavPath} makes with
+ * no augmentation present, so a project that reaches for this before declaring a tree
+ * still typechecks instead of resolving to `never` and rejecting every path.
+ */
+export type NavPathsOf<T> = T extends { nav: infer Items }
+  ? FlattenNavItems<Items>
+  : T extends readonly unknown[]
+    ? FlattenNavItems<T>
+    : string
+
 /**
  * Brand marking a function as a preview. Discovery filters on this rather than
  * guessing from shape, so helpers and fixtures exported from a `.preview.tsx`
@@ -156,7 +208,12 @@ export interface PreviewLeaf {
  */
 export interface NavItem {
   label: string
-  children?: NavItem[]
+  /**
+   * `readonly` so a tree declared through `defineNav` or `as const` still satisfies this,
+   * which is what lets {@link NavPathsOf} read literal labels off it. Nothing mutates a
+   * declared tree; it is read to build {@link NavNode}s.
+   */
+  children?: readonly NavItem[]
 }
 
 /** A group in the nav tree. Nests to arbitrary depth. */

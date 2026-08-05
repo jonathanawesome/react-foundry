@@ -69,8 +69,10 @@ export async function createViteConfig(
 
   // Emit the NavPath union so preview files typecheck their `nav` against the tree.
   // Pass the previews glob so the file lands next to previews that live in another
-  // package, and any explicit override.
-  writeNavTypes(config.nav, root, {
+  // package, and any explicit override. With `navTypes: false` the tree is passed as
+  // undefined rather than skipping the call, so writeNavTypes removes a file an earlier
+  // run left behind and a stale union cannot outlive the setting.
+  writeNavTypes(config.navTypes === false ? undefined : config.nav, root, {
     previews: config.previews,
     navTypesPath: config.navTypesPath,
   })

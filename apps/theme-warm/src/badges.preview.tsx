@@ -1,7 +1,11 @@
 import { Badge, type BadgeTone } from '@react-foundry/ui'
-import { createPreview, type NavPath } from 'react-foundry'
+import { createPreview } from 'react-foundry'
 
-export const nav: NavPath = 'Components/Badges'
+import type { WarmNavPath } from '../foundry.config'
+
+// The codegen-free union, derived from the config's own tree by `NavPathsOf` rather than
+// read off a generated `foundry-nav.gen.d.ts`. Typos are still compile errors.
+export const nav: WarmNavPath = 'Components/Badges'
 
 const tones: BadgeTone[] = ['danger', 'warning', 'caution', 'info', 'success', 'neutral']
 

@@ -1,5 +1,6 @@
 import { existsSync } from 'node:fs'
 import { resolve } from 'node:path'
+import pc from 'picocolors'
 import type { FoundryConfig, ResolvedFoundryConfig } from '../types'
 import { DEFAULT_CONFIG } from './defaults'
 import { importUserConfig } from './import-config'
@@ -34,6 +35,16 @@ export async function loadConfig(
     } catch (error) {
       console.error(`Failed to load config from ${configPath}:`, error)
     }
+  } else {
+    // Defaulting silently starts a working-looking server with an empty shelf, which
+    // reads as "discovery is broken" rather than "you are in the wrong directory".
+    // Easy to hit under a hoisting package manager, where the `foundry` binary is
+    // installed at the workspace root and runs happily from there. Naming the
+    // directory and the glob answers both halves of "why is nothing showing up".
+    console.warn(
+      pc.yellow(`  No foundry config found in ${root}`),
+      pc.dim(`using defaults (previews: ${DEFAULT_CONFIG.previews})`)
+    )
   }
 
   // Merge with defaults

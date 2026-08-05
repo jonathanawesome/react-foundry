@@ -12,7 +12,7 @@ export interface FoundryRuntimeConfig {
   theme?: ThemeConfig
   title?: string
   /** The declared nav tree, which the browser needs to order the shelf. */
-  nav?: NavItem[]
+  nav?: readonly NavItem[]
 }
 
 export interface FoundryConfigPaths {
@@ -21,6 +21,9 @@ export interface FoundryConfigPaths {
   /** Plain CSS override sheet, aliased to `virtual:react-foundry-theme`. */
   themePath: string
 }
+
+/** Filename of the generated config module, so watchers can find it before it is written. */
+export const CONFIG_MODULE_FILE_NAME = 'react-foundry-config.js'
 
 const OVERRIDABLE = new Set<string>(OVERRIDABLE_COLOR_TOKENS)
 
@@ -94,7 +97,7 @@ export function writeFoundryConfig(
     mkdirSync(cacheDir, { recursive: true })
   }
 
-  const configPath = resolve(cacheDir, 'react-foundry-config.js')
+  const configPath = resolve(cacheDir, CONFIG_MODULE_FILE_NAME)
   const configContent = [
     `export const foundryTitle = ${JSON.stringify(config.title ?? '')};`,
     `export const foundryNav = ${JSON.stringify(config.nav ?? [])};`,

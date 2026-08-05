@@ -311,6 +311,31 @@ describe('invalidation', () => {
       expect(invalidateFile(server, '/p/missing.preview.tsx')).toBe(0)
       expect(invalidated).toEqual([])
     })
+
+    // The generated config module is reached this way, and `app/nav.ts` imports it
+    // and memoizes the tree. Leaving that importer cached is what left the shelf
+    // rendering the previous nav after a config edit.
+    it('drops importers as well', () => {
+      const { server, invalidated } = fakeServer({
+        '/cache/react-foundry-config.js': { importers: ['/app/nav.ts'] },
+        '/app/nav.ts': { importers: ['/app/root-route.tsx'] },
+        '/app/root-route.tsx': {},
+      })
+
+      expect(invalidateFile(server, '/cache/react-foundry-config.js')).toBe(3)
+      expect(invalidated).toContain('/app/nav.ts')
+      expect(invalidated).toContain('/app/root-route.tsx')
+    })
+
+    it('does not loop forever on a circular importer graph', () => {
+      const { server } = fakeServer({
+        '/cache/react-foundry-config.js': { importers: ['/app/a.ts'] },
+        '/app/a.ts': { importers: ['/app/b.ts'] },
+        '/app/b.ts': { importers: ['/app/a.ts'] },
+      })
+
+      expect(invalidateFile(server, '/cache/react-foundry-config.js')).toBe(3)
+    })
   })
 
   describe('invalidateVirtualModule', () => {

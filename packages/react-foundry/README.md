@@ -10,7 +10,7 @@ config of your own.
 - **Typed nav paths** — a misplaced preview is a compile error, with autocomplete
 - **Theming** — light/dark/system, driven by a few role-named color tokens
 - **Accessibility** — an axe-core checker that highlights the offending node on the canvas
-- **Style isolation** — foundry's own CSS stops at the canvas, so components render as they do in your app
+- **Style isolation** — foundry's own CSS stops at the canvas, so components render as they do in your app ([one way](#style-isolation))
 - **Fast** — built on Vite; the chrome ships precompiled, so nothing builds in your `node_modules`
 
 ## Install
@@ -67,6 +67,12 @@ Each command takes an optional `[root]` argument, defaulting to the current dire
 - `foundry dev [root]` — start the dev server (also `foundry serve`, or just `foundry`)
 - `foundry build [root]` — build a static bundle for production
 - `foundry preview [root]` — serve the production build locally
+- `foundry --version` — the installed version, worth quoting in a bug report
+
+Every command reads `foundry.config.ts` from that directory. If there is none, foundry says
+so and falls back to defaults rather than starting a working-looking server with an empty
+shelf. Worth watching for under a hoisting package manager, where the `foundry` binary is
+installed at your workspace root and will run happily from there.
 
 ## Configuration
 
@@ -100,8 +106,17 @@ export default defineConfig({
 | `host` | `'localhost'` | Dev server host. Requires restart. |
 | `title` | none | Display title for the instance. Hot-reloadable. |
 | `theme` | none | Theme customization. Hot-reloadable. |
+| `navTypes` | `true` | Whether to emit `foundry-nav.gen.d.ts`. Set `false` when you derive the union with `NavPathsOf` instead. Requires restart. |
 | `navTypesPath` | inferred | Exact path for the generated `NavPath` types. Defaults next to your previews; override for layouts the inference can't reach. Requires restart. |
 | `viteConfig` | none | Vite config overrides. Requires restart. |
+
+The config is bundled with esbuild into `node_modules/.cache/react-foundry/` and imported
+from there, so **`import.meta.dirname` inside your config points at that cache directory,
+not your project.** Use `process.cwd()` for anything that needs a project path:
+
+```ts
+viteConfig: { plugins: [somePlugin({ root: process.cwd() })] }
+```
 
 Config files are resolved in this order, first match wins:
 
@@ -116,21 +131,76 @@ foundry.config.ts
 
 ### Navigation
 
-`nav` declares the shape of the shelf, nested as deeply as you like. **Array order is
-display order**, so you control where a section sits without renaming anything.
+`nav` is optional, and the two modes behave differently enough to choose deliberately:
 
-Every path in the tree, including parents, becomes part of a generated `NavPath` union that
-preview files check against. Foundry writes it to `src/foundry-nav.gen.d.ts` (or the project
-root if you have no `src/`) on every server start and whenever the config changes, so a
-mistyped path is a compile error with autocomplete rather than a preview quietly landing in
-the wrong place. **Add that file to your `.gitignore`.**
+| | Shelf order | `NavPath` |
+| --- | --- | --- |
+| **`nav` declared** | Exactly as written, nested as deeply as you like | The union of every path in the tree |
+| **`nav` omitted** | Inferred from the `nav` values your previews declare, **sorted alphabetically** | Stays `string` |
 
-`nav` is optional. Without it, `NavPath` stays `string` and the tree is inferred from the
-`nav` values your previews declare, sorted alphabetically. A preview whose path is not in the
-config still appears, appended at the end with a warning, so nothing is ever silently
-dropped.
+If your shelf is alphabetical and ignoring the order you wanted, that is the second row:
+you have no `nav` in your config.
+
+Either way a preview whose path is not in the config still appears, appended at the end with
+a warning, so nothing is ever silently dropped.
+
+With a tree declared, every path in it **including parents** becomes part of a `NavPath`
+union that preview files check against, so a mistyped path is a compile error with
+autocomplete rather than a preview quietly landing in the wrong place. There are two ways
+to get that union.
+
+#### Generated types (the default)
+
+Foundry writes `src/foundry-nav.gen.d.ts` (or the project root if you have no `src/`) on
+every server start and whenever the config changes, and `NavPath` picks it up ambiently.
+**Add that file to your `.gitignore`.** It carries its own `eslint-disable` and
+`prettier-ignore` header, so your lint and format config does not need to know about it.
+
+Nothing is written when `nav` is empty: with no tree to describe, the file would say exactly
+what `NavPath` already falls back to.
+
+#### Deriving it from the config
+
+`NavPathsOf` reads the same union straight off your config, with no generated file at all:
+
+```ts
+// foundry.config.ts
+import { defineConfig, defineNav, type NavPathsOf } from 'react-foundry'
+
+const nav = defineNav([{ label: 'Forms', children: [{ label: 'Button' }] }])
+
+const config = defineConfig({ nav, navTypes: false })
+export default config
+
+export type AppNavPath = NavPathsOf<typeof config> // 'Forms' | 'Forms/Button'
+```
+
+```tsx
+// button.preview.tsx
+import type { AppNavPath } from '../foundry.config'
+
+export const nav: AppNavPath = 'Forms/Button'
+```
+
+`defineNav` is what keeps the labels literal enough to flatten (`as const` works too, but
+checks nothing where you write it). `navTypes: false` turns the codegen off, which is the
+part that actually retires the artifact: no gitignore entry, no lint exemptions, and no
+question of whether types were emitted before `tsc` ran. Turning it off also deletes a file
+an earlier run wrote, so a stale union cannot outlive the setting.
+
+The tradeoff is that `AppNavPath` is a project-local type your previews import by name,
+rather than an ambient `NavPath`. That is arguably clearer, since its origin is visible at
+the import.
+
+If there is no tree to read, `NavPathsOf` resolves to `string` rather than to an empty
+union, matching what `NavPath` does without a config. So adding the type before you add
+the `nav` tree typechecks; it just does not constrain anything yet.
 
 #### Monorepo layouts
+
+This section is about placing the generated file. If you derive the union with `NavPathsOf`
+instead, none of it applies: an imported type resolves wherever the import does, so there is
+nothing to place.
 
 Declaration merging only narrows `NavPath` inside a TypeScript project that compiles both the
 generated file and your `.preview.tsx` files. When your config lives in one package but the
@@ -259,6 +329,47 @@ The rules:
 - **Order is what you wrote.** Previews appear in source order, sections in config order. Nothing is sorted behind your back.
 - **URLs use the export name, never the label.** `AllSizes` lives at `/Forms/Button/AllSizes` whatever you label it, so rewording a label never breaks a link.
 
+### How discovery reads your files
+
+Foundry finds previews by **parsing the source, not by importing it**. That is what keeps
+each preview in its own lazy chunk instead of the initial bundle: the whole shelf is built
+without evaluating a single preview module.
+
+The cost is a small authoring convention. A preview must be written as:
+
+```tsx
+export const Primary = createPreview(/* ... */)
+```
+
+with `createPreview` referenced by that name. These forms parse as *not a preview*, and the
+export simply will not appear in the shelf:
+
+```tsx
+import { createPreview as preview } from 'react-foundry' // aliased import
+export function Primary() {}                             // not a createPreview call
+export { Primary }                                       // re-export, not a declaration
+```
+
+An explicit `label` must likewise be a **string literal** at the top level of the options
+object. A computed one (a template literal, a variable, a constant) falls back to the
+de-camelCased export name rather than failing:
+
+```tsx
+export const AllSizes = createPreview({
+  label: 'Every Size',        // used
+  label: `Every ${thing}`,    // ignored, falls back to "All Sizes"
+  render: () => null,
+})
+```
+
+A file that calls `createPreview` but yields no previews under these rules logs a warning
+naming the file, so a silent miss is visible in the dev server output.
+
+**Two files cannot share both a nav path and an export name.** A duplicate
+`(nav, exportName)` pair means one of the two previews disappears, with a console warning;
+the survivor is decided by lexicographic file path. This is a realistic hazard when
+migrating from a tool where two files carried the same title.
+
 ### Controls
 
 Give a preview editable controls with `defineControls`, and `render` receives their live
@@ -330,8 +441,12 @@ export const Provider: FoundryProvider = ({ children, theme }) => (
 - **`theme`** is foundry's resolved mode (`'light' | 'dark'`), so a design-system provider
   can track foundry's own light/dark toggle. Ignore it if you don't need it.
 - The provider wraps **inside** the preview canvas, so app context reaches your components
-  while foundry's styling stays on foundry's side of that boundary. Nothing foundry sets,
-  resets, or inherits crosses into the canvas, in either direction.
+  while foundry's styling stays on foundry's side of that boundary. See
+  [Style isolation](#style-isolation) for exactly how far that guarantee reaches.
+- **It is mounted on every screen**, including the home screen and a group landing where
+  no preview is selected. So a design system that does document-level work on mount (a
+  theme class on `<html>`, `dir`, font loading, a portal root) has done it before you pick
+  anything.
 - The file is **optional**. Without it, previews render unchanged.
 
 The file may be `foundry.providers.{tsx,jsx,ts,js}`. Editing it hot-reloads. Two things to
@@ -369,6 +484,38 @@ export default defineConfig({
 
 Provide a single React plugin instance only through `viteConfig` if you need to configure it;
 foundry already includes `@vitejs/plugin-react`, so don't add a second copy.
+
+Foundry pins Vite 8, which resolves `tsconfig` path aliases natively. If you reach for
+`vite-tsconfig-paths` out of habit, Vite prints a deprecation notice on every start. Use the
+built-in instead:
+
+```ts
+export default defineConfig({
+  viteConfig: { resolve: { tsconfigPaths: true } },
+})
+```
+
+If you do keep a plugin that needs your project directory, remember the config runs from a
+cache directory: pass `process.cwd()`, not `import.meta.dirname`.
+
+## Style isolation
+
+The guarantee runs **one way**: nothing foundry sets, resets, or inherits reaches your
+component on the canvas. Foundry's resets are excluded from the canvas subtree, and its
+typography is anchored on each piece of chrome rather than on `body` or `html`, which the
+canvas would otherwise inherit from.
+
+**The reverse is not true.** Your stylesheets are loaded into foundry's document, so they
+reach foundry's own chrome: a CSS reset or preflight, element selectors, inherited
+typography, and anything painted on `body` all apply to the shelf, toolbar and props panel
+as well as to your components. That is usually harmless and occasionally not, so it is worth
+knowing which side of the line you are on.
+
+Two elements are foundry's:
+
+- **`#root`** is foundry's mount point, and foundry paints its own layout root over it. A
+  background you set there is covered rather than fighting the canvas for the viewport.
+- **`body`** is painted with foundry's canvas color.
 
 ## License
 

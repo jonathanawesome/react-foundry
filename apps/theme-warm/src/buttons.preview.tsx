@@ -1,7 +1,9 @@
 import { IconButton } from '@react-foundry/ui'
-import { createPreview, defineControls, type NavPath } from 'react-foundry'
+import { createPreview, defineControls } from 'react-foundry'
 
-export const nav: NavPath = 'Components/Buttons'
+import type { WarmNavPath } from '../foundry.config'
+
+export const nav: WarmNavPath = 'Components/Buttons'
 
 // A controlled preview drives the props panel, so its inputs and the active accent show
 // the recomputed warm scale.
