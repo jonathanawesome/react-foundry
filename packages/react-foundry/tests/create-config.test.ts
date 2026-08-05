@@ -236,10 +236,41 @@ describe('createViteConfig', () => {
     })
   })
 
-  it('writes the nav types into the project', async () => {
-    mkdirSync(resolve(testRoot, 'src'), { recursive: true })
-    await createViteConfig(config({ nav: [{ label: 'Forms' }] }), testRoot)
+  describe('the generated nav types', () => {
+    const generated = () => resolve(testRoot, 'src', 'foundry-nav.gen.d.ts')
 
-    expect(existsSync(resolve(testRoot, 'src', 'foundry-nav.gen.d.ts'))).toBe(true)
+    it('are written into the project', async () => {
+      mkdirSync(resolve(testRoot, 'src'), { recursive: true })
+      await createViteConfig(config({ nav: [{ label: 'Forms' }] }), testRoot)
+
+      expect(existsSync(generated())).toBe(true)
+    })
+
+    // The opt-out for projects deriving the union with `defineNav` + `NavPathsOf`, which
+    // needs no generated file at all.
+    it('are not written when navTypes is false', async () => {
+      mkdirSync(resolve(testRoot, 'src'), { recursive: true })
+      await createViteConfig(
+        config({ nav: [{ label: 'Forms' }], navTypes: false }),
+        testRoot
+      )
+
+      expect(existsSync(generated())).toBe(false)
+    })
+
+    // Switching the flag off has to clear the artifact too, or a union nothing
+    // regenerates outlives the setting that produced it.
+    it('are removed when navTypes is turned off after a run that wrote them', async () => {
+      mkdirSync(resolve(testRoot, 'src'), { recursive: true })
+      await createViteConfig(config({ nav: [{ label: 'Forms' }] }), testRoot)
+      expect(existsSync(generated())).toBe(true)
+
+      await createViteConfig(
+        config({ nav: [{ label: 'Forms' }], navTypes: false }),
+        testRoot
+      )
+
+      expect(existsSync(generated())).toBe(false)
+    })
   })
 })

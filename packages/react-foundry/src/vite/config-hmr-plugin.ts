@@ -48,8 +48,12 @@ export function createConfigHmrPlugin(userRoot: string, cacheDir: string): Plugi
             )
 
             // Regenerate the NavPath union too, so the running app doesn't offer a
-            // path TypeScript still rejects.
-            writeNavTypes(userConfig.nav as never, userRoot, {
+            // path TypeScript still rejects. `navTypes: false` passes no tree, which
+            // removes the file rather than leaving a stale union behind.
+            const navForTypes =
+              userConfig.navTypes === false ? undefined : (userConfig.nav as never)
+
+            writeNavTypes(navForTypes, userRoot, {
               previews: userConfig.previews as string | undefined,
               navTypesPath: userConfig.navTypesPath as string | undefined,
             })

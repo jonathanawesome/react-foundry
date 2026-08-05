@@ -1,7 +1,13 @@
 import { describe, expectTypeOf, it } from 'vitest'
 
 import { createPreview, defineControls } from '../src/create-preview'
-import type { ControlValues, NavPath, Preview, ResolveNavPath } from '../src/types'
+import type {
+  ControlValues,
+  NavPath,
+  NavPathsOf,
+  Preview,
+  ResolveNavPath,
+} from '../src/types'
 
 describe('ResolveNavPath', () => {
   it('falls back to string when the register declares no paths', () => {
@@ -36,6 +42,60 @@ describe('NavPath', () => {
   // covered by ResolveNavPath above and by the cli's write-nav-types tests.
   it('is plain string without a generated augmentation', () => {
     expectTypeOf<NavPath>().toEqualTypeOf<string>()
+  })
+})
+
+// The codegen-free route to the same union NavPath carries: derived from the config
+// rather than an emitted `foundry-nav.gen.d.ts`.
+describe('NavPathsOf', () => {
+  it('emits parents as well as leaves, so a preview can sit on a group', () => {
+    type Nav = readonly [
+      {
+        readonly label: 'Forms'
+        readonly children: readonly [{ readonly label: 'Button' }]
+      },
+    ]
+
+    expectTypeOf<NavPathsOf<Nav>>().toEqualTypeOf<'Forms' | 'Forms/Button'>()
+  })
+
+  it('reads the tree off a config object as well as a bare tree', () => {
+    type Config = { nav: readonly [{ readonly label: 'Forms' }]; title: string }
+
+    expectTypeOf<NavPathsOf<Config>>().toEqualTypeOf<'Forms'>()
+  })
+
+  it('nests to arbitrary depth', () => {
+    type Nav = readonly [
+      {
+        readonly label: 'a'
+        readonly children: readonly [
+          { readonly label: 'b'; readonly children: readonly [{ readonly label: 'c' }] },
+        ]
+      },
+    ]
+
+    expectTypeOf<NavPathsOf<Nav>>().toEqualTypeOf<'a' | 'a/b' | 'a/b/c'>()
+  })
+
+  it('rejects a path outside the declared tree', () => {
+    type Nav = readonly [
+      {
+        readonly label: 'Forms'
+        readonly children: readonly [{ readonly label: 'Button' }]
+      },
+    ]
+
+    // @ts-expect-error 'Forms/Buton' is a typo and not in the tree
+    const typo: NavPathsOf<Nav> = 'Forms/Buton'
+    void typo
+  })
+
+  // Widened labels name no particular path, so the union collapses to `string`: the
+  // same degradation NavPath makes with no augmentation present, and the reason a tree
+  // has to go through `defineNav` (or `as const`) to be worth anything.
+  it('degrades to string when the labels are not literal', () => {
+    expectTypeOf<NavPathsOf<{ label: string }[]>>().toEqualTypeOf<string>()
   })
 })
 

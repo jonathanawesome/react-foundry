@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { defineConfig } from '../src/config/define-config'
+import { defineConfig, defineNav } from '../src/config/define-config'
 
 describe('defineConfig', () => {
   it('returns the same config object (identity function)', () => {
@@ -25,5 +25,23 @@ describe('defineConfig', () => {
   it('handles an empty config', () => {
     const config = defineConfig({})
     expect(config).toEqual({})
+  })
+})
+
+describe('defineNav', () => {
+  it('returns the same tree (identity function)', () => {
+    const nav = [{ label: 'Forms', children: [{ label: 'Button' }] }] as const
+    expect(defineNav(nav)).toBe(nav)
+  })
+
+  // It exists for its type, not its runtime: the `const` type parameter keeps the labels
+  // literal so NavPathsOf can flatten them. The union itself is asserted in core's
+  // types.test-d.ts, and apps/theme-warm exercises the whole path end to end.
+  it('passes a nested tree through unchanged', () => {
+    const nav = defineNav([
+      { label: 'a', children: [{ label: 'b', children: [{ label: 'c' }] }] },
+    ])
+
+    expect(nav[0]?.children?.[0]?.children?.[0]?.label).toBe('c')
   })
 })

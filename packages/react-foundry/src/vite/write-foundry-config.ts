@@ -12,7 +12,7 @@ export interface FoundryRuntimeConfig {
   theme?: ThemeConfig
   title?: string
   /** The declared nav tree, which the browser needs to order the shelf. */
-  nav?: NavItem[]
+  nav?: readonly NavItem[]
 }
 
 export interface FoundryConfigPaths {

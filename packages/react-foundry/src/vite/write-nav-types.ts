@@ -59,7 +59,10 @@ export function resolveNavTypesPath(
  * Parents are addressable, not just leaves, so a preview can sit directly on
  * `'Forms'` as well as on `'Forms/Button'`.
  */
-export function flattenNavPaths(nav: NavItem[] | undefined, prefix = ''): string[] {
+export function flattenNavPaths(
+  nav: readonly NavItem[] | undefined,
+  prefix = ''
+): string[] {
   if (!nav?.length) return []
 
   return nav.flatMap((item) => {
@@ -80,7 +83,7 @@ export function flattenNavPaths(nav: NavItem[] | undefined, prefix = ''): string
  * previous run left behind.
  */
 export function writeNavTypes(
-  nav: NavItem[] | undefined,
+  nav: readonly NavItem[] | undefined,
   userRoot: string,
   location: NavTypesLocation = {}
 ): string | null {

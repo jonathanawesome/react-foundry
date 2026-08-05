@@ -46,7 +46,12 @@ export interface ThemeConfig {
  */
 export interface NavItem {
   label: string
-  children?: NavItem[]
+  /**
+   * `readonly` so a tree declared through `defineNav` or `as const` still satisfies this,
+   * which is what lets `NavPathsOf` read literal labels off it. Nothing mutates a
+   * declared tree.
+   */
+  children?: readonly NavItem[]
 }
 
 export interface FoundryConfig {
@@ -70,7 +75,7 @@ export interface FoundryConfig {
    * save, though your editor may need a moment to reload the types.
    * @default []
    */
-  nav?: NavItem[]
+  nav?: readonly NavItem[]
 
   /**
    * Port for dev server.
@@ -91,6 +96,23 @@ export interface FoundryConfig {
 
   /** Theme customization. Hot-reloadable. */
   theme?: ThemeConfig
+
+  /**
+   * Whether to emit `foundry-nav.gen.d.ts` at all, which is what narrows the ambient
+   * `NavPath` to your declared tree.
+   *
+   * Set false when you derive the union from the config instead, with `defineNav` and
+   * `NavPathsOf`. That route needs no generated file, so nothing has to be gitignored,
+   * exempted from a linter, or emitted before `tsc` runs; the tradeoff is a
+   * project-local type your previews import by name rather than an ambient one.
+   * Turning this off deletes any file a previous run left behind, so a stale union
+   * cannot outlive the setting.
+   *
+   * Nothing is emitted when `nav` is empty either way.
+   * Requires server restart.
+   * @default true
+   */
+  navTypes?: boolean
 
   /**
    * Where to write the generated `foundry-nav.gen.d.ts` (the `NavPath` union),

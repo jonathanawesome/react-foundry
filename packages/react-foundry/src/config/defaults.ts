@@ -5,6 +5,7 @@ export const DEFAULT_CONFIG: Required<
 > = {
   previews: 'src/components/**/*.preview.tsx',
   nav: [],
+  navTypes: true,
   port: 5173,
   host: 'localhost',
 }
