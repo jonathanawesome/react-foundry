@@ -24,6 +24,18 @@ export const previewStyles = {
     alignItems: 'safe center',
     justifyContent: 'safe center',
     overflow: 'auto',
+
+    selectors: {
+      // The canvas mounts on every surface so the consumer's Provider stays mounted,
+      // but with nothing to show it must take no room: the fallback chrome beside it
+      // occupies the pane instead. A Provider that renders a wrapper element of its
+      // own stays clipped in here rather than displacing that chrome.
+      '&[data-empty="true"]': {
+        flex: '0 0 0',
+        padding: 0,
+        overflow: 'hidden',
+      },
+    },
   }),
 
   // `flex: 1` rather than `height: 100%`, matching previewPane: the checker panel is a

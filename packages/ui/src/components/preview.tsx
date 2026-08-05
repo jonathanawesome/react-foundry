@@ -5,7 +5,7 @@ import {
 } from '@react-foundry/core'
 import { chromeSurface, ThemeContext } from '@react-foundry/style'
 import { useSearch } from '@tanstack/react-router'
-import { useCallback, useContext, useRef, useState } from 'react'
+import { type ReactNode, useCallback, useContext, useRef, useState } from 'react'
 
 import { useUIStore } from '../state'
 
@@ -32,17 +32,32 @@ function centerInPane(target: HTMLElement, pane: HTMLElement) {
   pane.scrollTo({ top: pane.scrollTop + offset, behavior: 'smooth' })
 }
 
+/**
+ * Stands in for the canvas ref on a surface with no preview, so the accessibility
+ * checker keeps its existing "nothing to scan" behaviour. Handing it the empty canvas
+ * instead would let axe's page-level rules report on foundry's own chrome.
+ */
+const NO_CANVAS_REF: React.RefObject<HTMLDivElement | null> = { current: null }
+
 interface PreviewProps {
   preview: PreviewComponent | null
-  /** Shown when nothing is selected. */
+  /** Shown when nothing is selected and no `fallback` is given. */
   emptyMessage?: string
-  /** The consumer's global provider, wrapped around the rendered preview. */
+  /**
+   * Foundry chrome to show in place of the canvas when there is no preview, such as the
+   * group landing under `/$`. Rendered outside the consumer's Provider on purpose: it is
+   * foundry's own UI, and putting it inside consumer context is exactly the inversion the
+   * canvas boundary exists to prevent.
+   */
+  fallback?: ReactNode
+  /** The consumer's global provider, mounted on every surface. */
   Provider?: FoundryProvider
 }
 
 export function Preview({
   preview,
   emptyMessage = 'Select a preview from the sidebar',
+  fallback,
   Provider = PassthroughProvider,
 }: PreviewProps) {
   const previewPaneRef = useRef<HTMLDivElement>(null)
@@ -78,28 +93,39 @@ export function Preview({
 
   return (
     <div className={previewStyles.previewContainer}>
-      {Component ? (
-        // data-foundry-canvas marks the reset boundary: foundry's appearance resets
-        // (global-styles.css.ts) deliberately do not reach the consumer's component.
-        // The consumer's Provider wraps inside it, so app context reaches the preview
-        // without foundry's chrome resets touching it.
-        <div
-          className={previewStyles.previewPane}
-          ref={previewPaneRef}
-          data-foundry-canvas
-        >
-          <Provider theme={theme}>
-            <Component controlValues={controlValues} />
-          </Provider>
-        </div>
-      ) : (
-        <div className={`${chromeSurface} ${previewStyles.noSelection}`}>
-          {emptyMessage}
-        </div>
-      )}
+      {/*
+        The canvas mounts on every surface, preview or not, so the consumer's Provider is
+        always mounted. Design systems routinely do document-level work on mount (a theme
+        class on <html>, `dir`, font loading, portal roots), and none of it ran until a
+        preview was selected: a cold load on `/` rendered under the wrong palette, and any
+        group node dropped back to it.
+
+        data-foundry-canvas marks the reset boundary: foundry's appearance resets
+        (global-styles.css.ts) deliberately do not reach the consumer's component. The
+        Provider wraps inside it, so app context and the consumer's canvas-scoped CSS
+        reach the preview the same way in every state, with foundry's chrome resets
+        touching neither.
+      */}
+      <div
+        className={previewStyles.previewPane}
+        ref={previewPaneRef}
+        data-foundry-canvas
+        data-empty={Component === null}
+      >
+        <Provider theme={theme}>
+          {Component ? <Component controlValues={controlValues} /> : null}
+        </Provider>
+      </div>
+
+      {Component === null &&
+        (fallback ?? (
+          <div className={`${chromeSurface} ${previewStyles.noSelection}`}>
+            {emptyMessage}
+          </div>
+        ))}
 
       <AccessibilityChecker
-        targetRef={previewPaneRef}
+        targetRef={Component ? previewPaneRef : NO_CANVAS_REF}
         isEnabled={isAccessibilityEnabled}
         onPin={handlePin}
         onHover={setHoveredTarget}

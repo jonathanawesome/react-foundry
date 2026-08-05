@@ -96,4 +96,77 @@ describe('Preview', () => {
     expect(wrapper).toHaveAttribute('data-theme', 'light')
     expect(wrapper).toContainElement(screen.getByText('Inside'))
   })
+
+  /**
+   * The Provider used to mount only on a rendered preview, so a design system that does
+   * document-level work on mount (a theme class on `<html>`, `dir`, fonts, portal roots)
+   * did none of it until one was selected, and undid it again on any group node. The
+   * consumer-side workaround for that was a MutationObserver at module scope.
+   */
+  describe('the consumer Provider on a surface with no preview', () => {
+    const Provider: FoundryProvider = ({ children, theme }) => (
+      <div data-testid="consumer-provider" data-theme={theme}>
+        {children}
+      </div>
+    )
+
+    it('mounts on the empty state', async () => {
+      await renderWithRouter(<Preview preview={null} Provider={Provider} />)
+
+      expect(screen.getByTestId('consumer-provider')).toBeInTheDocument()
+    })
+
+    it('mounts alongside a fallback', async () => {
+      await renderWithRouter(
+        <Preview preview={null} Provider={Provider} fallback={<p>Group landing</p>} />
+      )
+
+      expect(screen.getByTestId('consumer-provider')).toBeInTheDocument()
+      expect(screen.getByText('Group landing')).toBeInTheDocument()
+    })
+
+    // The fallback is foundry's own chrome. Inside consumer context it would inherit the
+    // consumer's wrapper, which inverts the isolation the canvas boundary exists to keep.
+    it('leaves the fallback outside the Provider', async () => {
+      await renderWithRouter(
+        <Preview preview={null} Provider={Provider} fallback={<p>Group landing</p>} />
+      )
+
+      expect(screen.getByTestId('consumer-provider')).not.toContainElement(
+        screen.getByText('Group landing')
+      )
+    })
+
+    // Canvas-scoped consumer CSS should apply in every state, not only once something
+    // is selected.
+    it('keeps the canvas boundary marked', async () => {
+      const { container } = await renderWithRouter(
+        <Preview preview={null} Provider={Provider} />
+      )
+
+      const canvas = container.querySelector('[data-foundry-canvas]')
+      expect(canvas).not.toBeNull()
+      expect(canvas).toHaveAttribute('data-empty', 'true')
+    })
+
+    it('marks the canvas as occupied once a preview renders', async () => {
+      const { container } = await renderWithRouter(
+        <Preview preview={createPreview(() => <p>Hello</p>)} Provider={Provider} />
+      )
+
+      expect(container.querySelector('[data-foundry-canvas]')).toHaveAttribute(
+        'data-empty',
+        'false'
+      )
+    })
+
+    it('prefers the fallback over the empty message', async () => {
+      await renderWithRouter(
+        <Preview preview={null} fallback={<p>Group landing</p>} emptyMessage="Nothing" />
+      )
+
+      expect(screen.getByText('Group landing')).toBeInTheDocument()
+      expect(screen.queryByText('Nothing')).not.toBeInTheDocument()
+    })
+  })
 })
