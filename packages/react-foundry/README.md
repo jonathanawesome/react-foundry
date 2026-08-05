@@ -192,6 +192,10 @@ The tradeoff is that `AppNavPath` is a project-local type your previews import b
 rather than an ambient `NavPath`. That is arguably clearer, since its origin is visible at
 the import.
 
+If there is no tree to read, `NavPathsOf` resolves to `string` rather than to an empty
+union, matching what `NavPath` does without a config. So adding the type before you add
+the `nav` tree typechecks; it just does not constrain anything yet.
+
 #### Monorepo layouts
 
 This section is about placing the generated file. If you derive the union with `NavPathsOf`

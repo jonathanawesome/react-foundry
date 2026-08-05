@@ -71,12 +71,16 @@ type FlattenNavItems<
  * export type AppNavPath = NavPathsOf<typeof config> // 'Forms' | 'Forms/Button'
  * ```
  *
- * With widened labels it collapses to `string`, the same degradation {@link NavPath}
- * makes when no augmentation is present, so previews still typecheck either way.
+ * Anything it cannot read a tree out of collapses to `string`: widened labels, and a
+ * config with no `nav` at all. That is the same degradation {@link NavPath} makes with
+ * no augmentation present, so a project that reaches for this before declaring a tree
+ * still typechecks instead of resolving to `never` and rejecting every path.
  */
 export type NavPathsOf<T> = T extends { nav: infer Items }
   ? FlattenNavItems<Items>
-  : FlattenNavItems<T>
+  : T extends readonly unknown[]
+    ? FlattenNavItems<T>
+    : string
 
 /**
  * Brand marking a function as a preview. Discovery filters on this rather than

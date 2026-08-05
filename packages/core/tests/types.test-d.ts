@@ -97,6 +97,27 @@ describe('NavPathsOf', () => {
   it('degrades to string when the labels are not literal', () => {
     expectTypeOf<NavPathsOf<{ label: string }[]>>().toEqualTypeOf<string>()
   })
+
+  // Reaching for this before declaring a tree is an easy order to write it in. Resolving
+  // to `never` there would reject every path with an error naming no cause.
+  it('degrades to string for a config that declares no nav at all', () => {
+    expectTypeOf<
+      NavPathsOf<{ previews: string; title: string }>
+    >().toEqualTypeOf<string>()
+  })
+
+  it('degrades to string for a tree that is not a tree', () => {
+    expectTypeOf<NavPathsOf<string>>().toEqualTypeOf<string>()
+    expectTypeOf<NavPathsOf<undefined>>().toEqualTypeOf<string>()
+  })
+
+  // The optional `nav?` on FoundryConfig itself: present as a key, but carrying nothing
+  // literal, so it lands in the same place rather than in `never`.
+  it('degrades to string when nav is declared but widened', () => {
+    type Config = { nav?: readonly { label: string }[] }
+
+    expectTypeOf<NavPathsOf<Config>>().toEqualTypeOf<string>()
+  })
 })
 
 describe('Preview', () => {

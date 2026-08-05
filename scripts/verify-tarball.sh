@@ -114,9 +114,17 @@ pass "import 'react-foundry' is side-effect-free"
 # up). The unit test can only prove the source layout, so this is the half that matters:
 # a wrong path here degrades to 'unknown' silently. The literal it replaced sat at 0.0.1
 # through nine releases.
+#
+# Captured into a variable rather than piped into `grep -q`. Under `set -o pipefail` a
+# `-q` grep exits on the first match and closes the pipe, so `npx` can take SIGPIPE and
+# fail the whole pipeline on a *passing* check. Capturing also means the failure message
+# reports the output actually tested rather than a second invocation's.
 EXPECTED_VERSION="$(node -p "require('./node_modules/react-foundry/package.json').version")"
-npx foundry --version 2>&1 | grep -qF "foundry/$EXPECTED_VERSION" \
-  || fail "foundry --version did not report $EXPECTED_VERSION (got: $(npx foundry --version 2>&1))"
+REPORTED_VERSION="$(npx foundry --version 2>&1)"
+case "$REPORTED_VERSION" in
+  *"foundry/$EXPECTED_VERSION"*) ;;
+  *) fail "foundry --version did not report $EXPECTED_VERSION (got: $REPORTED_VERSION)" ;;
+esac
 pass "foundry --version reports $EXPECTED_VERSION"
 
 # --- 4. foundry dev -----------------------------------------------------------
