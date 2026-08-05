@@ -16,9 +16,11 @@
     "test": "turbo run test",
     "types": "turbo run types",
     "demo": "pnpm --filter demo dev",
+    "demo:dist": "bash scripts/exercise-dist-client.sh dev",
     "theme-grand-tour": "pnpm --filter theme-grand-tour dev",
     "theme-warm": "pnpm --filter theme-warm dev",
     "validate": "pnpm run types && pnpm run check",
+    "verify:dist": "bash scripts/exercise-dist-client.sh build",
     "changeset": "changeset",
     "release": "bash scripts/verify-tarball.sh && changeset publish"
   },
