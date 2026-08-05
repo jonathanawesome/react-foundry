@@ -111,11 +111,17 @@ describe('resolveNavTypesPath', () => {
 })
 
 describe('writeNavTypes', () => {
+  /** Reads a generated file, failing the test if nothing was written. */
+  function read(filePath: string | null): string {
+    if (filePath === null) throw new Error('expected a file to be generated')
+    return readFileSync(filePath, 'utf-8')
+  }
+
   it('returns the absolute path to the generated file', () => {
     const filePath = writeNavTypes([{ label: 'Forms' }], testRoot)
 
     expect(filePath).toBe(resolve(testRoot, 'foundry-nav.gen.d.ts'))
-    expect(existsSync(filePath)).toBe(true)
+    expect(existsSync(filePath as string)).toBe(true)
   })
 
   it('writes into src when the project has one', () => {
@@ -124,14 +130,14 @@ describe('writeNavTypes', () => {
     const filePath = writeNavTypes([{ label: 'Forms' }], testRoot)
 
     expect(filePath).toBe(resolve(testRoot, 'src', 'foundry-nav.gen.d.ts'))
-    expect(existsSync(filePath)).toBe(true)
+    expect(existsSync(filePath as string)).toBe(true)
   })
 
   it('augments the react-foundry module so NavPath resolves through Register', () => {
     // Always `react-foundry`: everyone (consumers and the in-monorepo demo) imports
     // NavPath from it, and the augmentation merges into its Register either way.
-    const content = readFileSync(writeNavTypes([{ label: 'Forms' }], testRoot), 'utf-8')
-    expect(content).toContain("declare module 'react-foundry' {")
+    const content = read(writeNavTypes([{ label: 'Forms' }], testRoot))
+    expect(content).toContain('declare module "react-foundry" {')
     expect(content).toContain('interface Register {')
     expect(content).toContain('navPath:')
     expect(content).not.toContain('@react-foundry/core')
@@ -139,64 +145,98 @@ describe('writeNavTypes', () => {
 
   it('emits every path in the tree as a union member', () => {
     const nav: NavItem[] = [{ label: 'Forms', children: [{ label: 'Button' }] }]
-    const content = readFileSync(writeNavTypes(nav, testRoot), 'utf-8')
+    const content = read(writeNavTypes(nav, testRoot))
 
-    expect(content).toContain('navPath: "Forms" | "Forms/Button"')
+    expect(content).toContain('| "Forms"\n      | "Forms/Button"')
+  })
+
+  // A real tree runs to hundreds of columns on one line, which trips `max-len` and
+  // Prettier's printWidth in the consumer's project.
+  it('breaks the union across lines rather than emitting one long one', () => {
+    const nav: NavItem[] = [{ label: 'Forms' }, { label: 'Layout' }, { label: 'Data' }]
+    const content = read(writeNavTypes(nav, testRoot))
+
+    for (const line of content.split('\n')) expect(line.length).toBeLessThan(80)
+  })
+
+  // Consumer lint configs vary too much to satisfy one by one, so the file opts out.
+  // Same approach TanStack Router's routeTree.gen.ts takes.
+  it('exempts itself from the consumer lint and format config', () => {
+    const content = read(writeNavTypes([{ label: 'Forms' }], testRoot))
+
+    expect(content).toContain('/* eslint-disable */')
+    // Applies to the next declaration, so it has to sit immediately before it.
+    expect(content).toContain('// prettier-ignore\ndeclare module')
+  })
+
+  // The module name used single quotes while the paths came from JSON.stringify, so
+  // one generated file carried two styles.
+  it('quotes the module name and the paths the same way', () => {
+    const content = read(writeNavTypes([{ label: 'Forms' }], testRoot))
+
+    expect(content).not.toContain("'react-foundry'")
   })
 
   // Without this the file is a script, not a module, and TypeScript rejects the
   // augmentation outright.
   it('marks the file as a module', () => {
-    const content = readFileSync(writeNavTypes([{ label: 'Forms' }], testRoot), 'utf-8')
+    const content = read(writeNavTypes([{ label: 'Forms' }], testRoot))
 
     expect(content).toContain('export {}')
   })
 
-  it('falls back to string when no tree is declared, so previews still typecheck', () => {
-    const content = readFileSync(writeNavTypes([], testRoot), 'utf-8')
-
-    expect(content).toContain('navPath: string')
+  // `navPath: string` is exactly what ResolveNavPath falls back to with no
+  // augmentation present, so the file would be an inert artifact to gitignore.
+  it('writes nothing when no tree is declared', () => {
+    expect(writeNavTypes([], testRoot)).toBeNull()
+    expect(existsSync(resolve(testRoot, 'foundry-nav.gen.d.ts'))).toBe(false)
   })
 
-  it('falls back to string when nav is absent entirely', () => {
-    const content = readFileSync(writeNavTypes(undefined, testRoot), 'utf-8')
+  it('writes nothing when nav is absent entirely', () => {
+    expect(writeNavTypes(undefined, testRoot)).toBeNull()
+    expect(existsSync(resolve(testRoot, 'foundry-nav.gen.d.ts'))).toBe(false)
+  })
 
-    expect(content).toContain('navPath: string')
+  // Skipping the write is not enough: a project that drops its `nav` would keep the
+  // previous union pinned by a file nothing regenerates.
+  it('removes a file an earlier run left behind', () => {
+    const filePath = writeNavTypes([{ label: 'Forms' }], testRoot) as string
+    expect(existsSync(filePath)).toBe(true)
+
+    expect(writeNavTypes([], testRoot)).toBeNull()
+    expect(existsSync(filePath)).toBe(false)
   })
 
   // The union is built by string concatenation, so a label containing a quote
   // would otherwise emit a broken type and fail the user's whole typecheck.
   it('escapes quotes in labels', () => {
     const nav: NavItem[] = [{ label: 'The "Good" Parts' }]
-    const content = readFileSync(writeNavTypes(nav, testRoot), 'utf-8')
 
-    expect(content).toContain('navPath: "The \\"Good\\" Parts"')
+    expect(read(writeNavTypes(nav, testRoot))).toContain('| "The \\"Good\\" Parts"')
   })
 
   it('handles apostrophes in labels', () => {
     const nav: NavItem[] = [{ label: "Jon's Components" }]
-    const content = readFileSync(writeNavTypes(nav, testRoot), 'utf-8')
 
-    expect(content).toContain('navPath: "Jon\'s Components"')
+    expect(read(writeNavTypes(nav, testRoot))).toContain('| "Jon\'s Components"')
   })
 
   it('escapes backslashes in labels', () => {
     const nav: NavItem[] = [{ label: 'a\\b' }]
-    const content = readFileSync(writeNavTypes(nav, testRoot), 'utf-8')
 
-    expect(content).toContain('navPath: "a\\\\b"')
+    expect(read(writeNavTypes(nav, testRoot))).toContain('| "a\\\\b"')
   })
 
   it('overwrites on subsequent calls rather than appending', () => {
     writeNavTypes([{ label: 'Old' }], testRoot)
-    const content = readFileSync(writeNavTypes([{ label: 'New' }], testRoot), 'utf-8')
+    const content = read(writeNavTypes([{ label: 'New' }], testRoot))
 
     expect(content).toContain('"New"')
     expect(content).not.toContain('"Old"')
   })
 
   it('marks the file as generated so it is not hand edited', () => {
-    const content = readFileSync(writeNavTypes([{ label: 'Forms' }], testRoot), 'utf-8')
+    const content = read(writeNavTypes([{ label: 'Forms' }], testRoot))
 
     expect(content).toContain('Generated by react-foundry')
   })
@@ -207,12 +247,11 @@ describe('writeNavTypes', () => {
   it('reflects a path added on a later call', () => {
     writeNavTypes([{ label: 'Forms' }], testRoot)
 
-    const content = readFileSync(
-      writeNavTypes([{ label: 'Forms' }, { label: 'Layout' }], testRoot),
-      'utf-8'
+    const content = read(
+      writeNavTypes([{ label: 'Forms' }, { label: 'Layout' }], testRoot)
     )
 
-    expect(content).toContain('"Forms" | "Layout"')
+    expect(content).toContain('| "Forms"\n      | "Layout"')
   })
 
   // End to end for the monorepo layout: config root is apps/foundry, previews
@@ -229,7 +268,7 @@ describe('writeNavTypes', () => {
     })
 
     expect(filePath).toBe(resolve(siblingSrc, 'foundry-nav.gen.d.ts'))
-    expect(existsSync(filePath)).toBe(true)
-    expect(readFileSync(filePath, 'utf-8')).toContain('navPath: "Forms"')
+    expect(existsSync(filePath as string)).toBe(true)
+    expect(read(filePath)).toContain('| "Forms"')
   })
 })
