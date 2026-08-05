@@ -1,7 +1,7 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { loadConfig } from '../src/config/load-config'
 
@@ -114,5 +114,31 @@ describe('loadConfig', () => {
     // No default export → userConfig falls back to {}
     expect(config.port).toBe(5173)
     expect(config.previews).toBe('src/components/**/*.preview.tsx')
+  })
+
+  // Defaulting silently starts a working-looking server with an empty shelf, which
+  // reads as broken discovery rather than a wrong working directory.
+  describe('when no config file is found', () => {
+    it('names the directory it searched and the glob it fell back to', async () => {
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      await loadConfig(tempDir)
+
+      const message = warn.mock.calls[0]?.join(' ') ?? ''
+      expect(message).toContain(tempDir)
+      expect(message).toContain('src/components/**/*.preview.tsx')
+
+      warn.mockRestore()
+    })
+
+    it('stays quiet when a config is found', async () => {
+      writeConfig(tempDir, 'foundry.config.mjs', `export default { port: 9000 };\n`)
+      const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+      await loadConfig(tempDir)
+
+      expect(warn).not.toHaveBeenCalled()
+      warn.mockRestore()
+    })
   })
 })
