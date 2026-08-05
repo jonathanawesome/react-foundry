@@ -1,5 +1,11 @@
 # react-foundry
 
+## 0.0.10
+
+### Patch Changes
+
+- 156f5d3: Fixes and new API from a real migration onto foundry
+
 ## 0.0.9
 
 ### Patch Changes
