@@ -1,0 +1,15 @@
+/*
+ * Stands in for the global stylesheet a real consumer brings along, which nothing in
+ * this repo modelled before. Painting the app shell via `#root` is an extremely common
+ * pattern, and it is how a consumer's CSS reaches foundry's document at all.
+ *
+ * In foundry's document `#root` is the parent of foundry's own layout element, so this
+ * rule used to cover the entire viewport, canvas included: a consumer with dark chrome
+ * watched foundry's canvas go dark with it. Foundry now paints its layout root, which
+ * covers this, so the color below should never be visible anywhere.
+ *
+ * That is the point. If purple ever shows through, the fix has regressed.
+ */
+#root {
+  background-color: rebeccapurple;
+}
