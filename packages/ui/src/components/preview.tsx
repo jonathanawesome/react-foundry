@@ -5,7 +5,14 @@ import {
 } from '@react-foundry/core'
 import { chromeSurface, ThemeContext } from '@react-foundry/style'
 import { useSearch } from '@tanstack/react-router'
-import { type ReactNode, useCallback, useContext, useRef, useState } from 'react'
+import {
+  type ReactNode,
+  type RefObject,
+  useCallback,
+  useContext,
+  useRef,
+  useState,
+} from 'react'
 
 import { useUIStore } from '../state'
 
@@ -37,7 +44,7 @@ function centerInPane(target: HTMLElement, pane: HTMLElement) {
  * checker keeps its existing "nothing to scan" behaviour. Handing it the empty canvas
  * instead would let axe's page-level rules report on foundry's own chrome.
  */
-const NO_CANVAS_REF: React.RefObject<HTMLDivElement | null> = { current: null }
+const NO_CANVAS_REF: RefObject<HTMLDivElement | null> = { current: null }
 
 interface PreviewProps {
   preview: PreviewComponent | null

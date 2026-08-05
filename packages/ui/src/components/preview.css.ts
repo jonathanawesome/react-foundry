@@ -28,8 +28,14 @@ export const previewStyles = {
     selectors: {
       // The canvas mounts on every surface so the consumer's Provider stays mounted,
       // but with nothing to show it must take no room: the fallback chrome beside it
-      // occupies the pane instead. A Provider that renders a wrapper element of its
-      // own stays clipped in here rather than displacing that chrome.
+      // occupies the pane instead.
+      //
+      // All three declarations are load-bearing. `overflow: hidden` is not cosmetic: a
+      // flex item's automatic minimum size (`min-height: auto`) applies only while
+      // overflow is `visible`, so without it a Provider that renders a wrapper element
+      // would hold the pane open to that wrapper's height and push the chrome down.
+      // `padding: 0` matters because `flex-basis` resolves against the border box under
+      // `box-sizing: border-box`, which would otherwise floor the pane at 64px.
       '&[data-empty="true"]': {
         flex: '0 0 0',
         padding: 0,
