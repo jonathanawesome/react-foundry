@@ -103,11 +103,21 @@ pass "the install pulled in no @tanstack package"
 snapshot() { find node_modules/react-foundry -type f -exec shasum {} \; | sort | shasum; }
 BEFORE="$(snapshot)"
 
-# --- 3. import prints nothing (cli.parse split) -------------------------------
+# --- 3. import side effects and reported version ------------------------------
 echo "==> import side-effect check"
 OUT="$(node -e "import('react-foundry').then(() => {})" 2>&1)"
 [ -z "$OUT" ] || fail "importing react-foundry produced output (cli.parse leaked?): $OUT"
 pass "import 'react-foundry' is side-effect-free"
+
+# The version is read from the package's own manifest at startup, which only works if the
+# relative path holds in the PUBLISHED layout (bundled into dist/cli.js, manifest one level
+# up). The unit test can only prove the source layout, so this is the half that matters:
+# a wrong path here degrades to 'unknown' silently. The literal it replaced sat at 0.0.1
+# through nine releases.
+EXPECTED_VERSION="$(node -p "require('./node_modules/react-foundry/package.json').version")"
+npx foundry --version 2>&1 | grep -qF "foundry/$EXPECTED_VERSION" \
+  || fail "foundry --version did not report $EXPECTED_VERSION (got: $(npx foundry --version 2>&1))"
+pass "foundry --version reports $EXPECTED_VERSION"
 
 # --- 4. foundry dev -----------------------------------------------------------
 echo "==> foundry dev"
