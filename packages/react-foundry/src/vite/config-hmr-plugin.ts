@@ -1,12 +1,36 @@
 import { existsSync, readFileSync, watch } from 'node:fs'
-import { resolve } from 'node:path'
+import { basename, resolve } from 'node:path'
 import pc from 'picocolors'
 import type { Plugin, ViteDevServer } from 'vite'
+import { DEFAULT_CONFIG } from '../config/defaults'
 import { importUserConfig } from '../config/import-config'
 import { findConfigPath } from '../config/load-config'
+import type { ResolvedFoundryConfig } from '../types'
 import { invalidateFile } from './virtual-module-plugin'
 import { CONFIG_MODULE_FILE_NAME, writeFoundryConfig } from './write-foundry-config'
 import { writeNavTypes } from './write-nav-types'
+
+/**
+ * Config keys read once while the server is being built, so a running one cannot
+ * pick them up.
+ *
+ * `viteConfig` belongs here too but is left out on purpose: it carries plugin
+ * instances and functions, so any comparison is either lossy or reports a change on
+ * every save. `navTypes` and `navTypesPath` are absent because they are not
+ * restart-required at all, being re-applied below on every edit.
+ */
+const RESTART_KEYS = ['previews', 'port', 'host'] as const
+
+type RestartKey = (typeof RESTART_KEYS)[number]
+
+/** The restart-required values as they stood at the last reload. */
+export type RestartKeyValues = Pick<ResolvedFoundryConfig, RestartKey>
+
+export interface RestartRequiredChange {
+  key: RestartKey
+  from: RestartKeyValues[RestartKey]
+  to: RestartKeyValues[RestartKey]
+}
 
 /** What one reload did, so the caller can report it and compare the next one against it. */
 export interface ConfigReloadResult {
@@ -18,6 +42,10 @@ export interface ConfigReloadResult {
   dropped: number
   /** Where the `NavPath` union landed, or null when nothing was emitted. */
   navTypesPath: string | null
+  /** Keys the edit moved that only a restart can apply. Empty on the common edit. */
+  restartRequired: RestartRequiredChange[]
+  /** The restart-required values now on disk. Feed them back as `lastRestartKeys`. */
+  restartKeys: RestartKeyValues
 }
 
 export interface ConfigReloadOptions {
@@ -30,6 +58,22 @@ export interface ConfigReloadOptions {
    * it byte for byte, which is how those are told apart from a `nav` or `title` change.
    */
   lastConfigSource: string | null
+  /** What the restart-required keys held at the last reload, or at startup. */
+  lastRestartKeys: RestartKeyValues
+}
+
+/**
+ * Reads the restart-required keys off a raw user config.
+ *
+ * Defaults are applied here because the startup snapshot is already resolved: without
+ * them a config that omits `port` would report moving to 5173 on its first edit.
+ */
+function readRestartKeys(userConfig: Record<string, unknown>): RestartKeyValues {
+  return {
+    previews: (userConfig.previews as string) ?? DEFAULT_CONFIG.previews,
+    port: (userConfig.port as number) ?? DEFAULT_CONFIG.port,
+    host: (userConfig.host as string) ?? DEFAULT_CONFIG.host,
+  }
 }
 
 /** The config module's path, knowable before it is (re)written. */
@@ -57,7 +101,13 @@ export function readSeedConfigSource(cacheDir: string): string | null {
  */
 export async function applyConfigChange(
   server: ViteDevServer,
-  { configPath, userRoot, cacheDir, lastConfigSource }: ConfigReloadOptions
+  {
+    configPath,
+    userRoot,
+    cacheDir,
+    lastConfigSource,
+    lastRestartKeys,
+  }: ConfigReloadOptions
 ): Promise<ConfigReloadResult> {
   // Re-load through the same esbuild-to-file path as startup. The mtime in the emitted
   // filename busts the module cache; importing `react-foundry` is safe (side-effect-free
@@ -88,9 +138,28 @@ export async function applyConfigChange(
   // with no reload. That is the common case while tuning colors.
   server.watcher.emit('change', themePath)
 
+  // Read before the early return below. None of these keys reach the generated config
+  // module, so an edit that only moves one leaves it byte for byte identical, and a
+  // `previews` change would otherwise pass unremarked while the server carried on
+  // globbing the old pattern. That is the whole symptom: it surfaces later as HMR
+  // apparently not working for a file nothing is watching.
+  const restartKeys = readRestartKeys(userConfig)
+  const restartRequired = RESTART_KEYS.flatMap((key) =>
+    restartKeys[key] === lastRestartKeys[key]
+      ? []
+      : [{ key, from: lastRestartKeys[key], to: restartKeys[key] }]
+  )
+
   const configSource = readFileSync(configCachePath, 'utf-8')
   if (configSource === lastConfigSource) {
-    return { configSource, reloaded: false, dropped: 0, navTypesPath }
+    return {
+      configSource,
+      reloaded: false,
+      dropped: 0,
+      navTypesPath,
+      restartRequired,
+      restartKeys,
+    }
   }
 
   // `nav` and `title` need a reload rather than an HMR update. The cache dir sits under
@@ -101,10 +170,31 @@ export async function applyConfigChange(
   const dropped = invalidateFile(server, configCachePath)
   server.ws.send({ type: 'full-reload' })
 
-  return { configSource, reloaded: true, dropped, navTypesPath }
+  return {
+    configSource,
+    reloaded: true,
+    dropped,
+    navTypesPath,
+    restartRequired,
+    restartKeys,
+  }
 }
 
-export function createConfigHmrPlugin(userRoot: string, cacheDir: string): Plugin {
+/** How one restart-required change reads in the terminal. */
+function describeRestartRequired(configPath: string, change: RestartRequiredChange) {
+  const name = basename(configPath)
+
+  return pc.yellow(
+    `  ${name} changed: '${change.key}' requires a restart ` +
+      `(was ${JSON.stringify(change.from)}, now ${JSON.stringify(change.to)})`
+  )
+}
+
+export function createConfigHmrPlugin(
+  userRoot: string,
+  cacheDir: string,
+  config: ResolvedFoundryConfig
+): Plugin {
   return {
     name: 'react-foundry:config-hmr',
     configureServer(server) {
@@ -112,6 +202,13 @@ export function createConfigHmrPlugin(userRoot: string, cacheDir: string): Plugi
       if (!configPath) return
 
       let lastConfigSource = readSeedConfigSource(cacheDir)
+      // Seeded from the resolved config the server was built with, so the first edit
+      // is measured against what is actually running rather than against defaults.
+      let lastRestartKeys: RestartKeyValues = {
+        previews: config.previews,
+        port: config.port,
+        host: config.host,
+      }
       let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
       // Use fs.watch directly: the config is esbuild-bundled to the cache dir rather
@@ -129,16 +226,24 @@ export function createConfigHmrPlugin(userRoot: string, cacheDir: string): Plugi
               userRoot,
               cacheDir,
               lastConfigSource,
+              lastRestartKeys,
             })
             lastConfigSource = result.configSource
+            // Carried forward so the warning fires once for the edit that made the
+            // change, rather than on every save for the rest of the session.
+            lastRestartKeys = result.restartKeys
 
             if (result.reloaded) {
               console.log(
                 pc.green('  Config reloaded'),
                 pc.dim(`[${result.dropped} module(s) invalidated]`)
               )
-            } else {
+            } else if (result.restartRequired.length === 0) {
               console.log(pc.green('  Theme reloaded'))
+            }
+
+            for (const change of result.restartRequired) {
+              console.log(describeRestartRequired(configPath, change))
             }
           } catch (error) {
             console.error(pc.yellow('  Failed to reload config:'), error)

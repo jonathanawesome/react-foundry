@@ -87,7 +87,7 @@ export async function createViteConfig(
   } = config.viteConfig || {}
 
   const plugins: PluginOption[] = [
-    createConfigHmrPlugin(root, cacheDir),
+    createConfigHmrPlugin(root, cacheDir, config),
     createVirtualModulePlugin(config.previews, root),
     createProvidersVirtualModulePlugin(root),
     react(),
