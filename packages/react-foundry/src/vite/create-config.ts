@@ -167,12 +167,14 @@ export async function createViteConfig(
             strict: true,
             ...userServer?.fs,
           },
-      watch: {
-        // Excludes the user's project from Vite's watcher; previews and config are
-        // watched with fs.watch in their own plugins instead.
-        ignored: [`${root}/**/*`],
-        ...userServer?.watch,
-      },
+      // Nothing is added to `watch.ignored` on purpose. Vite watches its own root (this
+      // package's app dir) plus each file it transforms, which it adds by hand from
+      // `loadAndTransform`. Ignoring the user's project used to drop every one of those
+      // additions, so no edit to a component a preview imports ever reached HMR. Vite's
+      // own defaults already cover .git, node_modules (and so the foundry cache dir) and
+      // its cacheDir, and it never walks the user's project recursively, so the config
+      // file and the emitted nav types stay unwatched and their fs.watch plugins stay
+      // necessary.
     },
     optimizeDeps: {
       ...userOptimizeDeps,

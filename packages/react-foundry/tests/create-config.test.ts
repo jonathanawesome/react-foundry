@@ -79,9 +79,13 @@ describe('createViteConfig', () => {
     expect(pluginNames(vite.plugins)).toContain('react-foundry:virtual-providers')
   })
 
-  it('ignores the user project in the watcher', async () => {
+  // The HMR bug this guards: Vite watches its own root plus each file it transforms,
+  // which it adds by hand from `loadAndTransform`. Every one of the user's files arrives
+  // that way, so a root-wide ignore dropped all of them and no edit to a component a
+  // preview imports ever reached HMR.
+  it('leaves the user project watchable', async () => {
     const vite = await createViteConfig(config(), testRoot)
-    expect(vite.server?.watch?.ignored).toEqual([`${testRoot}/**/*`])
+    expect(vite.server?.watch?.ignored).toBeUndefined()
   })
 
   it('serves the user project under a strict fs allow-list', async () => {
@@ -133,16 +137,6 @@ describe('createViteConfig', () => {
   })
 
   describe('user vite overrides', () => {
-    it('keeps watch.ignored when the user sets an unrelated server key', async () => {
-      const vite = await createViteConfig(
-        config({ viteConfig: { server: { host: '0.0.0.0' } } }),
-        testRoot
-      )
-
-      expect(vite.server?.watch?.ignored).toEqual([`${testRoot}/**/*`])
-      expect(vite.server?.host).toBe('0.0.0.0')
-    })
-
     it('keeps fs.allow when the user sets an unrelated server key', async () => {
       const vite = await createViteConfig(
         config({ viteConfig: { server: { open: true } } }),
@@ -153,7 +147,9 @@ describe('createViteConfig', () => {
       expect(vite.server?.fs?.strict).toBe(true)
     })
 
-    it('lets the user override watch.ignored explicitly', async () => {
+    // Foundry no longer sets `watch` at all, so this proves the user's own survives the
+    // spread rather than being dropped alongside the ignore list that used to live here.
+    it('lets the user set watch.ignored', async () => {
       const vite = await createViteConfig(
         config({ viteConfig: { server: { watch: { ignored: ['custom'] } } } }),
         testRoot
