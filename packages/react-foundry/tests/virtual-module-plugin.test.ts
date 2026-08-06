@@ -8,11 +8,22 @@ import {
   invalidateFile,
   invalidateVirtualModule,
   type ModuleEntry,
+  type ParsedPreview,
   type PreviewMeta,
   parseNavPath,
   parsePreviewExports,
   resolvePreviewsGlob,
 } from '../src/vite/virtual-module-plugin'
+
+/**
+ * A preview as the tests below care to spell it out. Only `exportName` is ever
+ * required; the rest default to what a bare-function preview parses to, so a test
+ * names only the field it is about.
+ */
+type PreviewInput = Partial<ParsedPreview> & { exportName: string }
+
+const parsed = (previews: PreviewInput[]): ParsedPreview[] =>
+  previews.map((preview) => ({ label: null, controlsSource: null, ...preview }))
 
 describe('parseNavPath', () => {
   it('reads a nav path declared with a type annotation', () => {
@@ -63,9 +74,9 @@ describe('parsePreviewExports', () => {
     ].join('\n')
 
     expect(parsePreviewExports(source)).toEqual([
-      { exportName: 'Zulu', label: null },
-      { exportName: 'Alpha', label: null },
-      { exportName: 'Mike', label: null },
+      { exportName: 'Zulu', label: null, controlsSource: null },
+      { exportName: 'Alpha', label: null, controlsSource: null },
+      { exportName: 'Mike', label: null, controlsSource: null },
     ])
   })
 
@@ -76,7 +87,7 @@ describe('parsePreviewExports', () => {
       "export const Primary = createPreview({ label: 'Primary Button', render: () => null })\n"
 
     expect(parsePreviewExports(source)).toEqual([
-      { exportName: 'Primary', label: 'Primary Button' },
+      { exportName: 'Primary', label: 'Primary Button', controlsSource: null },
     ])
   })
 
@@ -85,14 +96,14 @@ describe('parsePreviewExports', () => {
       'export const Primary = createPreview({ label: "Primary", render: () => null })\n'
 
     expect(parsePreviewExports(source)).toEqual([
-      { exportName: 'Primary', label: 'Primary' },
+      { exportName: 'Primary', label: 'Primary', controlsSource: null },
     ])
   })
 
   it('yields a null label for the bare-function form', () => {
     expect(
       parsePreviewExports('export const Primary = createPreview(() => null)\n')
-    ).toEqual([{ exportName: 'Primary', label: null }])
+    ).toEqual([{ exportName: 'Primary', label: null, controlsSource: null }])
   })
 
   it('handles a createPreview call spanning multiple lines', () => {
@@ -106,8 +117,12 @@ describe('parsePreviewExports', () => {
     ].join('\n')
 
     expect(parsePreviewExports(source)).toEqual([
-      { exportName: 'Primary', label: 'Danger Playground' },
-      { exportName: 'Danger', label: null },
+      {
+        exportName: 'Primary',
+        label: 'Danger Playground',
+        controlsSource: '{ tone: { type: "select", options: ["a", "b"], default: "a" } }',
+      },
+      { exportName: 'Danger', label: null, controlsSource: null },
     ])
   })
 
@@ -121,7 +136,13 @@ describe('parsePreviewExports', () => {
       '})',
     ].join('\n')
 
-    expect(parsePreviewExports(source)).toEqual([{ exportName: 'Primary', label: null }])
+    expect(parsePreviewExports(source)).toEqual([
+      {
+        exportName: 'Primary',
+        label: null,
+        controlsSource: '{ label: { type: "text", default: "hi" } }',
+      },
+    ])
   })
 
   it('ignores a label nested inside the render body', () => {
@@ -131,7 +152,9 @@ describe('parsePreviewExports', () => {
       '})',
     ].join('\n')
 
-    expect(parsePreviewExports(source)).toEqual([{ exportName: 'Primary', label: null }])
+    expect(parsePreviewExports(source)).toEqual([
+      { exportName: 'Primary', label: null, controlsSource: null },
+    ])
   })
 
   it('is not thrown off by braces or a colon inside a string', () => {
@@ -139,7 +162,7 @@ describe('parsePreviewExports', () => {
       'export const Primary = createPreview({ render: () => <p>{"a: {b}"}</p>, label: \'Real\' })\n'
 
     expect(parsePreviewExports(source)).toEqual([
-      { exportName: 'Primary', label: 'Real' },
+      { exportName: 'Primary', label: 'Real', controlsSource: null },
     ])
   })
 
@@ -151,7 +174,7 @@ describe('parsePreviewExports', () => {
     ].join('\n')
 
     expect(parsePreviewExports(source)).toEqual([
-      { exportName: 'Primary', label: 'Primary' },
+      { exportName: 'Primary', label: 'Primary', controlsSource: null },
     ])
   })
 
@@ -164,14 +187,18 @@ describe('parsePreviewExports', () => {
       "export const Real = createPreview({ label: 'Real', render: () => null })",
     ].join('\n')
 
-    expect(parsePreviewExports(source)).toEqual([{ exportName: 'Real', label: 'Real' }])
+    expect(parsePreviewExports(source)).toEqual([
+      { exportName: 'Real', label: 'Real', controlsSource: null },
+    ])
   })
 
   it('ignores a createPreview that is not at the start of a line', () => {
     const source =
       '// export const Commented = createPreview(() => null)\nexport const Real = createPreview(() => null)\n'
 
-    expect(parsePreviewExports(source)).toEqual([{ exportName: 'Real', label: null }])
+    expect(parsePreviewExports(source)).toEqual([
+      { exportName: 'Real', label: null, controlsSource: null },
+    ])
   })
 
   // A template literal is treated as computed, not a literal, so it degrades to
@@ -180,26 +207,93 @@ describe('parsePreviewExports', () => {
     const source =
       'export const Primary = createPreview({ label: `Primary`, render: () => null })\n'
 
-    expect(parsePreviewExports(source)).toEqual([{ exportName: 'Primary', label: null }])
+    expect(parsePreviewExports(source)).toEqual([
+      { exportName: 'Primary', label: null, controlsSource: null },
+    ])
   })
 
   it('does not match a longer identifier ending in label', () => {
     const source =
       "export const Primary = createPreview({ ariaLabel: 'nope', render: () => null })\n"
 
-    expect(parsePreviewExports(source)).toEqual([{ exportName: 'Primary', label: null }])
+    expect(parsePreviewExports(source)).toEqual([
+      { exportName: 'Primary', label: null, controlsSource: null },
+    ])
+  })
+
+  // `controls` is read so an edit to a schema can be told apart from an edit to a
+  // render body. The props panel renders from the object the route loader captured,
+  // which a Fast Refresh patch does not replace, so a schema edit has to reload.
+  describe('the controls source', () => {
+    const controlsOf = (source: string) => parsePreviewExports(source)[0]?.controlsSource
+
+    it('is captured verbatim, ending at the comma that closes the property', () => {
+      const source =
+        "export const P = createPreview({ controls: { tone: { type: 'select' } }, render: () => null })\n"
+
+      expect(controlsOf(source)).toBe("{ tone: { type: 'select' } }")
+    })
+
+    it('is captured when it is the last property, ending at the closing brace', () => {
+      const source =
+        "export const P = createPreview({ render: () => null, controls: { n: { type: 'number' } } })\n"
+
+      expect(controlsOf(source)).toBe("{ n: { type: 'number' } }")
+    })
+
+    // Commas and braces inside a string or an options array would end the span
+    // early if the scan did not skip them, truncating the schema it compares.
+    it('survives commas and braces inside strings and nested arrays', () => {
+      const source = [
+        'export const P = createPreview({',
+        '  controls: { tone: { type: "select", options: ["a, b", "{c}"] } },',
+        '  render: () => null,',
+        '})',
+      ].join('\n')
+
+      expect(controlsOf(source)).toBe(
+        '{ tone: { type: "select", options: ["a, b", "{c}"] } }'
+      )
+    })
+
+    it('is null for a preview with no controls', () => {
+      const source =
+        "export const P = createPreview({ label: 'P', render: () => null })\n"
+
+      expect(controlsOf(source)).toBeNull()
+    })
+
+    it('is null for the bare-function form', () => {
+      expect(controlsOf('export const P = createPreview(() => null)\n')).toBeNull()
+    })
+
+    // Same depth guard the label relies on: only a key of the options object counts.
+    it('ignores a controls key nested inside the render body', () => {
+      const source = [
+        'export const P = createPreview({',
+        '  render: () => <Panel controls={{ a: 1 }} />,',
+        '})',
+      ].join('\n')
+
+      expect(controlsOf(source)).toBeNull()
+    })
+
+    it('is null for a shorthand property, which has no value to read', () => {
+      const source = 'export const P = createPreview({ controls, render: () => null })\n'
+
+      expect(controlsOf(source)).toBeNull()
+    })
   })
 })
 
 // The reason each branch exists is the log line a user reads when a reload
 // happens. Without these, the whole diff could return the wrong branch silently.
 describe('classifyChange', () => {
-  const meta = (
-    nav: string | null,
-    previews: { exportName: string; label: string | null }[]
-  ): PreviewMeta => ({ nav, previews })
-  const named = (...names: string[]) =>
-    names.map((exportName) => ({ exportName, label: null }))
+  const meta = (nav: string | null, previews: PreviewInput[]): PreviewMeta => ({
+    nav,
+    previews: parsed(previews),
+  })
+  const named = (...names: string[]) => names.map((exportName) => ({ exportName }))
 
   it('reports a removed file', () => {
     expect(classifyChange(meta('Forms', named('Primary')), null)).toBe('preview removed')
@@ -262,6 +356,57 @@ describe('classifyChange', () => {
     ).toBe('label changed')
   })
 
+  // The props panel renders from the controls object the route loader captured, and
+  // a Fast Refresh patch swaps the render without replacing that object. Left as an
+  // ordinary edit, a schema change would hot-patch the canvas while the panel kept
+  // describing the previous shape.
+  it('reports a controls change when the export set and labels are unchanged', () => {
+    expect(
+      classifyChange(
+        meta('Forms', [{ exportName: 'Primary', controlsSource: '{ tone: {} }' }]),
+        meta('Forms', [
+          { exportName: 'Primary', controlsSource: '{ tone: {}, size: {} }' },
+        ])
+      )
+    ).toBe('controls changed')
+  })
+
+  it('reports gaining controls where there were none', () => {
+    expect(
+      classifyChange(
+        meta('Forms', named('Primary')),
+        meta('Forms', [{ exportName: 'Primary', controlsSource: '{ tone: {} }' }])
+      )
+    ).toBe('controls changed')
+  })
+
+  // A schema can reach the call site from elsewhere in the module, and then it reads
+  // the same before and after it is edited. `controls: buttonControls` in the demo's
+  // button previews is exactly this. Judging which spans are self-contained means
+  // resolving identifiers, so declaring controls at all is what forces the reload.
+  it('reports that controls may have changed when a file declares any', () => {
+    expect(
+      classifyChange(
+        meta('Forms', [{ exportName: 'Primary', controlsSource: 'buttonControls' }]),
+        meta('Forms', [{ exportName: 'Primary', controlsSource: 'buttonControls' }])
+      )
+    ).toBe('controls may have changed')
+  })
+
+  // Even an inline literal takes this branch: a spread inside it can pull in an
+  // outside schema, so an unchanged span is not proof the schema held still.
+  it('reports the same for an unchanged inline schema', () => {
+    expect(
+      classifyChange(
+        meta('Forms', [{ exportName: 'Primary', controlsSource: '{ tone: {} }' }]),
+        meta('Forms', [{ exportName: 'Primary', controlsSource: '{ tone: {} }' }])
+      )
+    ).toBe('controls may have changed')
+  })
+
+  // The negative control for everything above, and the case the whole gate exists to
+  // reach: a render-body edit in a file with no controls leaves every parsed field
+  // alone, so it is Fast Refresh's to handle rather than a reload's.
   it('reports an ordinary edit when nothing structural changed', () => {
     expect(
       classifyChange(meta('Forms', named('Primary')), meta('Forms', named('Primary')))
@@ -390,8 +535,8 @@ describe('generateModuleSource', () => {
   const entry = (
     normalizedPath: string,
     nav: string | null,
-    previews: { exportName: string; label: string | null }[]
-  ): ModuleEntry => ({ normalizedPath, nav, previews })
+    previews: PreviewInput[]
+  ): ModuleEntry => ({ normalizedPath, nav, previews: parsed(previews) })
 
   it('emits nothing but the empty map for no entries', () => {
     const source = generateModuleSource([])
