@@ -94,8 +94,8 @@ export async function applyConfigChange(
   }
 
   // `nav` and `title` need a reload rather than an HMR update. The cache dir sits under
-  // the user's root, which the Vite config puts in `watch.ignored`, so the module has to
-  // be dropped by hand. Its importers go with it because `app/nav.ts` builds discovery at
+  // node_modules, which Vite's watcher ignores by default, so the module has to be
+  // dropped by hand. Its importers go with it because `app/nav.ts` builds discovery at
   // module scope and memoizes the tree, which is what left the shelf rendering the
   // previous tree after a `nav` edit.
   const dropped = invalidateFile(server, configCachePath)
@@ -114,7 +114,9 @@ export function createConfigHmrPlugin(userRoot: string, cacheDir: string): Plugi
       let lastConfigSource = readSeedConfigSource(cacheDir)
       let debounceTimer: ReturnType<typeof setTimeout> | null = null
 
-      // Use fs.watch directly: Vite's watcher ignores the user's project root.
+      // Use fs.watch directly: the config is esbuild-bundled to the cache dir rather
+      // than imported by the app, so it never enters the module graph and Vite's
+      // watcher never picks it up.
       watch(configPath, (eventType) => {
         if (eventType !== 'change') return
 

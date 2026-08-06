@@ -291,9 +291,10 @@ export interface PreviewMeta {
 /**
  * Describes what changed about a preview file, for the reload log.
  *
- * Every case reloads. Vite does not watch the user's project, so nothing else
- * would pick the change up. Labels are compared alongside the export set now
- * that they are read statically and feed the tree, so a label edit is visible.
+ * Every case but `edited` reloads, which {@link isStructuralChange} is the
+ * decision on. The fields compared here are exactly the ones the generated module
+ * carries or the props panel renders from, so anything they miss is a render body,
+ * which Vite hot-patches without foundry's help.
  */
 export function classifyChange(
   previous: PreviewMeta | undefined,
@@ -337,6 +338,85 @@ export function classifyChange(
   return 'edited'
 }
 
+/**
+ * True when a change needs a reload rather than leaving it to Fast Refresh.
+ *
+ * Defined off {@link classifyChange} so the two cannot disagree about what counts
+ * as structure: every branch it names is a change to the nav tree, the shelf, or
+ * the props panel, none of which a hot patch to a preview module would reach.
+ */
+export function isStructuralChange(
+  previous: PreviewMeta | undefined,
+  next: PreviewMeta | null
+): boolean {
+  return classifyChange(previous, next) !== 'edited'
+}
+
+/** What one preview change did, so the caller can report it. */
+export interface PreviewChangeResult {
+  /** How the change reads in the log. */
+  change: string
+  /** False when the change was left to Fast Refresh, which drops nothing. */
+  reloaded: boolean
+  /** Modules dropped from Vite's graph. Zero unless something reloaded. */
+  dropped: number
+}
+
+/**
+ * Re-reads a changed preview file and decides what the browser should do about it.
+ *
+ * Split out from the watcher so it can be exercised directly: the watcher is
+ * `fs.watch` inside `configureServer`, which no test can reach. Deliberately
+ * silent, leaving the reporting to the caller.
+ *
+ * Returns null when the file could not be read, which is what a half-written file
+ * looks like; the next event carries the finished one.
+ */
+export function applyPreviewChange(
+  server: ViteDevServer,
+  file: string,
+  fileMeta: Map<string, PreviewMeta>
+): PreviewChangeResult | null {
+  const normalizedPath = file.split('\\').join('/')
+  const previous = fileMeta.get(normalizedPath)
+
+  let next: PreviewMeta | null = null
+  if (existsSync(file)) {
+    try {
+      const source = readFileSync(file, 'utf-8')
+      next = { nav: parseNavPath(source), previews: parsePreviewExports(source) }
+    } catch {
+      return null
+    }
+  }
+
+  const change = classifyChange(previous, next)
+
+  // Record what the file looks like now even when nothing else happens here, so the
+  // next change is measured against it. On a reload `load` rebuilds this map anyway,
+  // but a hot-patched file never goes through `load` again.
+  if (next === null) fileMeta.delete(normalizedPath)
+  else fileMeta.set(normalizedPath, next)
+
+  // A render body is all that is left once nothing above changed, and Vite watches
+  // the user's project, so it is already hot-patching that file. Dropping the module
+  // here would throw away the very update it is applying.
+  if (!isStructuralChange(previous, next)) {
+    return { change, reloaded: false, dropped: 0 }
+  }
+
+  // The generated module names each file's previews and nav path, so it has to be
+  // rebuilt before the reload reads it. The edited file goes too: its own transform
+  // would otherwise still be the one Vite serves for the entry the module points at.
+  const dropped = invalidateFile(server, file) + invalidateVirtualModule(server)
+
+  // The tree is memoized per module instance, so a hot update alone would leave the
+  // shelf showing the previous structure.
+  server.ws.send({ type: 'full-reload' })
+
+  return { change, reloaded: true, dropped }
+}
+
 export function createVirtualModulePlugin(
   previewsPattern: string,
   userRoot: string
@@ -360,39 +440,22 @@ export function createVirtualModulePlugin(
       if (!existsSync(watchDir)) return
 
       const handle = (file: string) => {
-        const normalizedPath = file.split('\\').join('/')
-        const previous = fileMeta.get(normalizedPath)
-
-        let next: PreviewMeta | null = null
-        if (existsSync(file)) {
-          try {
-            const source = readFileSync(file, 'utf-8')
-            next = { nav: parseNavPath(source), previews: parsePreviewExports(source) }
-          } catch {
-            // Mid-write; the next event will carry the finished file.
-            return
-          }
-        }
-
-        // The edited file has to be dropped explicitly. Vite does not watch the
-        // user's project, so it would keep serving the previous transform, and
-        // a file's `nav` lives in that module rather than the generated one.
-        const dropped = invalidateFile(server, file) + invalidateVirtualModule(server)
+        const result = applyPreviewChange(server, file, fileMeta)
+        if (!result || !result.reloaded) return
 
         console.log(
-          pc.green(`  Preview changed (${classifyChange(previous, next)}), reloading`),
-          pc.dim(`[${dropped} module(s) invalidated]`)
+          pc.green(`  Preview changed (${result.change}), reloading`),
+          pc.dim(`[${result.dropped} module(s) invalidated]`)
         )
-
-        // The tree is memoized per module instance, so a hot update alone would
-        // leave the shelf showing the previous structure.
-        server.ws.send({ type: 'full-reload' })
       }
 
-      // Use fs.watch directly rather than server.watcher. The Vite config puts
-      // the user's project root in `watch.ignored`, so Vite never reports
-      // changes to preview files and its watcher callbacks never fire. Same
-      // reason the config HMR plugin watches the config file this way.
+      // Use fs.watch rather than server.watcher, which only reports files Vite has
+      // already transformed. A preview file that is new, or that no route has
+      // reached yet, is exactly the case this has to catch. Same reason the config
+      // HMR plugin watches the config file this way.
+      //
+      // Only preview files: a component one imports is Vite's to handle now, and
+      // widening this would put every component edit back on the reload path.
       let debounce: ReturnType<typeof setTimeout> | null = null
 
       watch(watchDir, { recursive: true }, (_event, filename) => {
@@ -529,9 +592,9 @@ function invalidateWithImporters(
  * Drops the modules Vite holds for a file on disk, and their importers,
  * returning how many.
  *
- * Vite does not watch the user's project (nor the cache dir the config module is
- * written into), so without this it serves a stale transform even across a full
- * page reload.
+ * Used for the files Vite's own watcher does not reach: the cache dir the config
+ * module is written into sits under node_modules, and a preview file may not have
+ * been transformed yet. Without this a stale transform survives a full page reload.
  */
 export function invalidateFile(server: ViteDevServer, file: string): number {
   const mods = server.moduleGraph.getModulesByFile(file)

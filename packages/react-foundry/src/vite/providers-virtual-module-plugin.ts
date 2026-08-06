@@ -64,8 +64,10 @@ export function createProvidersVirtualModulePlugin(userRoot: string): Plugin {
     configureServer(server) {
       let debounce: ReturnType<typeof setTimeout> | null = null
 
-      // fs.watch, not server.watcher: Vite ignores the user's project root. Watch the
-      // root non-recursively, filtering by filename since every root child fires here.
+      // fs.watch, not server.watcher: a providers file the consumer has not created
+      // yet is not in the module graph, so Vite's watcher would never report it
+      // appearing. Watch the root non-recursively, filtering by filename since every
+      // root child fires here.
       watch(userRoot, { recursive: false }, (_event, filename) => {
         if (!filename) return
         if (!PROVIDERS_FILE_NAMES.includes(filename.toString())) return

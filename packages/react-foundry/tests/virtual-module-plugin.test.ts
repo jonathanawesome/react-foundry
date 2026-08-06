@@ -1,12 +1,17 @@
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join, resolve } from 'node:path'
 import type { ViteDevServer } from 'vite'
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import {
+  applyPreviewChange,
   classifyChange,
   generateModuleSource,
   globBaseDir,
   invalidateFile,
   invalidateVirtualModule,
+  isStructuralChange,
   type ModuleEntry,
   type ParsedPreview,
   type PreviewMeta,
@@ -411,6 +416,204 @@ describe('classifyChange', () => {
     expect(
       classifyChange(meta('Forms', named('Primary')), meta('Forms', named('Primary')))
     ).toBe('edited')
+  })
+
+  // The one branch that must not reload, stated as the decision the watcher acts on
+  // rather than as the log line it prints.
+  describe('isStructuralChange', () => {
+    it('is false only for an ordinary edit', () => {
+      expect(
+        isStructuralChange(
+          meta('Forms', named('Primary')),
+          meta('Forms', named('Primary'))
+        )
+      ).toBe(false)
+    })
+
+    it.each([
+      ['a removed file', meta('Forms', named('Primary')), null],
+      ['an unseen file', undefined, meta('Forms', named('Primary'))],
+      ['a move', meta('Forms', named('Primary')), meta('Layout', named('Primary'))],
+      [
+        'an added preview',
+        meta('Forms', named('Primary')),
+        meta('Forms', named('Primary', 'Danger')),
+      ],
+      [
+        'a label change',
+        meta('Forms', [{ exportName: 'Primary', label: 'A' }]),
+        meta('Forms', [{ exportName: 'Primary', label: 'B' }]),
+      ],
+      [
+        'a file that declares controls',
+        meta('Forms', [{ exportName: 'Primary', controlsSource: '{}' }]),
+        meta('Forms', [{ exportName: 'Primary', controlsSource: '{}' }]),
+      ],
+    ])('is true for %s', (_name, previous, next) => {
+      expect(isStructuralChange(previous, next)).toBe(true)
+    })
+  })
+})
+
+// The watcher itself is fs.watch inside configureServer, which no test can reach,
+// so the decision it acts on lives here instead.
+describe('applyPreviewChange', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'foundry-preview-change-'))
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  function fakeServer() {
+    const invalidated: string[] = []
+    const sent: unknown[] = []
+
+    const server = {
+      moduleGraph: {
+        getModuleById: () => undefined,
+        getModulesByFile: (file: string) => new Set([{ id: file, importers: new Set() }]),
+        invalidateModule: (mod: { id: string }) => invalidated.push(mod.id),
+      },
+      ws: { send: (payload: unknown) => sent.push(payload) },
+    } as unknown as ViteDevServer
+
+    return { server, invalidated, sent }
+  }
+
+  /** Writes the preview file and hands back its path. */
+  function write(body: string, extra = ''): string {
+    const file = resolve(dir, 'a.preview.tsx')
+    writeFileSync(
+      file,
+      [
+        "export const nav = 'Forms'",
+        extra,
+        `export const Primary = createPreview(${body})`,
+      ].join('\n'),
+      'utf-8'
+    )
+    return file
+  }
+
+  /** Seeds the map the way `load` does, so a change has something to compare to. */
+  function seen(file: string, previews: PreviewInput[] = [{ exportName: 'Primary' }]) {
+    return new Map<string, PreviewMeta>([
+      [file, { nav: 'Forms', previews: parsed(previews) }],
+    ])
+  }
+
+  // The point of the whole gate: Vite is already hot-patching this file, and
+  // invalidating here would throw away the update it is applying.
+  it('leaves a render-body edit alone', () => {
+    const file = write('() => <p>one</p>')
+    const meta = seen(file)
+    const { server, invalidated, sent } = fakeServer()
+
+    write('() => <p>two</p>')
+    const result = applyPreviewChange(server, file, meta)
+
+    expect(result).toEqual({ change: 'edited', reloaded: false, dropped: 0 })
+    expect(sent).toEqual([])
+    expect(invalidated).toEqual([])
+  })
+
+  it('reloads when a preview is added, dropping the file and the generated module', () => {
+    const file = write('() => null')
+    const meta = seen(file)
+    const { server, invalidated, sent } = fakeServer()
+
+    writeFileSync(
+      file,
+      [
+        "export const nav = 'Forms'",
+        'export const Primary = createPreview(() => null)',
+        'export const Danger = createPreview(() => null)',
+      ].join('\n'),
+      'utf-8'
+    )
+    const result = applyPreviewChange(server, file, meta)
+
+    expect(result?.change).toBe('previews added or reordered')
+    expect(result?.reloaded).toBe(true)
+    expect(sent).toEqual([{ type: 'full-reload' }])
+    expect(invalidated).toContain(file)
+  })
+
+  it('reloads when the nav path moves', () => {
+    const file = write('() => null')
+    const meta = seen(file)
+    const { server, sent } = fakeServer()
+
+    writeFileSync(
+      file,
+      "export const nav = 'Layout'\nexport const Primary = createPreview(() => null)\n",
+      'utf-8'
+    )
+
+    expect(applyPreviewChange(server, file, meta)?.change).toBe('moved to Layout')
+    expect(sent).toEqual([{ type: 'full-reload' }])
+  })
+
+  // A schema can reach the call site by name, so an unchanged span is not proof it
+  // held still, and the props panel renders from an object a hot patch never replaces.
+  it('reloads a file that declares controls even on a body-only edit', () => {
+    const file = write('{ controls: schema, render: () => <p>one</p> }')
+    const meta = seen(file, [{ exportName: 'Primary', controlsSource: 'schema' }])
+    const { server, sent } = fakeServer()
+
+    write('{ controls: schema, render: () => <p>two</p> }')
+    const result = applyPreviewChange(server, file, meta)
+
+    expect(result?.change).toBe('controls may have changed')
+    expect(sent).toEqual([{ type: 'full-reload' }])
+  })
+
+  it('reloads for a file it has not seen, since there is nothing to compare', () => {
+    const file = write('() => null')
+    const { server, sent } = fakeServer()
+
+    expect(applyPreviewChange(server, file, new Map())?.change).toBe('preview added')
+    expect(sent).toEqual([{ type: 'full-reload' }])
+  })
+
+  it('reloads when the file is gone', () => {
+    const file = resolve(dir, 'a.preview.tsx')
+    const meta = seen(file)
+    const { server, sent } = fakeServer()
+
+    expect(applyPreviewChange(server, file, meta)?.change).toBe('preview removed')
+    expect(sent).toEqual([{ type: 'full-reload' }])
+  })
+
+  // A half-written file reads as a syntax error at best and throws at worst. The next
+  // event carries the finished one, so the right move is to do nothing at all.
+  it('does nothing when the file cannot be read', () => {
+    const file = resolve(dir, 'a.preview.tsx')
+    mkdirSync(file) // exists, but reading it throws EISDIR
+    const { server, invalidated, sent } = fakeServer()
+
+    expect(applyPreviewChange(server, file, seen(file))).toBeNull()
+    expect(sent).toEqual([])
+    expect(invalidated).toEqual([])
+  })
+
+  // The bookkeeping matters because a hot-patched file never goes back through
+  // `load`, which is the only other thing that fills this map.
+  it('records what the file looks like now, so the next change compares to it', () => {
+    const file = write('() => null')
+    const meta = seen(file)
+    const { server } = fakeServer()
+
+    rmSync(file)
+    expect(applyPreviewChange(server, file, meta)?.change).toBe('preview removed')
+    expect(meta.has(file)).toBe(false)
+
+    write('() => null')
+    expect(applyPreviewChange(server, file, meta)?.change).toBe('preview added')
   })
 })
 
