@@ -32,7 +32,7 @@
     "ladle",
     "preview"
   ],
-  "packageManager": "pnpm@10.11.0",
+  "packageManager": "pnpm@10.34.5",
   "engines": {
     "node": ">=22",
     "pnpm": "10.x"
