@@ -57,7 +57,7 @@ export interface NavItem {
 export interface FoundryConfig {
   /**
    * Glob pattern for preview files.
-   * Requires server restart.
+   * Requires server restart; changing it while one is running logs a warning.
    * @default 'src/components/**\/*.preview.tsx'
    */
   previews?: string
@@ -79,14 +79,14 @@ export interface FoundryConfig {
 
   /**
    * Port for dev server.
-   * Requires server restart.
+   * Requires server restart; changing it while one is running logs a warning.
    * @default 5173
    */
   port?: number
 
   /**
    * Host for dev server.
-   * Requires server restart.
+   * Requires server restart; changing it while one is running logs a warning.
    * @default 'localhost'
    */
   host?: string
@@ -109,7 +109,7 @@ export interface FoundryConfig {
    * cannot outlive the setting.
    *
    * Nothing is emitted when `nav` is empty either way.
-   * Requires server restart.
+   * Hot-reloadable: turning it off mid-session removes the file on the next save.
    * @default true
    */
   navTypes?: boolean
@@ -122,7 +122,7 @@ export interface FoundryConfig {
    * glob base), which is what makes typed `NavPath` work when previews live in a
    * different package than the config. Set this only when that inference can't
    * reach the right place. Must be gitignored.
-   * Requires server restart.
+   * Hot-reloadable.
    */
   navTypesPath?: string
 

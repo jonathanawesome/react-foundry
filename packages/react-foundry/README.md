@@ -74,6 +74,47 @@ so and falls back to defaults rather than starting a working-looking server with
 shelf. Worth watching for under a hoisting package manager, where the `foundry` binary is
 installed at your workspace root and will run happily from there.
 
+### Hot reloading
+
+Editing a component, or the preview that renders it, patches the canvas in place. What
+reloads instead is anything that changes the shelf or the props panel, since neither is
+rebuilt by a hot patch:
+
+| You edit | What happens |
+| --- | --- |
+| A component, or a stylesheet it imports | Patched in place |
+| A render body, in a preview file with no `controls` | Patched in place |
+| Anything, in a preview file that declares `controls` | Page reloads |
+| A preview's `nav`, its exports, or a label | Page reloads, shelf updates |
+| A preview file added or deleted | Page reloads |
+| `nav` or `title` in your config | Page reloads |
+| `theme` in your config | Stylesheet swaps, no reload |
+| `foundry.providers.tsx` | Page reloads |
+
+A file that declares `controls` reloads on every edit, not just on schema edits. The props
+panel renders from the schema captured when the preview loaded, and a hot patch replaces
+the render without replacing that object, so patching a schema change would leave the panel
+describing the previous shape. Foundry can't tell the two edits apart, because a schema can
+reach the preview by name (`controls: buttonControls`) and then reads identically either
+side of an edit to it.
+
+#### Keeping a refresh boundary
+
+React Fast Refresh patches a module in place only while every one of its exports is
+component-like, or the value of a non-component export is unchanged by the edit. So a file
+exporting a component alongside a helper:
+
+```tsx
+export const Badge = (props: BadgeProps) => { ... }
+export const badgeVariants = cva({ ... })   // not a component
+```
+
+keeps its boundary while you are editing `Badge`, and loses it the moment `badgeVariants`
+is what changed: the update invalidates upward and the page reloads instead. Moving the
+helper into its own file avoids it. This is a React rule rather than a foundry one, and it
+applies to your components as much as to previews. The browser console names the offending
+export when it happens.
+
 ## Configuration
 
 Create a `foundry.config.ts` in your project root:
@@ -106,9 +147,14 @@ export default defineConfig({
 | `host` | `'localhost'` | Dev server host. Requires restart. |
 | `title` | none | Display title for the instance. Hot-reloadable. |
 | `theme` | none | Theme customization. Hot-reloadable. |
-| `navTypes` | `true` | Whether to emit `foundry-nav.gen.d.ts`. Set `false` when you derive the union with `NavPathsOf` instead. Requires restart. |
-| `navTypesPath` | inferred | Exact path for the generated `NavPath` types. Defaults next to your previews; override for layouts the inference can't reach. Requires restart. |
+| `navTypes` | `true` | Whether to emit `foundry-nav.gen.d.ts`. Set `false` when you derive the union with `NavPathsOf` instead. Hot-reloadable; turning it off mid-session removes the file. |
+| `navTypesPath` | inferred | Exact path for the generated `NavPath` types. Defaults next to your previews; override for layouts the inference can't reach. Hot-reloadable. |
 | `viteConfig` | none | Vite config overrides. Requires restart. |
+
+Changing `previews`, `port` or `host` logs a warning naming the key and both values, so a
+restart-required edit doesn't quietly leave the server running on the old one. A changed
+`previews` glob is the one worth watching for: without the warning it looks like HMR has
+broken, when the file you're editing is simply outside the pattern being watched.
 
 The config is bundled with esbuild into `node_modules/.cache/react-foundry/` and imported
 from there, so **`import.meta.dirname` inside your config points at that cache directory,
@@ -397,6 +443,10 @@ Values are typed from the schema, so `values.variant` narrows to `'primary' | 'd
 and a typo is a compile error. Control types: `text`, `boolean`, `number`, `range`, `select`,
 `radio`, `color`.
 
+Note that a file declaring `controls` reloads the page on every edit rather than patching
+in place, so the panel can never describe a schema the canvas has moved on from. See
+[Hot reloading](#hot-reloading).
+
 ## Accessibility
 
 Foundry runs [axe-core](https://github.com/dequelabs/axe-core) against the canvas, scoped to
@@ -449,8 +499,8 @@ export const Provider: FoundryProvider = ({ children, theme }) => (
   anything.
 - The file is **optional**. Without it, previews render unchanged.
 
-The file may be `foundry.providers.{tsx,jsx,ts,js}`. Editing it hot-reloads. Two things to
-know for a real project:
+The file may be `foundry.providers.{tsx,jsx,ts,js}`. Editing it reloads the page, since
+every preview mounts inside it. Two things to know for a real project:
 
 - The first time you add the file, foundry pulls its new dependencies into the graph, so
   Vite may re-optimize and reload once more than usual. That is expected, not a bug.

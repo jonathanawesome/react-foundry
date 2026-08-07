@@ -97,6 +97,21 @@ describe('createPreview', () => {
   ])('accepts a render returning %s', (_label, render) => {
     expect(isPreview(createPreview(render))).toBe(true)
   })
+
+  // Not cosmetic. React Fast Refresh has no way to tell a component from any other
+  // function, so for plain functions it falls back to testing `fn.name` against
+  // /^[A-Z]/. A lowercase name fails, and the whole module stops being a refresh
+  // boundary: `@vitejs/plugin-react` calls `import.meta.hot.invalidate()` instead of
+  // patching, the update travels up to foundry's routes, and the page reloads. The
+  // same predicate gates `registerExportsForReactRefresh`, which is what covers
+  // previews written in the options form, since the static transform only registers
+  // the bare-render ones.
+  it.each([
+    ['the bare form', createPreview(() => element)],
+    ['the options form', createPreview({ render: () => element })],
+  ])('names the returned function so Fast Refresh accepts it: %s', (_label, preview) => {
+    expect(preview.name).toMatch(/^[A-Z]/)
+  })
 })
 
 describe('isPreview', () => {

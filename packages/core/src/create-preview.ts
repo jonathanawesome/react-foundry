@@ -72,7 +72,17 @@ export function createPreview(
   // so we never mutate a caller-owned function; module-scope identity stays
   // stable for React. No hook or context here: tests call `preview()` directly,
   // which would throw if the wrapper read one.
-  const preview = ((props) => render(props?.controlValues)) as Preview
+  //
+  // Named, and named with a capital, because React Fast Refresh decides what is a
+  // component by `fn.name` for plain functions. An anonymous arrow assigned to
+  // `const preview` reads as `'preview'` and fails that test, which cost every
+  // `.preview.tsx` file its refresh boundary: an edit invalidated up to the routes
+  // and full-reloaded the page instead of patching the canvas. The same predicate
+  // also gates the runtime registration that covers previews written in the options
+  // form, which the static transform does not detect on its own.
+  const preview = function Preview(props) {
+    return render(props?.controlValues)
+  } as Preview
 
   preview[PREVIEW] = true
   preview.label = isBare ? undefined : input.label
