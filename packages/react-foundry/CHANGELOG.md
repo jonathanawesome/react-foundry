@@ -1,5 +1,11 @@
 # react-foundry
 
+## 0.0.11
+
+### Patch Changes
+
+- 685f8ca: Fix hot reloading in the preview canvas: component and preview edits now patch in place instead of doing nothing. Changing `previews`, `port` or `host` now warns that a restart is needed.
+
 ## 0.0.10
 
 ### Patch Changes
