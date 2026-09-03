@@ -70,9 +70,9 @@
     "@tanstack/react-router": "catalog:",
     "@vanilla-extract/css": "catalog:",
     "@vanilla-extract/vite-plugin": "catalog:",
-    "publint": "0.3.21",
-    "tsdown": "0.22.12",
-    "tsx": "4.21.0",
+    "publint": "0.3.24",
+    "tsdown": "0.22.14",
+    "tsx": "4.23.12",
     "typescript": "catalog:",
     "vitest": "catalog:"
   }
