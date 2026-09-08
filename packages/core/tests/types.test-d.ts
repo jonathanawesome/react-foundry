@@ -1,7 +1,9 @@
+import { type ComponentProps, forwardRef, type ReactNode } from 'react'
 import { describe, expectTypeOf, it } from 'vitest'
 
-import { createPreview, defineControls } from '../src/create-preview'
+import { controlsFor, createPreview, defineControls } from '../src/create-preview'
 import type {
+  ControllableProps,
   ControlValues,
   NavPath,
   NavPathsOf,
@@ -208,6 +210,219 @@ describe('createPreview typing', () => {
       controls: { variant: { type: 'text' } },
       // @ts-expect-error `size` is not a declared control
       render: (v) => v.size,
+    })
+  })
+})
+
+// Fixtures for controlsFor. Written here rather than imported because core depends
+// on no component package, and the repo has no forwardRef component to point at.
+interface ButtonProps {
+  variant?: 'primary' | 'secondary' | 'danger'
+  size?: 'small' | 'large'
+  disabled?: boolean
+  /** Open string: takes free input, and a curated dropdown too. */
+  title?: string
+  count?: number
+  children?: ReactNode
+  onClick?: () => void
+}
+
+const Button = (_props: ButtonProps): ReactNode => null
+
+function PlainButton(_props: ButtonProps): ReactNode {
+  return null
+}
+
+const ForwardButton = forwardRef<HTMLButtonElement, ButtonProps>((_props, _ref) => null)
+
+/** No prop any control can drive, so no playground is meaningful for it. */
+const SlotOnly = (_props: { renderItem: () => ReactNode }): ReactNode => null
+
+/** The shape cva and vanilla-extract's RecipeVariants produce. */
+const Card = (_props: { variant?: 'default' | 'selectable' | undefined }): ReactNode =>
+  null
+
+interface DomButtonProps extends ComponentProps<'button'> {
+  variant?: 'primary' | 'danger'
+}
+
+const DomButton = (_props: DomButtonProps): ReactNode => null
+
+interface EdgeProps {
+  nullable?: 'a' | 'b' | null
+  // biome-ignore lint/suspicious/noExplicitAny: `inlist?: any` in @types/react is the real case
+  loose?: any
+  mystery?: unknown
+  nothing?: never
+}
+
+const Edge = (_props: EdgeProps): ReactNode => null
+
+describe('controlsFor', () => {
+  it('accepts controls that match the component and narrows their values', () => {
+    const controls = controlsFor(Button, {
+      variant: { type: 'select', options: ['primary', 'danger'], default: 'primary' },
+      size: { type: 'radio', options: ['small', 'large'] },
+      disabled: { type: 'boolean' },
+      count: { type: 'number', min: 0 },
+      title: { type: 'text' },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['variant']>().toEqualTypeOf<
+      'primary' | 'danger'
+    >()
+    expectTypeOf<ControlValues<typeof controls>['size']>().toEqualTypeOf<
+      'small' | 'large'
+    >()
+    expectTypeOf<ControlValues<typeof controls>['count']>().toEqualTypeOf<number>()
+  })
+
+  it('rejects a control naming no prop of the component', () => {
+    controlsFor(Button, {
+      // @ts-expect-error `varinat` is a typo, not a prop of Button
+      varinat: { type: 'text' },
+    })
+  })
+
+  it('rejects a control whose input type does not suit the prop', () => {
+    controlsFor(Button, {
+      // @ts-expect-error `disabled` is a boolean prop; a text box cannot drive it
+      disabled: { type: 'text' },
+    })
+  })
+
+  it('constrains options to the union the prop declares, so a typo cannot compile', () => {
+    controlsFor(Button, {
+      // @ts-expect-error 'dangre' is a typo and not a variant Button accepts
+      variant: { type: 'select', options: ['primary', 'dangre'] },
+    })
+  })
+
+  it('constrains a default to the union the prop declares', () => {
+    controlsFor(Button, {
+      // @ts-expect-error 'ghost' is not a variant Button accepts
+      variant: { type: 'select', options: ['primary', 'danger'], default: 'ghost' },
+    })
+  })
+
+  it('offers a dropdown as well as free input on an open string prop', () => {
+    const controls = controlsFor(Button, {
+      title: { type: 'select', options: ['Save', 'Cancel'] },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['title']>().toEqualTypeOf<
+      'Save' | 'Cancel'
+    >()
+  })
+
+  it('drives a ReactNode prop with a text control, since a string is a ReactNode', () => {
+    const controls = controlsFor(Button, {
+      children: { type: 'text', default: 'Click me' },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['children']>().toEqualTypeOf<string>()
+  })
+
+  it('rejects a control a ReactNode prop cannot take', () => {
+    controlsFor(Button, {
+      // @ts-expect-error a checkbox cannot drive a ReactNode slot
+      children: { type: 'boolean' },
+    })
+  })
+
+  // The point of the whole exercise: a component with nothing to control says so at
+  // the first control you write, rather than presenting a UI no call site can produce.
+  it('leaves a component with no controllable prop with no controls at all', () => {
+    expectTypeOf<keyof ControllableProps<typeof SlotOnly>>().toBeNever()
+
+    controlsFor(SlotOnly, {
+      // @ts-expect-error SlotOnly has no prop any control can drive
+      anything: { type: 'text' },
+    })
+  })
+
+  it('excludes props no control can drive, rather than mapping them to never', () => {
+    expectTypeOf<keyof ControllableProps<typeof Button>>().toEqualTypeOf<
+      'variant' | 'size' | 'disabled' | 'title' | 'count' | 'children'
+    >()
+  })
+
+  it('reads a variants-derived optional union as options', () => {
+    const controls = controlsFor(Card, {
+      variant: { type: 'radio', options: ['default', 'selectable'], default: 'default' },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['variant']>().toEqualTypeOf<
+      'default' | 'selectable'
+    >()
+  })
+
+  it('reads props off a plain function, a forwardRef, and an intrinsic element', () => {
+    controlsFor(PlainButton, { variant: { type: 'select', options: ['primary'] } })
+    controlsFor(ForwardButton, { variant: { type: 'select', options: ['primary'] } })
+    controlsFor('button', { type: { type: 'select', options: ['submit', 'reset'] } })
+  })
+
+  it('still checks a component that inherits every DOM attribute', () => {
+    controlsFor(DomButton, {
+      variant: { type: 'select', options: ['primary', 'danger'] },
+      disabled: { type: 'boolean' },
+    })
+
+    controlsFor(DomButton, {
+      // @ts-expect-error 'dangre' is a typo, even among ~97 inherited DOM props
+      variant: { type: 'select', options: ['primary', 'dangre'] },
+    })
+  })
+
+  it('types render values end to end through createPreview', () => {
+    createPreview({
+      controls: controlsFor(Button, {
+        variant: { type: 'select', options: ['primary', 'danger'] },
+        disabled: { type: 'boolean' },
+      }),
+      render: (v) => {
+        expectTypeOf(v.variant).toEqualTypeOf<'primary' | 'danger'>()
+        expectTypeOf(v.disabled).toEqualTypeOf<boolean>()
+        return null
+      },
+    })
+  })
+
+  // A schema derived from a bound one keeps its literal types, so overriding a
+  // default in a second preview does not quietly opt back out of the checking.
+  it('keeps a spread of a bound schema bound', () => {
+    const base = controlsFor(Button, {
+      variant: { type: 'select', options: ['primary', 'danger'], default: 'primary' },
+    })
+
+    const derived = { ...base, variant: { ...base.variant, default: 'danger' } } as const
+
+    expectTypeOf<ControlValues<typeof derived>['variant']>().toEqualTypeOf<
+      'primary' | 'danger'
+    >()
+  })
+})
+
+// Each of these compiled silently, or resolved to the wrong control, in a draft of
+// these types. They are guards rather than documentation of intent.
+describe('controlsFor edge cases', () => {
+  it('keeps a nullable prop controllable, and reads its union without the null', () => {
+    const controls = controlsFor(Edge, {
+      nullable: { type: 'select', options: ['a', 'b'] },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['nullable']>().toEqualTypeOf<'a' | 'b'>()
+  })
+
+  it('excludes props typed any, unknown, or never', () => {
+    expectTypeOf<keyof ControllableProps<typeof Edge>>().toEqualTypeOf<'nullable'>()
+  })
+
+  it('does not offer a checkbox for a prop typed any', () => {
+    controlsFor(Edge, {
+      // @ts-expect-error `loose` is `any`, which is not a controllable prop
+      loose: { type: 'boolean' },
     })
   })
 })
