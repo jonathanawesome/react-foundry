@@ -4,7 +4,7 @@ import {
   coerceControlValues,
   encodeControlValues,
 } from '@react-foundry/core'
-import { chromeSurface } from '@react-foundry/style'
+import { chromeSurfaceProps } from '@react-foundry/style'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 
@@ -94,10 +94,7 @@ export function PropsPanel({ controls }: PropsPanelProps) {
   const hasControls = controls && Object.keys(controls).length > 0
 
   return (
-    <aside
-      className={`${chromeSurface} ${propsPanelStyles.panel}`}
-      data-open={isPanelOpen}
-    >
+    <aside {...chromeSurfaceProps(propsPanelStyles.panel)} data-open={isPanelOpen}>
       <div className={propsPanelStyles.header}>Controls</div>
       <Scrollable className={propsPanelStyles.content}>
         {hasControls ? (

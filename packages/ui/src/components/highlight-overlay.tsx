@@ -74,6 +74,8 @@ export function HighlightOverlay({
     <div
       ref={ref}
       className={highlightOverlayStyles}
+      // Foundry chrome that lives outside every chrome surface, so it is marked directly.
+      data-foundry-chrome
       data-foundry-highlight
       data-pinned={pinned}
       aria-hidden

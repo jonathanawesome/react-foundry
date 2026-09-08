@@ -1,4 +1,4 @@
-import { chromeSurface, ThemeContext } from '@react-foundry/style'
+import { chromeSurfaceProps, ThemeContext } from '@react-foundry/style'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
 import { resolveTarget, selectorOf, type Violation } from './a11y-scan'
 import { accessibilityCheckerStyles } from './accessibility-checker.css'
@@ -206,7 +206,7 @@ export function AccessibilityChecker({
 
   return (
     <div
-      className={`${chromeSurface} ${accessibilityCheckerStyles.container}`}
+      {...chromeSurfaceProps(accessibilityCheckerStyles.container)}
       data-open={isEnabled}
       data-expanded={isExpanded}
       aria-hidden={!isEnabled}

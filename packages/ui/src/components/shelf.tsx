@@ -1,5 +1,5 @@
 import { collectNodePaths, type NavNode } from '@react-foundry/core'
-import { chromeSurface } from '@react-foundry/style'
+import { chromeSurfaceProps } from '@react-foundry/style'
 import { Link, useParams } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { useUIStore } from '../state'
@@ -132,7 +132,7 @@ export const Shelf = ({ nav }: ShelfProps) => {
   const { isExpanded, toggle } = useExpandState(nav, activeLeafId)
 
   return (
-    <aside className={`${chromeSurface} ${shelfStyles.shelf}`} data-open={isShelfOpen}>
+    <aside {...chromeSurfaceProps(shelfStyles.shelf)} data-open={isShelfOpen}>
       <Scrollable className={shelfStyles.content}>
         <nav className={shelfStyles.sidebar}>
           <NavTree

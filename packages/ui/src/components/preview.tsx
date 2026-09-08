@@ -3,7 +3,7 @@ import {
   type FoundryProvider,
   type Preview as PreviewComponent,
 } from '@react-foundry/core'
-import { chromeSurface, ThemeContext } from '@react-foundry/style'
+import { chromeSurfaceProps, ThemeContext } from '@react-foundry/style'
 import { useSearch } from '@tanstack/react-router'
 import {
   type ReactNode,
@@ -107,11 +107,11 @@ export function Preview({
         preview was selected: a cold load on `/` rendered under the wrong palette, and any
         group node dropped back to it.
 
-        data-foundry-canvas marks the reset boundary: foundry's appearance resets
-        (global-styles.css.ts) deliberately do not reach the consumer's component. The
-        Provider wraps inside it, so app context and the consumer's canvas-scoped CSS
-        reach the preview the same way in every state, with foundry's chrome resets
-        touching neither.
+        data-foundry-canvas names the consumer's half of the tree: foundry's appearance
+        resets (global-styles.css.ts) are scoped to marked chrome and never reach it,
+        wherever a preview renders, portals included. The Provider wraps inside it, so app
+        context and the consumer's canvas-scoped CSS reach the preview the same way in
+        every state, with foundry's chrome resets touching neither.
       */}
       <div
         className={previewStyles.previewPane}
@@ -126,9 +126,7 @@ export function Preview({
 
       {Component === null &&
         (fallback ?? (
-          <div className={`${chromeSurface} ${previewStyles.noSelection}`}>
-            {emptyMessage}
-          </div>
+          <div {...chromeSurfaceProps(previewStyles.noSelection)}>{emptyMessage}</div>
         ))}
 
       <AccessibilityChecker

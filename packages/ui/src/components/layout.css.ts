@@ -3,6 +3,11 @@ import { style, themeContract } from '@react-foundry/style'
 import { PANEL_WIDTH, SHELF_WIDTH } from '../constants'
 
 export const layout = style({
+  // Declared here rather than taken from the chrome reset: this element is an ancestor of
+  // the canvas, so it cannot be marked `data-foundry-chrome` without the reset reaching
+  // the consumer's component. Load-bearing, since the shelf/panel gutters below are
+  // padding on a `100vw` box.
+  boxSizing: 'border-box',
   height: '100vh',
   width: '100vw',
   overflow: 'hidden',

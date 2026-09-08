@@ -31,7 +31,7 @@ export default defineConfig({
         { label: 'Surfaces' },
         {
           label: 'Overlays',
-          children: [{ label: 'Dialog' }, { label: 'Popover' }],
+          children: [{ label: 'Dialog' }, { label: 'Menu' }, { label: 'Popover' }],
         },
         {
           label: 'Disclosure',

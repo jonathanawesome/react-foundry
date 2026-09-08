@@ -4,7 +4,10 @@ export { globalStyle, keyframes, style } from '@vanilla-extract/css'
 export { type RecipeVariants, recipe } from '@vanilla-extract/recipes'
 
 // Global styles
-export { chromeSurface } from './global-styles.css'
+// `chromeSurface` itself is deliberately not exported: foundry's chrome type and the
+// `data-foundry-chrome` mark its resets need travel together, or a surface silently gets
+// one without the other.
+export { chromeSurfaceProps } from './chrome-surface'
 
 // Fonts
 import './fonts.css'
