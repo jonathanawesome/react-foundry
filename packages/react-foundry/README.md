@@ -447,6 +447,42 @@ Note that a file declaring `controls` reloads the page on every edit rather than
 in place, so the panel can never describe a schema the canvas has moved on from. See
 [Hot reloading](#hot-reloading).
 
+#### Typing controls against a component
+
+`defineControls` has no relationship to any component, so nothing stops a schema drifting
+from the thing it claims to exercise. `controlsFor` takes the component too:
+
+```tsx
+const cardControls = controlsFor(Card, {
+  title: { type: 'text', default: 'Alert rule' },
+  padding: { type: 'radio', options: ['small', 'medium', 'large'], default: 'medium' },
+  elevated: { type: 'boolean', default: false },
+})
+```
+
+A control naming no prop, a control type the prop cannot take, and an option outside the
+prop's own union all stop compiling. Props that no control can drive are absent from the
+schema entirely, so a component that cannot meaningfully have a props playground says so at
+the first control you write.
+
+Either way, a controls schema is a props declaration. Written inline or through
+`defineControls`, it declares props for the preview's own render function, which is itself a
+component and free to render whatever it likes. `controlsFor` points that declaration at a
+component you already have, so a preview cannot claim to exercise one whose props it does
+not describe.
+
+Worth knowing:
+
+- **Write the schema inline**, as above. Building it separately and passing it by name
+  widens `type: 'select'` to `string` before `controlsFor` sees it, and the error you get
+  names the widening rather than the cause.
+- **A `ReactNode` prop takes a `text` control**, since a string is a valid `ReactNode`. So
+  `children: { type: 'text' }` works. A props panel cannot author JSX.
+- **A prop typed `string | number` gets no control**, and one typed `2 | 3 | 4` gets a plain
+  number input rather than a dropdown, because `options` currently holds strings.
+- **Props inherited from a DOM element come along**, so a component extending
+  `ComponentProps<'button'>` offers every `aria-*` attribute in autocomplete.
+
 ## Accessibility
 
 Foundry runs [axe-core](https://github.com/dequelabs/axe-core) against the canvas, scoped to
