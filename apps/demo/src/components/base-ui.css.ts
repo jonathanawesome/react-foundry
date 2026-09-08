@@ -243,6 +243,56 @@ export const popover = {
   }),
 }
 
+export const menu = {
+  popup: style({
+    ...surface,
+    minWidth: '220px',
+    paddingBlock: themeContract.px[4],
+    fontSize: themeContract.px[14],
+    color: themeContract.colors.textBody,
+    outline: 'none',
+  }),
+
+  groupLabel: style({
+    padding: `${themeContract.px[6]} ${themeContract.px[12]}`,
+    fontSize: themeContract.px[12],
+    fontWeight: 600,
+    color: themeContract.colors.textMuted,
+  }),
+
+  item: style({
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: themeContract.px[16],
+    padding: `${themeContract.px[8]} ${themeContract.px[12]}`,
+    cursor: 'default',
+    userSelect: 'none',
+    outline: 'none',
+
+    selectors: {
+      '&[data-highlighted]': {
+        backgroundColor: themeContract.colors.stateHover,
+        color: themeContract.colors.textStrong,
+      },
+    },
+  }),
+
+  shortcut: style({
+    fontFamily: themeContract.fonts.mono,
+    fontSize: themeContract.px[12],
+    color: themeContract.colors.textMuted,
+  }),
+
+  // Draws the line and nothing else. The spacing around it is the `<hr>`'s own
+  // `margin-block: 0.5em` from the UA, which is the point of the preview: see the note
+  // in menu.preview.tsx before adding a margin here.
+  separator: style({
+    border: 'none',
+    borderTop: `1px solid ${themeContract.colors.border}`,
+  }),
+}
+
 export const accordion = {
   root: style({
     width: '320px',

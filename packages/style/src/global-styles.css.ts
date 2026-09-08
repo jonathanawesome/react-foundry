@@ -1,5 +1,6 @@
 import { globalStyle, style } from '@vanilla-extract/css'
 
+import { chromeOnly } from './chrome-scope'
 import { themeContract } from './theme-contract.css'
 
 /**
@@ -7,26 +8,16 @@ import { themeContract } from './theme-contract.css'
  * preview) must receive nothing from foundry, so a component renders exactly as it does
  * in the consumer's own app. Foundry's styling is confined to its chrome two ways:
  *
- *   - Element-matched resets are excluded from the canvas subtree with
- *     `:not([data-foundry-canvas] …)` via {@link chromeOnly}.
+ *   - Element-matched resets reach only marked chrome surfaces (`data-foundry-chrome`)
+ *     and their descendants, via {@link chromeOnly}.
  *   - Inherited typography (font, size, line-height, color) is never set on `body`/`html`,
  *     which are canvas ancestors the component would inherit them from. It is anchored on
  *     each chrome surface via {@link chromeSurface} instead, leaving the canvas to inherit
  *     only the consumer's document (or, unstyled, the UA default).
+ *
+ * Both arrive together on `chromeSurfaceProps` (chrome-surface.ts), which is how a surface
+ * is marked.
  */
-// `:where(...)` inside `:not(...)` contributes ZERO specificity, so each reset keeps its
-// original weight. A bare `:not([data-foundry-canvas] …)` would instead add the argument's
-// specificity and start overriding the component styles it's meant to sit beneath (e.g.
-// `all: unset` beating a shelf button's `display: flex`, which stacked the tree carets).
-const chromeOnly = (selectors: string) =>
-  selectors
-    .split(',')
-    .map((s) => {
-      const sel = s.trim()
-      return `${sel}:not(:where([data-foundry-canvas] ${sel}))`
-    })
-    .join(', ')
-
 /**
  * Foundry's base typography, composed onto each chrome surface root rather than set on
  * `body`/`html`. Chrome must anchor its own type: `body` and `html` are ancestors of the

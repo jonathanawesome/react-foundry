@@ -18,6 +18,9 @@ export const previewStyles = {
   // offsets cannot go negative). `safe` falls back to start-alignment once it overflows,
   // which keeps the whole preview reachable while still centering anything that fits.
   previewPane: style({
+    // The canvas is never marked `data-foundry-chrome` (that would hand the whole preview
+    // to foundry's resets), so it declares the border box the padding below depends on.
+    boxSizing: 'border-box',
     flex: 1,
     padding: '32px',
     display: 'flex',
