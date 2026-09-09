@@ -12,6 +12,11 @@ export interface IconButtonProps
   title: string
   /** Fills the button to show a toggle is on. */
   active?: boolean
+  /**
+   * Whether to render the browser's own tooltip. Turn it off when the button is
+   * wrapped in a {@link Tooltip}, or the two stack up on hover.
+   */
+  nativeTooltip?: boolean
 }
 
 /**
@@ -27,6 +32,7 @@ export function IconButton({
   title,
   active,
   className,
+  nativeTooltip = true,
   ...rest
 }: IconButtonProps) {
   return (
@@ -34,7 +40,7 @@ export function IconButton({
       type="button"
       className={className ? `${iconButtonStyles} ${className}` : iconButtonStyles}
       onClick={onClick}
-      title={title}
+      title={nativeTooltip ? title : undefined}
       aria-label={title}
       aria-pressed={active}
       data-active={active}
