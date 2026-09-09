@@ -69,9 +69,11 @@ export const shelfStyles = {
     display: 'flex',
     alignItems: 'center',
     width: '100%',
-    height: themeContract.px[24],
+    // Labels wrap, so the row grows past this floor rather than overflowing it.
+    minHeight: themeContract.px[24],
     textAlign: 'left',
     fontSize: themeContract.px[14],
+    lineHeight: 1.4,
     fontWeight: 500,
     color: themeContract.colors.textMuted,
     background: 'none',
@@ -101,13 +103,14 @@ export const shelfStyles = {
   leafLink: style({
     display: 'flex',
     alignItems: 'center',
-    height: themeContract.px[24],
+    minHeight: themeContract.px[24],
     textAlign: 'left',
     border: 'none',
     backgroundColor: 'transparent',
     color: themeContract.colors.textMuted,
     cursor: 'pointer',
     fontSize: themeContract.px[14],
+    lineHeight: 1.4,
     transition: `background-color 0.2s ${themeContract.motion.authentic}`,
 
     ':hover': {
