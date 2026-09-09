@@ -72,3 +72,63 @@ describe('PropsPanel', () => {
     expect(router.state.location.search).toEqual({})
   })
 })
+
+// Controls for an object-typed prop: drawn as a section, and carried in the URL
+// under a flattened `group.member` key.
+describe('PropsPanel control groups', () => {
+  beforeEach(() => {
+    useUIStore.setState({ isPanelOpen: true })
+  })
+
+  const grouped: ControlSchema = {
+    title: { type: 'text', default: 'Requests' },
+    variants: {
+      onSurface: { type: 'select', options: ['base', 'raised'], default: 'raised' },
+      tone: { type: 'select', options: ['default', 'success'], default: 'default' },
+    },
+  }
+
+  it('draws a group as a labelled section, with an input per member', async () => {
+    await renderWithRouter(<PropsPanel controls={grouped} />, '/Forms/StatCard')
+
+    const group = screen.getByRole('group', { name: 'Variants' })
+
+    expect(group).toBeInTheDocument()
+    expect(screen.getAllByRole('combobox')).toHaveLength(2)
+  })
+
+  it('reflects a member value read from its flattened URL param', async () => {
+    await renderWithRouter(
+      <PropsPanel controls={grouped} />,
+      '/Forms/StatCard?variants.tone=success'
+    )
+
+    expect(screen.getByLabelText('Tone')).toHaveValue('success')
+    expect(screen.getByLabelText('On Surface')).toHaveValue('raised')
+  })
+
+  it('writes a changed member to the URL without disturbing its siblings', async () => {
+    const { router } = await renderWithRouter(
+      <PropsPanel controls={grouped} />,
+      '/Forms/StatCard?variants.tone=success'
+    )
+
+    await userEvent.selectOptions(screen.getByLabelText('On Surface'), 'base')
+
+    expect(router.state.location.search).toEqual({
+      'variants.onSurface': 'base',
+      'variants.tone': 'success',
+    })
+  })
+
+  it('drops a member from the URL when it returns to its default', async () => {
+    const { router } = await renderWithRouter(
+      <PropsPanel controls={grouped} />,
+      '/Forms/StatCard?variants.tone=success'
+    )
+
+    await userEvent.selectOptions(screen.getByLabelText('Tone'), 'default')
+
+    expect(router.state.location.search).toEqual({})
+  })
+})

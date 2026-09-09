@@ -106,7 +106,29 @@ export type ControlDef =
   | { type: 'range'; default?: number; min?: number; max?: number; step?: number }
   | { type: 'color'; default?: string }
 
-export type ControlSchema = Record<string, ControlDef>
+/**
+ * Controls for the members of an object-typed prop, drawn as a labelled section
+ * in the props panel.
+ *
+ * The shape a schema takes for a prop like cva's `variants` bag: the controls
+ * mirror the prop, so a preview's `render` passes the group straight through
+ * rather than reassembling an object from flat values.
+ *
+ * A group holds controls, never further groups. See {@link ControlFor} for why
+ * the nesting stops at one level.
+ */
+export type ControlGroup = Record<string, ControlDef>
+
+/**
+ * One entry in a schema: a control, or a group of controls for an object prop.
+ *
+ * The two are told apart structurally, by whether `type` holds a string. A
+ * control always carries one and a group's own values are controls, so no marker
+ * property is needed at runtime or in the types.
+ */
+export type ControlEntry = ControlDef | ControlGroup
+
+export type ControlSchema = Record<string, ControlEntry>
 
 /**
  * The value type a single control resolves to. A select/radio narrows to the
@@ -120,14 +142,38 @@ export type ControlValue<D extends ControlDef> = D extends { type: 'boolean' }
       ? O
       : string
 
+/** The values object for one control group: one value per member control. */
+export type ControlGroupValues<G extends ControlGroup> = {
+  [K in keyof G]: ControlValue<G[K]>
+}
+
+/**
+ * The value a single schema entry resolves to: a scalar for a control, a nested
+ * object for a group.
+ *
+ * `E` is naked so a union of entries distributes, which is what keeps an
+ * unparameterized {@link ControlValues} meaningful. `Extract` rather than a bare
+ * `E` because {@link ControlValue} and {@link ControlGroupValues} are
+ * constrained, and a conditional's true branch does not narrow a type parameter
+ * enough to satisfy one.
+ */
+type ControlEntryValue<E> = E extends ControlDef
+  ? ControlValue<Extract<E, ControlDef>>
+  : E extends ControlGroup
+    ? ControlGroupValues<Extract<E, ControlGroup>>
+    : never
+
 /**
  * The values object a controlled preview's `render` receives, typed from its
  * schema so `v.variant` autocompletes and a typo or wrong-type use is a compile
  * error. A control declared but never read is not flagged: TypeScript has no
  * unused-property check.
+ *
+ * A group entry resolves to a nested object, mirroring the prop it describes, so
+ * `render` can hand it to the component as-is: `<Card variants={v.variants} />`.
  */
 export type ControlValues<S extends ControlSchema = ControlSchema> = {
-  [K in keyof S]: ControlValue<S[K]>
+  [K in keyof S]: ControlEntryValue<S[K]>
 }
 
 /**
@@ -143,8 +189,8 @@ type OptionsControl<T> = {
 }
 
 /**
- * The controls a prop of type `T` can be driven by, or `never` when it can't be
- * driven by any of them.
+ * The single control a prop of type `T` can be driven by, or `never` when no
+ * scalar input suits it.
  *
  * Each arm is a guard as much as a mapping, and the order matters:
  *
@@ -161,7 +207,7 @@ type OptionsControl<T> = {
  *   practice means a `ReactNode` slot: a string is a valid `ReactNode`, so a text
  *   control there renders. It cannot author JSX, and is not meant to.
  */
-export type ControlFor<T> = unknown extends T
+type ScalarControlFor<T> = unknown extends T
   ? never
   : [T] extends [never]
     ? never
@@ -178,6 +224,92 @@ export type ControlFor<T> = unknown extends T
           : string extends T
             ? Extract<ControlDef, { type: 'text' }>
             : never
+
+/**
+ * True when any member of `T` carries a call or construct signature.
+ *
+ * `T` is naked so a union distributes, which is the whole point: `ComponentType`
+ * is `ComponentClass | FunctionComponent`, a constructable unioned with a
+ * callable, and neither half's signature describes the union. Tested as a whole
+ * it would satisfy neither guard, fall through to the object arm, and offer a
+ * control group over a component's `displayName`.
+ *
+ * A mixed union answers `boolean`, so the caller's `extends [false]` test drops a
+ * prop when *any* member is callable, which is the safe direction: half a
+ * function is not a thing a props panel can drive.
+ */
+type IsCallable<T> = T extends (...args: never[]) => unknown
+  ? true
+  : T extends abstract new (
+        ...args: never[]
+      ) => unknown
+    ? true
+    : false
+
+/**
+ * Controls for the members of an object-typed prop.
+ *
+ * Members are typed with {@link ScalarControlFor} rather than {@link ControlFor},
+ * which caps nesting at one level: an object inside an object drives no control
+ * and drops out. One level covers the case this exists for (a cva `variants`
+ * bag), and a deeper tree is both harder to render legibly and more type
+ * instantiation than the feature is worth.
+ *
+ * `Exclude<…, null | undefined>` for the same reason {@link PropTypes} does it a
+ * level up: `VariantProps` produces `onSurface?: 'base' | 'raised' | null |
+ * undefined`, which matches no arm with those in it and would silently leave the
+ * group empty.
+ *
+ * Members no control can drive are removed rather than mapped to `never`, the
+ * same as {@link ControllableProps} does a level up.
+ */
+type ControlGroupFor<T> = {
+  [K in keyof T as [ScalarControlFor<Exclude<T[K], null | undefined>>] extends [never]
+    ? never
+    : K]?: ScalarControlFor<Exclude<T[K], null | undefined>>
+}
+
+/**
+ * A group with nothing in it is no group at all: the prop drops out of the schema
+ * entirely, so a render-prop bag reports as "not a controllable prop" rather than
+ * accepting `{}` and rejecting every key you then write inside it.
+ */
+type NonEmptyGroup<G> = [keyof G] extends [never] ? never : G
+
+/**
+ * The group an object-typed prop can be driven by, or `never` for an object no
+ * props panel has any business editing.
+ *
+ * Reached only for a prop that no scalar control fits, so the arms above take
+ * precedence: `ReactNode` includes `string`, so it stays a text control rather
+ * than becoming a group over `ReactElement`'s members.
+ *
+ * Arrays and functions are excluded before the object test, since both extend
+ * `object`. Without them a `ComponentType` prop would offer a control group over
+ * a function's members.
+ */
+type ObjectControlFor<T> = unknown extends T
+  ? never
+  : [T] extends [readonly unknown[]]
+    ? never
+    : [IsCallable<T>] extends [false]
+      ? [T] extends [object]
+        ? NonEmptyGroup<ControlGroupFor<T>>
+        : never
+      : never
+
+/**
+ * The controls a prop of type `T` can be driven by, or `never` when it can't be
+ * driven by any of them: a single control for a scalar prop, a group of them for
+ * an object prop.
+ *
+ * Written as a fallthrough rather than another arm so the scalar arms keep their
+ * precedence over the object one by construction, which is what a `ReactNode`
+ * prop depends on to stay a text control.
+ */
+export type ControlFor<T> = [ScalarControlFor<T>] extends [never]
+  ? ObjectControlFor<T>
+  : ScalarControlFor<T>
 
 /**
  * A component's props with `undefined` and `null` stripped, and React's own props
@@ -217,13 +349,28 @@ export type ControllableProps<C extends ElementType> = {
 }
 
 /**
- * Turns a key that is not a controllable prop into an error naming why.
+ * Turns a key inside a control group that the prop does not have into an error
+ * naming why.
+ *
+ * `G` is the group {@link ControlFor} derived for the prop, `E` the entry the
+ * author actually wrote. An entry carrying a `type` key is a control rather than
+ * a group, so there is nothing to look inside: it is left unconstrained and the
+ * entry's own type does the checking.
+ */
+type NoExtraGroupControls<G, E> = 'type' extends keyof E
+  ? unknown
+  : Record<Exclude<keyof E, keyof G>, 'not a control of this prop'>
+
+/**
+ * Turns a key that is not a controllable prop into an error naming why, at the
+ * top level and inside a control group alike.
  *
  * This has to be applied in {@link controlsFor}'s parameter position rather than
  * left to its `S extends ControllableProps<C>` constraint. TypeScript skips
  * excess-property checking against an empty object type, so for exactly the
- * component this feature exists to catch — one with no controllable props — a
- * constraint alone lets any control through with no error at all.
+ * component this feature exists to catch — one with no controllable props, or an
+ * object prop with no controllable members — a constraint alone lets any control
+ * through with no error at all.
  *
  * Exported so {@link controlsFor} can reference it from its own module, not
  * because it is part of the public API; the barrels do not re-export it.
@@ -231,7 +378,11 @@ export type ControllableProps<C extends ElementType> = {
 export type NoExtraControls<C extends ElementType, S> = Record<
   Exclude<keyof S, keyof ControllableProps<C>>,
   'not a controllable prop of this component'
->
+> & {
+  [K in keyof S]?: K extends keyof ControllableProps<C>
+    ? NoExtraGroupControls<NonNullable<ControllableProps<C>[K]>, S[K]>
+    : unknown
+}
 
 /**
  * A preview's render function. `ReactNode`, not `ReactElement`, so fragments and

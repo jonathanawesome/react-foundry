@@ -12,8 +12,11 @@ interface ControlFieldProps {
   onChange: (value: ControlValue) => void
 }
 
-/** De-camelCases a control name for its label, matching nav leaf labels. */
-function labelFor(name: string): string {
+/**
+ * De-camelCases a control name for its label, matching nav leaf labels. Exported
+ * for the props panel, which labels a control group the same way.
+ */
+export function labelFor(name: string): string {
   return name
     .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
     .replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2')
