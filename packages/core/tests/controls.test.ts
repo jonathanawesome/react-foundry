@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import { coerceControlValues, defaultValues, encodeControlValues } from '../src/controls'
+import {
+  coerceControlValues,
+  defaultValues,
+  encodeControlValues,
+  isControlDef,
+} from '../src/controls'
 import type { ControlSchema } from '../src/types'
 
 const schema: ControlSchema = {
@@ -12,6 +17,31 @@ const schema: ControlSchema = {
   disabled: { type: 'boolean', default: false },
   tint: { type: 'color', default: '#000000' },
 }
+
+/** A schema mixing flat controls with a group, as `controlsFor` types one. */
+const grouped: ControlSchema = {
+  title: { type: 'text', default: 'Requests' },
+  variants: {
+    onSurface: { type: 'radio', options: ['base', 'raised'], default: 'raised' },
+    tone: { type: 'select', options: ['default', 'success'], default: 'default' },
+  },
+}
+
+describe('isControlDef', () => {
+  it('reads a control by its string type', () => {
+    expect(isControlDef({ type: 'text' })).toBe(true)
+  })
+
+  it('reads a group of controls as not a control', () => {
+    expect(isControlDef({ tone: { type: 'text' } })).toBe(false)
+  })
+
+  // The reason this tests the value rather than the key: a prop named `type` is a
+  // legitimate member of an object prop, and `<button type>` is the obvious case.
+  it('reads a group whose own member is named type as a group', () => {
+    expect(isControlDef({ type: { type: 'text' } })).toBe(false)
+  })
+})
 
 describe('defaultValues', () => {
   it('returns each control default', () => {
@@ -126,5 +156,68 @@ describe('encodeControlValues', () => {
     const encoded = encodeControlValues(schema, values)
 
     expect(coerceControlValues(schema, encoded)).toEqual(values)
+  })
+})
+
+// A group's values nest, mirroring the object prop they drive, but flatten for the
+// URL so one edited member costs one short param.
+describe('control groups', () => {
+  it('nests a group default under its own key', () => {
+    expect(defaultValues(grouped)).toEqual({
+      title: 'Requests',
+      variants: { onSurface: 'raised', tone: 'default' },
+    })
+  })
+
+  it('falls back to a zero value per member when none is declared', () => {
+    expect(
+      defaultValues({ variants: { tone: { type: 'select', options: ['a', 'b'] } } })
+    ).toEqual({ variants: { tone: 'a' } })
+  })
+
+  it('reads a member from its flattened param', () => {
+    expect(coerceControlValues(grouped, { 'variants.tone': 'success' })).toEqual({
+      title: 'Requests',
+      variants: { onSurface: 'raised', tone: 'success' },
+    })
+  })
+
+  it('falls back to the member default for a value outside its options', () => {
+    const values = coerceControlValues(grouped, { 'variants.tone': 'chartreuse' })
+
+    expect((values.variants as Record<string, unknown>).tone).toBe('default')
+  })
+
+  it('ignores a param naming the group itself rather than a member', () => {
+    expect(coerceControlValues(grouped, { variants: 'raised' })).toEqual(
+      defaultValues(grouped)
+    )
+  })
+
+  it('encodes only the members that differ from their default', () => {
+    const values = { title: 'Requests', variants: { onSurface: 'base', tone: 'default' } }
+
+    expect(encodeControlValues(grouped, values)).toEqual({ 'variants.onSurface': 'base' })
+  })
+
+  it('encodes nothing for a group left at its defaults', () => {
+    expect(encodeControlValues(grouped, defaultValues(grouped))).toEqual({})
+  })
+
+  // A schema can outrun the URL it is read back from: an old link, or a group added
+  // to a preview since. Missing members take their defaults rather than throwing.
+  it('tolerates values missing the group entirely', () => {
+    expect(encodeControlValues(grouped, { title: 'Requests' })).toEqual({})
+  })
+
+  it('round-trips a group through encode and coerce', () => {
+    const values = {
+      title: 'Total requests',
+      variants: { onSurface: 'base', tone: 'success' },
+    }
+
+    expect(coerceControlValues(grouped, encodeControlValues(grouped, values))).toEqual(
+      values
+    )
   })
 })

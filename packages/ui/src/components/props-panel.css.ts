@@ -52,6 +52,28 @@ export const propsPanelStyles = {
     gap: themeContract.px[16],
   }),
 
+  // Controls for one object-typed prop, drawn as a section so the panel reads the
+  // way the props do. A fieldset for the grouping semantics; its UA styles
+  // (min-inline-size, default border and padding) are all overridden here.
+  group: style({
+    display: 'flex',
+    flexDirection: 'column',
+    gap: themeContract.px[12],
+    minInlineSize: 0,
+    margin: 0,
+    padding: themeContract.px[12],
+    border: `1px solid ${themeContract.colors.border}`,
+    borderRadius: themeContract.radii.medium,
+  }),
+
+  groupLabel: style({
+    padding: `0 ${themeContract.px[4]}`,
+    fontFamily: themeContract.fonts.sans,
+    fontSize: themeContract.px[12],
+    fontWeight: 600,
+    color: themeContract.colors.textMuted,
+  }),
+
   empty: style({
     fontSize: themeContract.px[14],
     color: themeContract.colors.textMuted,

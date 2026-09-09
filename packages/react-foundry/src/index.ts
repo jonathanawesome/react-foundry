@@ -8,7 +8,10 @@ export { controlsFor, createPreview, defineControls } from '@react-foundry/core'
 // cleanly one hop from the definition file.
 export type {
   ControlDef,
+  ControlEntry,
   ControlFor,
+  ControlGroup,
+  ControlGroupValues,
   ControllableProps,
   ControlSchema,
   ControlValue,

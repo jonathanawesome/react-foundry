@@ -1,4 +1,9 @@
-import { type ComponentProps, forwardRef, type ReactNode } from 'react'
+import {
+  type ComponentProps,
+  type ComponentType,
+  forwardRef,
+  type ReactNode,
+} from 'react'
 import { describe, expectTypeOf, it } from 'vitest'
 
 import { controlsFor, createPreview, defineControls } from '../src/create-preview'
@@ -258,6 +263,30 @@ interface EdgeProps {
 
 const Edge = (_props: EdgeProps): ReactNode => null
 
+/**
+ * The motivating shape for control groups: cva's variants, handed to a component
+ * as one object prop rather than as flat props. `VariantProps` produces exactly
+ * this — optional keys, each nullable, each a closed union.
+ */
+interface StatCardProps {
+  title: string
+  value: ReactNode
+  hint?: ReactNode
+  icon?: ComponentType<{ className?: string }>
+  variants?: {
+    onSurface?: 'base' | 'raised' | null | undefined
+    tone?: 'default' | 'success' | 'danger' | null | undefined
+  }
+  /** Plain data, not a variants bag: a group here is the same deal. */
+  period?: { from: string; to: string }
+  /** Nothing inside it a control can drive, so it yields an empty group. */
+  slots?: { renderItem: () => ReactNode }
+  /** An object one level deeper than a group goes. */
+  nested?: { inner: { deep: string } }
+}
+
+const StatCard = (_props: StatCardProps): ReactNode => null
+
 describe('controlsFor', () => {
   it('accepts controls that match the component and narrows their values', () => {
     const controls = controlsFor(Button, {
@@ -401,6 +430,130 @@ describe('controlsFor', () => {
     expectTypeOf<ControlValues<typeof derived>['variant']>().toEqualTypeOf<
       'primary' | 'danger'
     >()
+  })
+})
+
+describe('controlsFor control groups', () => {
+  it('mirrors an object prop with a group, and nests its values to match', () => {
+    const controls = controlsFor(StatCard, {
+      title: { type: 'text', default: 'Requests' },
+      variants: {
+        onSurface: { type: 'radio', options: ['base', 'raised'], default: 'raised' },
+        tone: { type: 'select', options: ['default', 'success'], default: 'default' },
+      },
+    })
+
+    // `readonly` because `controlsFor` takes a `const` type parameter, which is what
+    // keeps the option literals. Readonly members stay assignable to the prop.
+    expectTypeOf<ControlValues<typeof controls>['variants']>().toEqualTypeOf<{
+      readonly onSurface: 'base' | 'raised'
+      readonly tone: 'default' | 'success'
+    }>()
+  })
+
+  // The ergonomic win: the values mirror the props, so render stays a pass-through.
+  it('hands a group straight back to the prop it describes', () => {
+    createPreview({
+      controls: controlsFor(StatCard, {
+        variants: {
+          onSurface: { type: 'radio', options: ['base', 'raised'] },
+        },
+      }),
+      render: (v) => StatCard({ title: 't', value: null, variants: v.variants }),
+    })
+  })
+
+  it('rejects a control naming a key the object prop does not have', () => {
+    controlsFor(StatCard, {
+      variants: {
+        // @ts-expect-error `onSurfce` is a typo, not a key of the variants bag
+        onSurfce: { type: 'radio', options: ['base', 'raised'] },
+      },
+    })
+  })
+
+  it('constrains options inside a group to that key own union', () => {
+    controlsFor(StatCard, {
+      variants: {
+        // @ts-expect-error 'raize' is a typo and not a value onSurface accepts
+        onSurface: { type: 'radio', options: ['base', 'raize'] },
+      },
+    })
+  })
+
+  it('rejects a control type the key inside the group cannot take', () => {
+    controlsFor(StatCard, {
+      variants: {
+        // @ts-expect-error a checkbox cannot drive a string union
+        tone: { type: 'boolean' },
+      },
+    })
+  })
+
+  it('groups a plain data object prop as readily as a variants bag', () => {
+    const controls = controlsFor(StatCard, {
+      period: { from: { type: 'text' }, to: { type: 'text' } },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['period']>().toEqualTypeOf<{
+      readonly from: string
+      readonly to: string
+    }>()
+  })
+
+  // ReactNode includes ReactElement, which is an object. The scalar arms have to
+  // keep their precedence or a slot prop turns into a group over an element.
+  it('leaves a ReactNode prop a text control rather than a group', () => {
+    const controls = controlsFor(StatCard, { hint: { type: 'text', default: '' } })
+
+    expectTypeOf<ControlValues<typeof controls>['hint']>().toEqualTypeOf<string>()
+  })
+
+  // ComponentType is a callable unioned with a constructable; neither half's
+  // signature describes the union, so this is the guard that catches it.
+  it('drops a component-typed prop instead of grouping its members', () => {
+    expectTypeOf<keyof ControllableProps<typeof StatCard>>().toEqualTypeOf<
+      'title' | 'value' | 'hint' | 'variants' | 'period'
+    >()
+
+    controlsFor(StatCard, {
+      // @ts-expect-error `icon` takes a component, which no control can author
+      icon: { displayName: { type: 'text' } },
+    })
+  })
+
+  it('drops an object prop with nothing drivable inside it', () => {
+    controlsFor(StatCard, {
+      // @ts-expect-error `slots` holds a render prop, which no control can drive
+      slots: { renderItem: { type: 'text' } },
+    })
+  })
+
+  // One level deep is the whole feature: an object inside a group drives nothing,
+  // which leaves `nested` with an empty group and so no entry at all.
+  it('stops nesting at one level', () => {
+    controlsFor(StatCard, {
+      // @ts-expect-error a group holds controls, never further groups
+      nested: { inner: { deep: { type: 'text' } } },
+    })
+  })
+
+  // Every component extending an intrinsic element's props carries `style`, so the
+  // object arm now reaches a few hundred keys. It has to stay a typecheck, not a
+  // recursion the compiler gives up on.
+  it('handles a CSSProperties-sized group on a DOM component', () => {
+    const controls = controlsFor(DomButton, {
+      style: { color: { type: 'color', default: '#ff0000' } },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['style']>().toEqualTypeOf<{
+      readonly color: string
+    }>()
+
+    controlsFor(DomButton, {
+      // @ts-expect-error `colour` is not a CSS property
+      style: { colour: { type: 'color' } },
+    })
   })
 })
 

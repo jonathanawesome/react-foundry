@@ -3,17 +3,21 @@ import {
   type ControlSchema,
   coerceControlValues,
   encodeControlValues,
+  isControlDef,
 } from '@react-foundry/core'
 import { chromeSurfaceProps } from '@react-foundry/style'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 
 import { useUIStore } from '../state'
-import { ControlField } from './control-field'
+import { ControlField, labelFor } from './control-field'
 import { propsPanelStyles } from './props-panel.css'
 import { Scrollable } from './scrollable'
 
 type ControlValue = string | number | boolean
+
+/** The draft, read loosely: a group entry holds a nested record of values. */
+type DraftValues = Record<string, ControlValue | Record<string, ControlValue>>
 
 /** Continuous controls debounce their URL write so typing/dragging isn't spammy. */
 function isContinuous(def: ControlDef): boolean {
@@ -49,29 +53,62 @@ function PanelControls({ controls, splat }: PanelControlsProps) {
     })
   }
 
-  const handleChange = (name: string, def: ControlDef, value: ControlValue) => {
-    const next = { ...draft, [name]: value }
-    setDraft(next)
+  const values = draft as DraftValues
+
+  /**
+   * Writes one control's value into the draft. `group` names the object prop a
+   * control belongs to, so a group member replaces its own key inside the nested
+   * object rather than the whole group.
+   */
+  const handleChange = (
+    group: string | null,
+    name: string,
+    def: ControlDef,
+    value: ControlValue
+  ) => {
+    const next = group
+      ? {
+          ...values,
+          [group]: { ...(values[group] as Record<string, ControlValue>), [name]: value },
+        }
+      : { ...values, [name]: value }
+
+    setDraft(next as typeof draft)
 
     if (isContinuous(def)) {
       if (timer.current) clearTimeout(timer.current)
-      timer.current = setTimeout(() => writeUrl(next), 200)
+      timer.current = setTimeout(() => writeUrl(next as typeof draft), 200)
     } else {
-      writeUrl(next)
+      writeUrl(next as typeof draft)
     }
   }
 
   return (
     <>
-      {Object.entries(controls).map(([name, def]) => (
-        <ControlField
-          key={name}
-          name={name}
-          def={def}
-          value={(draft as Record<string, ControlValue>)[name]}
-          onChange={(value) => handleChange(name, def, value)}
-        />
-      ))}
+      {Object.entries(controls).map(([name, entry]) =>
+        isControlDef(entry) ? (
+          <ControlField
+            key={name}
+            name={name}
+            def={entry}
+            value={values[name] as ControlValue}
+            onChange={(value) => handleChange(null, name, entry, value)}
+          />
+        ) : (
+          <fieldset key={name} className={propsPanelStyles.group}>
+            <legend className={propsPanelStyles.groupLabel}>{labelFor(name)}</legend>
+            {Object.entries(entry).map(([member, def]) => (
+              <ControlField
+                key={member}
+                name={member}
+                def={def}
+                value={(values[name] as Record<string, ControlValue>)[member]}
+                onChange={(value) => handleChange(name, member, def, value)}
+              />
+            ))}
+          </fieldset>
+        )
+      )}
     </>
   )
 }

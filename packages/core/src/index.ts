@@ -2,13 +2,17 @@ export {
   coerceControlValues,
   defaultValues,
   encodeControlValues,
+  isControlDef,
 } from './controls'
 export { controlsFor, createPreview, defineControls, isPreview } from './create-preview'
 export { createDiscovery, deCamelCase, navPathFromFilename } from './discovery'
 export { collectNodePaths, findLeaf, findNode } from './nav'
 export type {
   ControlDef,
+  ControlEntry,
   ControlFor,
+  ControlGroup,
+  ControlGroupValues,
   ControllableProps,
   ControlSchema,
   ControlValue,
