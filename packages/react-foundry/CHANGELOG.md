@@ -1,5 +1,12 @@
 # react-foundry
 
+## 0.0.14
+
+### Patch Changes
+
+- db167f9: Fixes nav items overlapping
+- 1860327: recurse controlsFor into object-typed props
+
 ## 0.0.13
 
 ### Patch Changes
