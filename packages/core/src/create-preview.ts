@@ -1,8 +1,10 @@
-import type { ReactNode } from 'react'
+import type { ElementType, ReactNode } from 'react'
 
 import {
+  type ControllableProps,
   type ControlSchema,
   type ControlValues,
+  type NoExtraControls,
   PREVIEW,
   type Preview,
   type RenderFn,
@@ -25,6 +27,48 @@ import {
  * ```
  */
 export function defineControls<const S extends ControlSchema>(controls: S): S {
+  return controls
+}
+
+/**
+ * {@link defineControls}, bound to a component, so the schema is checked against
+ * that component's props.
+ *
+ * A control naming no prop is a compile error, a control whose input doesn't suit
+ * the prop's type is a compile error, and `options` is constrained to the prop's
+ * own union, so a typo in a variant name fails to compile rather than quietly
+ * rendering a broken variant:
+ *
+ * ```ts
+ * const cardControls = controlsFor(Card, {
+ *   title: { type: 'text', default: 'Alert rule' },
+ *   variant: { type: 'radio', options: ['default', 'selectable'], default: 'default' },
+ * })
+ * ```
+ *
+ * Props no control can drive are absent from the schema entirely, so a component
+ * that cannot meaningfully have a props playground says so at the first control
+ * you write.
+ *
+ * Prefer this whenever a preview exercises one component's API. Reach for
+ * {@link defineControls} when a preview is deliberately mocking a page
+ * composition and its controls drive JSX the preview assembles itself, which is a
+ * legitimate thing to do and a different thing to be doing.
+ *
+ * Take the schema inline. Hoisting it to a plain `const` first widens `type:
+ * 'select'` to `string` before it ever arrives, and the resulting error names the
+ * widening rather than the cause. Hoist the result instead:
+ * `const cardControls = controlsFor(Card, { … })`.
+ */
+export function controlsFor<C extends ElementType, const S extends ControllableProps<C>>(
+  component: C,
+  controls: S & NoExtraControls<C, S>
+): S {
+  // Unused at runtime and load-bearing for inference: `C` comes from here, and it
+  // is what every check on `controls` is made against. `noUnusedParameters` flags
+  // it otherwise, and `_component` would read badly in hover.
+  void component
+
   return controls
 }
 

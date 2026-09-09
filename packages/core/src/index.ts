@@ -3,11 +3,13 @@ export {
   defaultValues,
   encodeControlValues,
 } from './controls'
-export { createPreview, defineControls, isPreview } from './create-preview'
+export { controlsFor, createPreview, defineControls, isPreview } from './create-preview'
 export { createDiscovery, deCamelCase, navPathFromFilename } from './discovery'
 export { collectNodePaths, findLeaf, findNode } from './nav'
 export type {
   ControlDef,
+  ControlFor,
+  ControllableProps,
   ControlSchema,
   ControlValue,
   ControlValues,

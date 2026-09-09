@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { ComponentProps, ElementType, ReactNode } from 'react'
 
 /**
  * Augmented by the generated `foundry-nav.gen.d.ts` in the user's project to
@@ -93,8 +93,9 @@ export const PREVIEW: unique symbol = Symbol.for('react-foundry.preview')
  * One editable control on a preview, drawn as an input in the props panel.
  *
  * `options` is `readonly` so a schema declared `as const` or through
- * {@link defineControls} keeps its literal option types, which lets a select's
- * value narrow to the union of its options rather than plain `string`.
+ * {@link defineControls} or {@link controlsFor} keeps its literal option types,
+ * which lets a select's value narrow to the union of its options rather than
+ * plain `string`.
  */
 export type ControlDef =
   | { type: 'text'; default?: string }
@@ -128,6 +129,109 @@ export type ControlValue<D extends ControlDef> = D extends { type: 'boolean' }
 export type ControlValues<S extends ControlSchema = ControlSchema> = {
   [K in keyof S]: ControlValue<S[K]>
 }
+
+/**
+ * A select/radio whose options are the prop's own union.
+ *
+ * Non-empty on purpose: an empty `options` array leaves a control with no value to
+ * take, and {@link ControlValue} would infer `never` for it.
+ */
+type OptionsControl<T> = {
+  type: 'select' | 'radio'
+  options: readonly [T, ...T[]]
+  default?: T
+}
+
+/**
+ * The controls a prop of type `T` can be driven by, or `never` when it can't be
+ * driven by any of them.
+ *
+ * Each arm is a guard as much as a mapping, and the order matters:
+ *
+ * - `any` and `unknown` satisfy every test below, so they are rejected first. This
+ *   is not hypothetical — `inlist?: any` in `@types/react` reaches every component
+ *   whose props extend an intrinsic element's. Rejecting `unknown` here is also
+ *   what strips a props type's index signature.
+ * - `[never] extends [boolean]` is `true`, so `never` needs its own arm ahead of
+ *   the boolean one or a `never`-typed prop offers a checkbox.
+ * - A closed string union gets a dropdown of exactly its members. An open `string`
+ *   also gets free input, since a curated dropdown on an open string prop is a
+ *   legitimate thing to want.
+ * - The last arm is for a prop that *accepts* a string without being one, which in
+ *   practice means a `ReactNode` slot: a string is a valid `ReactNode`, so a text
+ *   control there renders. It cannot author JSX, and is not meant to.
+ */
+export type ControlFor<T> = unknown extends T
+  ? never
+  : [T] extends [never]
+    ? never
+    : [T] extends [boolean]
+      ? Extract<ControlDef, { type: 'boolean' }>
+      : [T] extends [number]
+        ? Extract<ControlDef, { type: 'number' | 'range' }>
+        : [T] extends [string]
+          ?
+              | OptionsControl<T>
+              | (string extends T
+                  ? Extract<ControlDef, { type: 'text' | 'color' }>
+                  : never)
+          : string extends T
+            ? Extract<ControlDef, { type: 'text' }>
+            : never
+
+/**
+ * A component's props with `undefined` and `null` stripped, and React's own props
+ * dropped.
+ *
+ * `-?` and `Exclude` rather than `NonNullable<…>` so hover text and errors read as
+ * the author wrote them: `'primary' | 'danger'`, not
+ * `NonNullable<'primary' | 'danger' | null>`. Stripping `null` is load-bearing
+ * rather than cosmetic: without it `variant?: 'a' | 'b' | null` matches no arm of
+ * {@link ControlFor} and disappears from the schema, and naming it then reports
+ * that it is not a prop of the component, which it is.
+ *
+ * `key` is dropped because `Key` is `string | number | bigint`, which reaches
+ * {@link ControlFor}'s last arm and would otherwise offer a text control on it.
+ * `ref` needs no dropping — its type matches no arm — but is named alongside `key`
+ * so the intent reads as "React's own props, not the component's API".
+ */
+type PropTypes<C extends ElementType> = {
+  [K in keyof ComponentProps<C> as K extends 'key' | 'ref' ? never : K]-?: Exclude<
+    ComponentProps<C>[K],
+    null
+  >
+}
+
+/**
+ * The controls schema a component can have: one optional entry per prop that a
+ * control can actually drive, typed to the controls that suit that prop.
+ *
+ * Props that no control can drive are removed rather than mapped to `never`, so a
+ * component that cannot meaningfully have a playground — one whose only prop is
+ * `children`, say — carries no controllable props at all.
+ */
+export type ControllableProps<C extends ElementType> = {
+  [K in keyof PropTypes<C> as [ControlFor<PropTypes<C>[K]>] extends [never]
+    ? never
+    : K]?: ControlFor<PropTypes<C>[K]>
+}
+
+/**
+ * Turns a key that is not a controllable prop into an error naming why.
+ *
+ * This has to be applied in {@link controlsFor}'s parameter position rather than
+ * left to its `S extends ControllableProps<C>` constraint. TypeScript skips
+ * excess-property checking against an empty object type, so for exactly the
+ * component this feature exists to catch — one with no controllable props — a
+ * constraint alone lets any control through with no error at all.
+ *
+ * Exported so {@link controlsFor} can reference it from its own module, not
+ * because it is part of the public API; the barrels do not re-export it.
+ */
+export type NoExtraControls<C extends ElementType, S> = Record<
+  Exclude<keyof S, keyof ControllableProps<C>>,
+  'not a controllable prop of this component'
+>
 
 /**
  * A preview's render function. `ReactNode`, not `ReactElement`, so fragments and

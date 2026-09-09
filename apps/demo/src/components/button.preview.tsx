@@ -1,13 +1,16 @@
 import { useState } from 'react'
-import { createPreview, defineControls, type NavPath } from 'react-foundry'
+import { controlsFor, createPreview, type NavPath } from 'react-foundry'
 
 import { Button } from './button'
 
-export const nav: NavPath = 'Demo/Actions'
+export const nav: NavPath = 'Demo/Actions/Button'
 
-// Extracted so it can be reused across previews. defineControls keeps the literal
-// option types, so `v.variant`/`v.size` narrow to their unions with no casts.
-const buttonControls = defineControls({
+// Extracted so it can be reused across previews. controlsFor keeps the literal option
+// types, so `v.variant`/`v.size` narrow to their unions with no casts, and checks every
+// control against Button's own props: a name Button does not have, a control type the
+// prop cannot take, or a typo inside `options` is a compile error rather than a panel
+// offering a variant no call site can produce.
+const buttonControls = controlsFor(Button, {
   children: { type: 'text', default: 'Click me' },
   variant: {
     type: 'select',
@@ -29,13 +32,15 @@ export const Playground = createPreview({
   ),
 })
 
-// The same schema reused, showing controls are not one-per-preview.
+// The same schema reused, showing controls are not one-per-preview. Derived through
+// controlsFor as well, so overriding a default does not quietly opt back out of the
+// checking that buttonControls above is getting.
 export const DangerPlayground = createPreview({
   label: 'Danger Playground',
-  controls: {
+  controls: controlsFor(Button, {
     ...buttonControls,
     variant: { ...buttonControls.variant, default: 'danger' },
-  },
+  }),
   render: (v) => (
     <Button variant={v.variant} size={v.size} disabled={v.disabled}>
       {v.children}

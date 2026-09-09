@@ -27,8 +27,8 @@ export default defineConfig({
           label: 'Inputs',
           children: [{ label: 'Checkbox' }, { label: 'Switch' }, { label: 'Slider' }],
         },
-        { label: 'Actions' },
-        { label: 'Surfaces' },
+        { label: 'Actions', children: [{ label: 'Button' }] },
+        { label: 'Surfaces', children: [{ label: 'Card' }] },
         {
           label: 'Overlays',
           children: [{ label: 'Dialog' }, { label: 'Menu' }, { label: 'Popover' }],

@@ -1,5 +1,11 @@
 # react-foundry
 
+## 0.0.13
+
+### Patch Changes
+
+- e20ce6f: Add `controlsFor`, which accepts a component for typing.
+
 ## 0.0.12
 
 ### Patch Changes
