@@ -54,7 +54,7 @@
   },
   "dependencies": {
     "@vitejs/plugin-react": "6.0.3",
-    "axe-core": "4.11.0",
+    "axe-core": "4.13.0",
     "cac": "6.7.14",
     "esbuild": "0.28.1",
     "glob": "13.0.6",
