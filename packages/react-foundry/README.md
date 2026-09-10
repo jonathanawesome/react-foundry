@@ -60,6 +60,31 @@ export const Primary = createPreview(() => <Button variant="primary">Go</Button>
 
 Run `npm run dev` and it appears on the canvas under **Forms → Button → Primary**.
 
+## Toolbar
+
+The floating bar in the top-left corner holds every control over the environment itself.
+Each one has a keyboard shortcut, and hovering or focusing a button names both.
+
+| Control | Key | What it does |
+| --- | --- | --- |
+| Component list | <kbd>S</kbd> | Shows or hides the shelf, the navigation tree down the left |
+| Controls panel | <kbd>P</kbd> | Shows or hides the props panel |
+| Theme | <kbd>T</kbd> | Flips between light and dark. On `system`, it flips away from whatever the system resolved to, since that is the theme you are actually looking at |
+| Accessibility check | <kbd>A</kbd> | Turns the [axe-core panel](#accessibility) on or off |
+
+The shortcuts are bare letters, with no modifier. The obvious chords are already taken by
+browsers — <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>T</kbd> reopens a tab, <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd>
+opens a private window — and this is a bar you reach for constantly.
+
+The cost of bare letters is that they have to stay out of your component's way, so a
+keystroke is ignored when it lands on an input, a textarea, a select or a rich text editor
+on the canvas, when any of ctrl, cmd or alt is held, or when something closer to the
+keystroke has already handled it.
+
+Shelf and panel state persists across reloads, which matters more than it sounds: editing a
+preview file reloads the page, and collapsing the whole layout on every save would be worse
+than the edit is worth.
+
 ## CLI
 
 Each command takes an optional `[root]` argument, defaulting to the current directory:

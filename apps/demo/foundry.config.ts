@@ -17,6 +17,7 @@ export default defineConfig({
         { label: 'Providers' },
         { label: 'Render True' },
         { label: 'Scrollable' },
+        { label: 'Tooltip' },
       ],
     },
     // Example components built on Base UI, showing the authoring surface.
