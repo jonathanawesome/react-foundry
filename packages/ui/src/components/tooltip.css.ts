@@ -8,13 +8,11 @@ export const tooltipStyles = {
     display: 'inline-flex',
   }),
 
-  // Hangs under the control, centered on it. The toolbar is fixed in the
-  // top-left corner and nothing clips it, so there is never a flip to compute.
+  // Placement is set inline, from measurements. Deliberately no `top`/`left`
+  // here: an offset written in both places would be one the JS could disagree
+  // with, and the JS is the half that has to do the arithmetic.
   bubble: style({
     position: 'absolute',
-    top: `calc(100% + ${themeContract.px[8]})`,
-    left: '50%',
-    transform: 'translateX(-50%)',
     // The toolbar container is the stacking context; this only has to clear the
     // buttons rendered after it.
     zIndex: 1,
