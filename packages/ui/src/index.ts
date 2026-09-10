@@ -24,6 +24,7 @@ export { PropsPanel } from './components/props-panel'
 export { Scrollable, type ScrollableProps } from './components/scrollable'
 export { Shelf } from './components/shelf'
 export { Toolbar } from './components/toolbar'
+export { Tooltip, type TooltipProps } from './components/tooltip'
 
 // State
 export { useUIStore } from './state'
