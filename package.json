@@ -43,7 +43,7 @@
     "@types/react-dom": "catalog:",
     "react": "catalog:",
     "react-dom": "catalog:",
-    "turbo": "2.6.3",
+    "turbo": "2.10.12",
     "typescript": "catalog:"
   },
   "devDependencies": {
