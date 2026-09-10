@@ -23,7 +23,7 @@
     "@vanilla-extract/css": "catalog:",
     "@vanilla-extract/recipes": "catalog:",
     "axe-core": "4.11.0",
-    "zustand": "5.0.9"
+    "zustand": "5.0.15"
   },
   "devDependencies": {
     "@testing-library/dom": "catalog:",
