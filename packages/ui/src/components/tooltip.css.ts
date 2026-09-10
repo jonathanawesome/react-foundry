@@ -37,6 +37,22 @@ export const tooltipStyles = {
     pointerEvents: 'none',
   }),
 
+  // Carries the shortcut to a screen reader, which cannot read a key cap.
+  // Clipped rather than `display: none` or `hidden`, both of which drop the
+  // element out of the accessibility tree entirely, taking the description with
+  // them.
+  screenReaderOnly: style({
+    position: 'absolute',
+    width: '1px',
+    height: '1px',
+    margin: '-1px',
+    padding: 0,
+    overflow: 'hidden',
+    clip: 'rect(0, 0, 0, 0)',
+    whiteSpace: 'nowrap',
+    border: 0,
+  }),
+
   label: style({
     // Explicit rather than an anonymous flex item, so the bubble's gap applies
     // between the words and the key cap the same way it would between elements.

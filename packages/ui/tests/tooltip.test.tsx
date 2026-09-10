@@ -131,6 +131,52 @@ describe('Tooltip', () => {
     )
   })
 
+  // A key cap reads as "T" to a sighted user and as nothing at all without the
+  // visual context, so the shortcut goes out as a description too.
+  describe('the shortcut for a screen reader', () => {
+    it('describes the control with the shortcut spelled out', () => {
+      render(
+        <Tooltip label="Toggle Theme" shortcut="t">
+          <button type="button" aria-label="Toggle Theme">
+            theme
+          </button>
+        </Tooltip>
+      )
+
+      expect(screen.getByRole('button')).toHaveAccessibleDescription('Shortcut: T')
+    })
+
+    // The control's own label already says what it does; repeating it in the
+    // description would have a screen reader announce it twice.
+    it('leaves the description off when there is no shortcut', () => {
+      render(
+        <Tooltip label="Toggle Theme">
+          <button type="button" aria-label="Toggle Theme">
+            theme
+          </button>
+        </Tooltip>
+      )
+
+      expect(screen.getByRole('button')).not.toHaveAttribute('aria-describedby')
+      expect(screen.getByRole('button')).toHaveAccessibleName('Toggle Theme')
+    })
+
+    // Hover and focus are for the eyes. A screen reader user tabbing here needs
+    // the description already in place, not appearing as focus lands.
+    it('describes the control before the bubble has ever opened', () => {
+      render(
+        <Tooltip label="Toggle Theme" shortcut="t">
+          <button type="button" aria-label="Toggle Theme">
+            theme
+          </button>
+        </Tooltip>
+      )
+
+      expect(screen.queryByText('Toggle Theme')).not.toBeInTheDocument()
+      expect(screen.getByRole('button')).toHaveAccessibleDescription('Shortcut: T')
+    })
+  })
+
   describe('placement', () => {
     const open = async () => {
       render(

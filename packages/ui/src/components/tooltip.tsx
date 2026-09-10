@@ -1,7 +1,11 @@
 import {
+  cloneElement,
+  isValidElement,
+  type ReactElement,
   type ReactNode,
   useCallback,
   useEffect,
+  useId,
   useLayoutEffect,
   useRef,
   useState,
@@ -33,21 +37,42 @@ export interface TooltipProps {
 /**
  * A themed hover and focus tooltip for a single control.
  *
- * Placement is measured rather than declared, so the bubble stays on screen
- * wherever its control ends up: centered under the control by default, pulled
- * back when that would cross a side of the window, flipped above when there is
- * no room below. That is the whole of what a tooltip needs, which is why this
- * measures directly instead of pulling in a positioning library.
+ * Placement is measured rather than declared, so the bubble finds the window's
+ * edges wherever its control ends up: centered under the control by default,
+ * pulled back when that would cross a side of the window, flipped above when
+ * there is no room below. That is the whole of what a tooltip needs, which is
+ * why this measures directly instead of pulling in a positioning library.
  *
- * The bubble is decoration, not the accessible name. The control it wraps
- * already carries one, and announcing the same words a second time is worse
- * than silence, so the bubble is hidden from assistive tech.
+ * The window is the only thing it knows about, though. The bubble is positioned
+ * absolutely, so an ancestor that clips — `overflow: hidden`, or a
+ * {@link Scrollable} — will cut it off, and a control in one needs a portal
+ * this does not have yet.
+ *
+ * The bubble itself is decoration, not the accessible name: the control already
+ * carries one, and announcing the same words twice is worse than silence, so it
+ * is hidden from assistive tech. The shortcut is the one thing a key cap cannot
+ * convey without sight, so it goes out separately as a description.
  */
 export function Tooltip({ label, shortcut, children }: TooltipProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [placement, setPlacement] = useState<Placement | null>(null)
   const wrapperRef = useRef<HTMLSpanElement>(null)
   const bubbleRef = useRef<HTMLSpanElement>(null)
+  const hintId = useId()
+
+  // Pointed at the control itself rather than the wrapper, so it is announced
+  // with the button on focus. Described rather than named: the control's own
+  // label already says what it does, and only the shortcut is new information.
+  //
+  // The hint is rendered whether or not the bubble is open, so a screen reader
+  // reaching the control by keyboard finds a description already there instead
+  // of one that appears in the same moment focus lands.
+  const describedChild =
+    shortcut && isValidElement(children)
+      ? cloneElement(children as ReactElement<{ 'aria-describedby'?: string }>, {
+          'aria-describedby': hintId,
+        })
+      : children
 
   const place = useCallback(() => {
     const wrapper = wrapperRef.current
@@ -116,7 +141,13 @@ export function Tooltip({ label, shortcut, children }: TooltipProps) {
       onFocus={() => setIsOpen(true)}
       onBlur={() => setIsOpen(false)}
     >
-      {children}
+      {describedChild}
+
+      {shortcut && (
+        <span id={hintId} className={tooltipStyles.screenReaderOnly}>
+          Shortcut: {shortcut.toUpperCase()}
+        </span>
+      )}
 
       {isOpen && (
         <span
