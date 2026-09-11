@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import { Preview } from '../src/components/preview'
+import { PropsPanel } from '../src/components/props-panel'
 import { useUIStore } from '../src/state'
 import { renderWithRouter } from './test-utils'
 
@@ -77,6 +78,43 @@ describe('Preview', () => {
     await renderWithRouter(<Preview preview={preview} />, '/Forms/Button?variant=danger')
 
     expect(screen.getByText('variant: danger')).toBeInTheDocument()
+  })
+
+  /**
+   * The controlled counterpart of the hooks test above: `render` holds its own
+   * state, with no wrapper component extracted to carry it, and a controls change
+   * re-renders it with new props rather than remounting it. This depends on
+   * `createPreview` mounting `render` as an element with a stable identity: a
+   * fresh function per render would be a new component type to React, and the
+   * count would reset to 0 on every control edit.
+   */
+  it('keeps state held directly in render across a controls change', async () => {
+    const preview = createPreview({
+      controls: { variant: { type: 'select', options: ['primary', 'danger'] } },
+      render: (v) => {
+        const [count, setCount] = useState(0)
+        return (
+          <button type="button" onClick={() => setCount(count + 1)}>
+            {v.variant} clicked {count}
+          </button>
+        )
+      },
+    })
+    useUIStore.setState({ isPanelOpen: true })
+
+    await renderWithRouter(
+      <>
+        <Preview preview={preview} />
+        <PropsPanel controls={preview.controls} />
+      </>,
+      '/Forms/Button'
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'primary clicked 0' }))
+    await userEvent.click(screen.getByRole('button', { name: 'primary clicked 1' }))
+    await userEvent.selectOptions(screen.getByRole('combobox'), 'danger')
+
+    expect(screen.getByRole('button', { name: 'danger clicked 2' })).toBeInTheDocument()
   })
 
   // The consumer's global provider wraps the preview inside the canvas, and receives

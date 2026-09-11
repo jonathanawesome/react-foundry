@@ -1,23 +1,46 @@
-import type { ReactElement } from 'react'
+import { isValidElement, type ReactElement } from 'react'
 import { describe, expect, it } from 'vitest'
 
 import { createPreview, isPreview } from '../src/create-preview'
-import { type ControlSchema, PREVIEW } from '../src/types'
+import { type ControlSchema, PREVIEW, type Preview } from '../src/types'
 
 /** Stand-in for a rendered element; core has no React runtime to render with. */
 const element = { type: 'div', props: {}, key: null } as unknown as ReactElement
 
-describe('createPreview', () => {
-  it('returns a function that renders what the bare render fn returns', () => {
-    const preview = createPreview(() => element)
+/**
+ * What a preview hands React: the element it returns when called as a component.
+ * Core has no renderer, so the assertions read the element's `type` and `props`
+ * rather than what mounting it would produce.
+ */
+function mounted(preview: Preview, props?: Parameters<Preview>[0]): ReactElement {
+  const result = preview(props)
+  if (!isValidElement(result)) throw new Error('preview did not return an element')
+  return result
+}
 
-    expect(preview()).toBe(element)
+describe('createPreview', () => {
+  // `render` is mounted as a component, not called: the preview returns an element
+  // whose type is `render` itself, so hooks inside it get their own fiber.
+  it('returns a function that mounts the bare render fn as an element', () => {
+    const render = () => element
+    const preview = createPreview(render)
+
+    expect(mounted(preview).type).toBe(render)
   })
 
-  it('returns a function that renders what the options form renders', () => {
-    const preview = createPreview({ render: () => element })
+  it('returns a function that mounts the options form render fn as an element', () => {
+    const render = () => element
+    const preview = createPreview({ render })
 
-    expect(preview()).toBe(element)
+    expect(mounted(preview).type).toBe(render)
+  })
+
+  // What React keys a fiber's state on. A fresh identity per call would remount
+  // `render` on every re-render and drop any state held inside it.
+  it('mounts the same render identity on every call', () => {
+    const preview = createPreview(() => element)
+
+    expect(mounted(preview).type).toBe(mounted(preview).type)
   })
 
   it('exposes the label from the options form', () => {
@@ -51,25 +74,37 @@ describe('createPreview', () => {
     expect(createPreview(() => element).controls).toBeUndefined()
   })
 
-  it('forwards control values from its props to render', () => {
-    const seen: unknown[] = []
+  it('forwards control values from its props to render as its props', () => {
     const preview = createPreview({
       controls: { variant: { type: 'text' } },
-      render: (v) => {
-        seen.push(v)
-        return element
-      },
+      render: () => element,
     })
 
-    preview({ controlValues: { variant: 'danger' } })
+    expect(mounted(preview, { controlValues: { variant: 'danger' } }).props).toEqual({
+      variant: 'danger',
+    })
+  })
 
-    expect(seen).toEqual([{ variant: 'danger' }])
+  // `children` as a control name is documented as fine. It is a key in the values
+  // object, and `createElement` keeps a `children` key from its config when no
+  // children arguments follow, so it arrives in render's props like any other.
+  it('forwards a control named children like any other', () => {
+    const preview = createPreview({
+      controls: { children: { type: 'text' } },
+      render: () => element,
+    })
+
+    expect(mounted(preview, { controlValues: { children: 'Click me' } }).props).toEqual({
+      children: 'Click me',
+    })
   })
 
   it('renders a zero-arg preview even when called with no props', () => {
-    const preview = createPreview(() => element)
+    const render = () => element
+    const preview = createPreview(render)
 
-    expect(preview()).toBe(element)
+    expect(mounted(preview).type).toBe(render)
+    expect(mounted(preview).props).toEqual({})
   })
 
   // The wrap-don't-tag rule: `createPreview` must never touch a value the caller

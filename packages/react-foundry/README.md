@@ -399,6 +399,7 @@ The rules:
 - **Labels come from export names**, de-camelCased: `AllSizes` becomes `All Sizes`. Pass `label` to override.
 - **Order is what you wrote.** Previews appear in source order, sections in config order. Nothing is sorted behind your back.
 - **URLs use the export name, never the label.** `AllSizes` lives at `/Forms/Button/AllSizes` whatever you label it, so rewording a label never breaks a link.
+- **`render` is a component.** Foundry mounts it rather than calling it, so hooks work inside it in both forms, controls or not, and a controlled component's value can live right there with no wrapper component extracted to hold it. React keys that state on `render`'s identity, which is stable when it is written as a literal in a module-level `createPreview` call, as above. Do not build previews in a factory that runs during render and recreates `render` each time: every pass would be a new component to React, remounted with its state gone.
 
 ### How discovery reads your files
 
@@ -467,6 +468,21 @@ export const Playground = createPreview({
 Values are typed from the schema, so `values.variant` narrows to `'primary' | 'danger'`
 and a typo is a compile error. Control types: `text`, `boolean`, `number`, `range`, `select`,
 `radio`, `color`.
+
+`render` is a component, so a preview of a controlled component keeps its value in a hook
+right there, and a control edit re-renders it with the new props rather than remounting it:
+
+```tsx
+export const Playground = createPreview({
+  controls: controlsFor(Select, {
+    width: { type: 'radio', options: ['auto', 'full'], default: 'auto' },
+  }),
+  render: (v) => {
+    const [value, setValue] = useState('a')
+    return <Select options={OPTIONS} value={value} onValueChange={setValue} width={v.width} />
+  },
+})
+```
 
 Note that a file declaring `controls` reloads the page on every edit rather than patching
 in place, so the panel can never describe a schema the canvas has moved on from. See

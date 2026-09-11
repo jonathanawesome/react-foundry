@@ -1,4 +1,4 @@
-import type { ElementType, ReactNode } from 'react'
+import { createElement, type ElementType, type ReactNode } from 'react'
 
 import {
   type ControllableProps,
@@ -88,6 +88,25 @@ export function controlsFor<C extends ElementType, const S extends ControllableP
  * })
  * ```
  *
+ * `render` is mounted as a React component with the control values as its props,
+ * not called as a function, so it can hold state and read context directly:
+ *
+ * ```tsx
+ * export const Controlled = createPreview({
+ *   controls: controlsFor(Select, { width: { type: 'radio', options: ['auto', 'full'] } }),
+ *   render: (v) => {
+ *     const [value, setValue] = useState('a')
+ *     return <Select value={value} onValueChange={setValue} width={v.width} />
+ *   },
+ * })
+ * ```
+ *
+ * That makes `render`'s identity what React keys its state on. It is stable when
+ * written as a literal inside a module-level `createPreview` call, which is the
+ * documented usage. Do not build previews inside a factory that runs during
+ * render and recreates `render` each time: React would see a new component type
+ * on every pass and remount it, losing the state inside.
+ *
  * Exports that are not wrapped are ignored, so a `.preview.tsx` file can also
  * export helpers and fixtures without them showing up in the nav.
  */
@@ -111,11 +130,20 @@ export function createPreview(
   const isBare = typeof input === 'function'
   const render = isBare ? input : input.render
 
-  // A React component taking the control values as one private prop, so control
-  // names can't collide with children/key/ref. Wrap rather than tag `render`
-  // so we never mutate a caller-owned function; module-scope identity stays
-  // stable for React. No hook or context here: tests call `preview()` directly,
-  // which would throw if the wrapper read one.
+  // A React component taking the control values as one private prop, so the host
+  // can pass them without the wrapper's own props bag colliding with children/key/
+  // ref. It mounts `render` as an element rather than calling it, which gives
+  // `render` its own fiber: hooks inside it belong to it, and the control values
+  // reach it as ordinary props. `render` is captured once here, so its identity is
+  // stable across re-renders and React keeps that fiber's state.
+  //
+  // Wrap rather than tag `render` so we never mutate a caller-owned function. No
+  // hook or context in the wrapper itself: tests call `preview()` directly, which
+  // would throw if the wrapper read one.
+  //
+  // The values become `render`'s props verbatim, so a control named `key` is taken
+  // by React and never reaches `render`. `controlsFor` cannot produce one, since
+  // `key` and `ref` are stripped from the props it checks against.
   //
   // Named, and named with a capital, because React Fast Refresh decides what is a
   // component by `fn.name` for plain functions. An anonymous arrow assigned to
@@ -125,7 +153,7 @@ export function createPreview(
   // also gates the runtime registration that covers previews written in the options
   // form, which the static transform does not detect on its own.
   const preview = function Preview(props) {
-    return render(props?.controlValues)
+    return createElement(render, props?.controlValues)
   } as Preview
 
   preview[PREVIEW] = true
