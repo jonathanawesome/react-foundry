@@ -43,6 +43,19 @@ describe('createPreview', () => {
     expect(mounted(preview).type).toBe(mounted(preview).type)
   })
 
+  // The dev server registers this with Fast Refresh under the export name, which
+  // is what keeps an options-form render's state across a hot patch.
+  it.each([
+    ['the bare form', (render: () => ReactElement) => createPreview(render)],
+    ['the options form', (render: () => ReactElement) => createPreview({ render })],
+  ])('exposes the render function it mounts: %s', (_label, make) => {
+    const render = () => element
+    const preview = make(render)
+
+    expect(preview.render).toBe(render)
+    expect(mounted(preview).type).toBe(preview.render)
+  })
+
   it('exposes the label from the options form', () => {
     const preview = createPreview({ label: 'Every Size', render: () => element })
 

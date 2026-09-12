@@ -123,6 +123,12 @@ describing the previous shape. Foundry can't tell the two edits apart, because a
 reach the preview by name (`controls: buttonControls`) and then reads identically either
 side of an edit to it.
 
+A patch keeps the state held inside `render`, in both forms. React's refresh transform only
+registers a function passed straight to `createPreview`, so foundry registers an options-form
+`render` itself, under the export's name; React then treats the edited function as an update of
+the one on screen rather than as a new component. Changing the hooks inside it still remounts
+it, which is React's own rule.
+
 #### Keeping a refresh boundary
 
 React Fast Refresh patches a module in place only while every one of its exports is

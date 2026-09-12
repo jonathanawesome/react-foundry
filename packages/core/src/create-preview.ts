@@ -177,6 +177,13 @@ export function createPreview(
   preview.label = isBare ? undefined : input.label
   preview.controls = isBare ? undefined : input.controls
 
+  // Exposed for the dev server. The refresh transform registers a function passed
+  // straight to `createPreview`, but not one sitting in an options object, so
+  // foundry's Vite plugin registers `render` itself, by export name, and it needs
+  // a handle on it to do so. Without that, a hot patch to an options-form preview
+  // gives React a new component type for `render` and remounts it, state and all.
+  preview.render = render
+
   return preview
 }
 

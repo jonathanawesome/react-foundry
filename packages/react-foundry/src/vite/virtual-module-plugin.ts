@@ -417,6 +417,39 @@ export function applyPreviewChange(
   return { change, reloaded: true, dropped }
 }
 
+/**
+ * Appends a React Fast Refresh registration for each preview's `render` to a
+ * transformed preview module.
+ *
+ * The refresh transform registers a function passed straight to a call on a
+ * capitalized export, so a bare-form preview's render already has a refresh
+ * family and keeps its state across a patch. One written in the options form
+ * only gets a hook signature: on a patch React sees a new component type for it
+ * and remounts it, state and all. This registers it under the export's name, the
+ * same id on every evaluation, so the runtime treats the new function as an
+ * update of the old one.
+ *
+ * `$RefreshReg$` is declared by the wrapper that `@vitejs/plugin-react` applies
+ * after this runs, gated on the code containing a call to it, so these lines
+ * also give a file whose previews are all options-form the refresh boundary it
+ * otherwise never gets. The `typeof` guard covers `server.hmr: false`, where the
+ * wrapper is skipped and the name is undeclared. Appended after the transform's
+ * own registrations, so for a bare-form preview the first registration, the
+ * transform's, keeps its id and this one is a no-op on the same function.
+ */
+export function appendRenderRegistrations(
+  code: string,
+  previews: ParsedPreview[]
+): string {
+  if (previews.length === 0) return code
+
+  const lines = previews.map(
+    ({ exportName }) =>
+      `if (typeof $RefreshReg$ === 'function') $RefreshReg$(${exportName}.render, ${JSON.stringify(`${exportName}$render`)});`
+  )
+  return `${code}\n${lines.join('\n')}\n`
+}
+
 export function createVirtualModulePlugin(
   previewsPattern: string,
   userRoot: string
@@ -427,12 +460,37 @@ export function createVirtualModulePlugin(
   // What each file looked like at the last load, so a change can be described.
   const fileMeta = new Map<string, PreviewMeta>()
 
+  // Whether Fast Refresh is on at all. Mirrors the condition `@vitejs/plugin-react`
+  // skips its wrapper on, so a registration is never appended where nothing would
+  // declare `$RefreshReg$` or act on the call.
+  let refresh = false
+
   return {
     name: 'react-foundry:virtual-previews',
     resolveId(id) {
       if (id === VIRTUAL_MODULE_ID) {
         return RESOLVED_VIRTUAL_MODULE_ID
       }
+    },
+
+    configResolved(config) {
+      refresh = config.command === 'serve' && config.server.hmr !== false
+    },
+
+    // Runs after Vite's own transform and before the react plugin's refresh
+    // wrapper: this plugin sits ahead of `react()` in the plugin list and both
+    // hooks are normal order. Only files the virtual module has already parsed are
+    // touched, which is every preview file, since the route loader reaches them
+    // through that module. Append-only, so no source map is needed to keep the
+    // existing positions right.
+    transform(code, id) {
+      if (!refresh) return
+
+      const file = id.split('?')[0].split('\\').join('/')
+      const meta = fileMeta.get(file)
+      if (!meta || meta.previews.length === 0) return
+
+      return { code: appendRenderRegistrations(code, meta.previews), map: null }
     },
 
     configureServer(server) {

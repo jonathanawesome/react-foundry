@@ -32,6 +32,24 @@ export const Playground = createPreview({
   ),
 })
 
+export const Derived = createPreview({
+  controls: controlsFor(Button, {
+    children: {
+      type: 'range',
+      min: 1,
+      max: 5,
+      default: 2,
+      derive: (n) => 'Go!!! '.repeat(n).trim(),
+    },
+    variant: {
+      type: 'select',
+      options: ['primary', 'secondary', 'danger'],
+      default: 'primary',
+    },
+  }),
+  render: (v) => <Button variant={v.variant}>{v.children}</Button>,
+})
+
 // The same schema reused, showing controls are not one-per-preview. Derived through
 // controlsFor as well, so overriding a default does not quietly opt back out of the
 // checking that buttonControls above is getting.

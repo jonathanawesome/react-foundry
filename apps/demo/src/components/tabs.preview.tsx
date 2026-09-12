@@ -69,7 +69,7 @@ export const Controlled = createPreview({
         >
           <Tabs.List className={tabs.list}>
             <Tabs.Tab className={tabs.tab} value="overview">
-              Overview
+              Overview!!!
             </Tabs.Tab>
             <Tabs.Tab className={tabs.tab} value="usage">
               Usage
@@ -77,10 +77,10 @@ export const Controlled = createPreview({
             <Tabs.Indicator className={tabs.indicator} />
           </Tabs.List>
           <Tabs.Panel className={tabs.panel} value="overview">
-            First panel.
+            First panel!!!.
           </Tabs.Panel>
           <Tabs.Panel className={tabs.panel} value="usage">
-            Second panel.
+            Second panel!!!.
           </Tabs.Panel>
         </Tabs.Root>
 

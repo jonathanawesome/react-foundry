@@ -1,12 +1,14 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import type { ViteDevServer } from 'vite'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { ResolvedConfig, ViteDevServer } from 'vite'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  appendRenderRegistrations,
   applyPreviewChange,
   classifyChange,
+  createVirtualModulePlugin,
   generateModuleSource,
   globBaseDir,
   invalidateFile,
@@ -844,5 +846,124 @@ describe('globBaseDir', () => {
 
   it('drops the filename when the pattern has no wildcard at all', () => {
     expect(globBaseDir('/proj/src/button.preview.tsx')).toBe('/proj/src')
+  })
+})
+
+// A bare-form render is registered by the refresh transform itself; an options-form
+// one is not, and without a family of its own a hot patch remounts it. These lines
+// give it one under the export's name.
+describe('appendRenderRegistrations', () => {
+  const code = 'export const Playground = createPreview({ render: () => null })'
+
+  it('appends one guarded registration per preview, after the code', () => {
+    const out = appendRenderRegistrations(
+      code,
+      parsed([{ exportName: 'Playground' }, { exportName: 'Sizes' }])
+    )
+
+    expect(out.startsWith(code)).toBe(true)
+    expect(out).toContain(
+      `if (typeof $RefreshReg$ === 'function') $RefreshReg$(Playground.render, "Playground$render");`
+    )
+    expect(out).toContain(
+      `if (typeof $RefreshReg$ === 'function') $RefreshReg$(Sizes.render, "Sizes$render");`
+    )
+  })
+
+  it('returns the code untouched for a file with no previews', () => {
+    expect(appendRenderRegistrations(code, [])).toBe(code)
+  })
+
+  // The refresh wrapper adds its header and footer only to code that calls
+  // `$RefreshReg$(`, which a file of options-form previews otherwise never does.
+  it('contains the call the refresh wrapper gates on', () => {
+    expect(appendRenderRegistrations(code, parsed([{ exportName: 'A' }]))).toMatch(
+      /\$RefreshReg\$\(/
+    )
+  })
+})
+
+describe('the transform hook', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'foundry-preview-refresh-'))
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+    vi.restoreAllMocks()
+  })
+
+  /** Unwraps a hook declared as a function or as `{ handler }`. */
+  function hook<T>(value: T | { handler: T } | undefined): T {
+    if (!value) throw new Error('hook not defined')
+    return typeof value === 'function' ? value : (value as { handler: T }).handler
+  }
+
+  async function setUp(config: { command: 'serve' | 'build'; hmr?: boolean }) {
+    const file = resolve(dir, 'a.preview.tsx')
+    writeFileSync(
+      file,
+      [
+        "export const nav = 'Forms'",
+        'export const Playground = createPreview({ render: () => null })',
+        'export const Primary = createPreview(() => null)',
+      ].join('\n'),
+      'utf-8'
+    )
+
+    const plugin = createVirtualModulePlugin('*.preview.tsx', dir)
+    hook(plugin.configResolved).call(
+      {} as never,
+      {
+        command: config.command,
+        server: { hmr: config.hmr ?? true },
+      } as unknown as ResolvedConfig
+    )
+    await hook(plugin.load).call({} as never, '\0virtual:react-foundry-previews')
+
+    const transform = (id: string) =>
+      hook(plugin.transform).call({} as never, 'const code = 1', id) as
+        | { code: string }
+        | undefined
+
+    return { file, transform }
+  }
+
+  it('appends a registration for every preview in a file the module has parsed', async () => {
+    const { file, transform } = await setUp({ command: 'serve' })
+
+    const out = transform(file)
+
+    expect(out?.code).toContain('$RefreshReg$(Playground.render, "Playground$render")')
+    expect(out?.code).toContain('$RefreshReg$(Primary.render, "Primary$render")')
+  })
+
+  it('matches the file through a query suffix', async () => {
+    const { file, transform } = await setUp({ command: 'serve' })
+
+    expect(transform(`${file}?t=1`)?.code).toContain('Playground$render')
+  })
+
+  it('leaves a file the module does not know alone', async () => {
+    const { transform } = await setUp({ command: 'serve' })
+
+    expect(transform(resolve(dir, 'button.tsx'))).toBeUndefined()
+  })
+
+  it('does nothing in a build', async () => {
+    const { file, transform } = await setUp({ command: 'build' })
+
+    expect(transform(file)).toBeUndefined()
+  })
+
+  // Nothing declares `$RefreshReg$` with HMR off; the guard in the appended line
+  // covers a stray call, but there is no reason to append one at all.
+  it('does nothing with HMR off', async () => {
+    const { file, transform } = await setUp({ command: 'serve', hmr: false })
+
+    expect(transform(file)).toBeUndefined()
   })
 })

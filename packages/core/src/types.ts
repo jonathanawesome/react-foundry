@@ -613,11 +613,17 @@ export interface PreviewOptions {
  * As a React component it takes a single private props bag carrying the control
  * values, deliberately *not* `RenderFn`'s shape: if the values were the props
  * bag directly, control names would collide with `children`/`key`/`ref`.
+ *
+ * `render` is the function the preview mounts, exposed so the dev server can
+ * register it with React Fast Refresh under the preview's export name. Typed to
+ * accept any render function and to be called by nothing: it is a handle for
+ * tooling, not part of the authoring API.
  */
 export type Preview = ((props?: { controlValues?: ControlValues }) => ReactNode) & {
   [PREVIEW]: true
   label?: string
   controls?: ControlSchema
+  render: (values: never) => ReactNode
 }
 
 /**
