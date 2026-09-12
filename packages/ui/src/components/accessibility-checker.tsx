@@ -6,6 +6,7 @@ import { Badge, type BadgeTone } from './badge'
 import { Icon } from './icon/icon'
 import { IconButton } from './icon-button'
 import { Scrollable } from './scrollable'
+import { Tooltip } from './tooltip'
 
 interface AccessibilityCheckerProps {
   targetRef: React.RefObject<HTMLDivElement | null>
@@ -255,15 +256,15 @@ export function AccessibilityChecker({
             </span>
           )}
         </button>
-        <button
-          type="button"
-          className={accessibilityCheckerStyles.rescanButton}
-          onClick={() => void runAccessibilityCheck()}
-          disabled={isScanning}
-          title="Re-run accessibility check"
-        >
-          re-run check
-        </button>
+
+        <Tooltip label="Re-run accessibility check">
+          <IconButton
+            icon="ArrowsClockwise"
+            onClick={() => void runAccessibilityCheck()}
+            title="Re-run accessibility check"
+            nativeTooltip={false}
+          />
+        </Tooltip>
       </div>
 
       {/* Stays mounted while collapsed so the height has something to animate against.

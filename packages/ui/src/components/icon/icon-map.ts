@@ -1,4 +1,5 @@
 import {
+  ArrowsClockwiseIcon as ArrowsClockwise,
   CaretRightIcon as CaretRight,
   CircleIcon as Circle,
   CrosshairIcon as Crosshair,
@@ -13,6 +14,7 @@ import {
 } from '@phosphor-icons/react'
 
 export const IconMap = {
+  ArrowsClockwise,
   CaretRight,
   Circle,
   Crosshair,
