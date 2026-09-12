@@ -208,6 +208,30 @@ describe('Preview', () => {
     })
   })
 
+  // A list's value reaches render as the array its rows make, from the default
+  // and from the URL alike.
+  describe('a list control', () => {
+    const preview = createPreview({
+      controls: {
+        tags: { type: 'list', of: { type: 'text' }, default: ['one', 'two'] },
+      },
+      render: (v) => <p>{v.tags.join(', ')}</p>,
+    })
+
+    it('hands render the default rows', async () => {
+      await renderWithRouter(<Preview preview={preview} />, '/Forms/Tags')
+
+      expect(screen.getByText('one, two')).toBeInTheDocument()
+    })
+
+    it('hands render the rows read off the URL', async () => {
+      const rows = encodeURIComponent(JSON.stringify(['a', 'b', 'c']))
+      await renderWithRouter(<Preview preview={preview} />, `/Forms/Tags?tags=${rows}`)
+
+      expect(screen.getByText('a, b, c')).toBeInTheDocument()
+    })
+  })
+
   // The consumer's global provider wraps the preview inside the canvas, and receives
   // foundry's resolved mode. Outside a ThemeProvider that mode defaults to light.
   it('wraps the preview in the given Provider and passes the resolved theme', async () => {

@@ -473,7 +473,7 @@ export const Playground = createPreview({
 
 Values are typed from the schema, so `values.variant` narrows to `'primary' | 'danger'`
 and a typo is a compile error. Control types: `text`, `boolean`, `number`, `range`, `select`,
-`radio`, `color`.
+`radio`, `color`, and `list` for an array of any of them (see [Lists](#lists)).
 
 `render` is a component, so a preview of a controlled component keeps its value in a hook
 right there, and a control edit re-renders it with the new props rather than remounting it:
@@ -533,9 +533,9 @@ Worth knowing:
 
 #### Deriving a prop's value from a control
 
-Some props have types no input can express: an array (`options: SelectOption[]`), a
-component (`icon: LucideIcon`), a node built from a flag. Any scalar control can carry a
-`derive` that maps the control's own value to the prop's type:
+Some props have types no input can express: a component (`icon: LucideIcon`), a node built
+from a flag, an array you would rather size with a slider than edit row by row. Any scalar
+control can carry a `derive` that maps the control's own value to the prop's type:
 
 ```tsx
 const selectControls = controlsFor(Select, {
@@ -568,11 +568,39 @@ line between the two helpers: `derive` produces one prop's value from one input,
 `render`. A `derive` on a select or radio in `defineControls` or an inline schema receives
 `string`; the narrowing to the option union is `controlsFor`'s.
 
-There is no `list` control. A `{ type: 'list', of: ControlGroup }` with per-row add and
-remove would be a second level of nesting, a list of groups, which the schema deliberately
-caps at one for instantiation cost and panel legibility. `derive` covers the array,
-component and node cases; a list control is a possible follow-up if a real preview needs
-per-row editing.
+#### Lists
+
+An array prop takes a `list`: rows drawn from one `of` schema, which is a scalar control for
+an array of strings or a group of them for an array of objects.
+
+```tsx
+const selectControls = controlsFor(Select, {
+  options: {
+    type: 'list',
+    of: { value: { type: 'text' }, label: { type: 'text', default: 'Untitled' } },
+    default: [{ value: 'acme', label: 'Acme' }],
+  },
+})
+
+const tagControls = controlsFor(TagList, {
+  tags: { type: 'list', of: { type: 'select', options: ['new', 'beta'] }, default: ['new'] },
+})
+```
+
+The panel draws a section per row with the row's fields and a remove button, and an add
+button that appends a row of the `of` defaults. `render` receives the array, typed from `of`:
+`v.options` is `{ value: string; label: string }[]`. The rows travel in the URL whole, as
+JSON, and the list is left out of the URL while it equals its default.
+
+`controlsFor` checks the row schema against the item type the same way it checks a group
+against an object prop: a key the item does not have, a control the key cannot take, and a
+typo in a `default` row are all compile errors. A row's controls may carry a `derive`, and a
+select in a row narrows to its options as one at the top level does.
+
+`of` is a control or a group, never another list, and a list cannot sit inside a group. That
+is the one level of nesting below the list the schema allows, for the same reasons a group
+holds no group: a deeper tree is hard to draw legibly in a panel and costs more type
+instantiation than it earns.
 
 ## Accessibility
 

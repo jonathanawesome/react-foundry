@@ -12,13 +12,56 @@ import { useRef, useState } from 'react'
 
 import { useUIStore } from '../state'
 import { ControlField, labelFor } from './control-field'
+import { ListField, type ListRowValue } from './list-field'
 import { propsPanelStyles } from './props-panel.css'
 import { Scrollable } from './scrollable'
 
 type ControlValue = string | number | boolean
 
-/** The draft, read loosely: a group entry holds a nested record of values. */
-type DraftValues = Record<string, ControlValue | Record<string, ControlValue>>
+/**
+ * The draft, read loosely: a group entry holds a nested record of values, a list
+ * entry an array of rows.
+ */
+type DraftValues = Record<
+  string,
+  ControlValue | Record<string, ControlValue> | ListRowValue[]
+>
+
+/**
+ * Where one control's value sits in the draft: a top-level control, a member of
+ * a group, a scalar row of a list, or a member of a row in a list.
+ */
+type ValuePath =
+  | [name: string]
+  | [group: string, member: string]
+  | [list: string, index: number]
+  | [list: string, index: number, member: string]
+
+/**
+ * Writes one value into the draft at a path, copying what it passes through so
+ * the draft stays a fresh object at every level React compares.
+ */
+function setAtPath(
+  values: DraftValues,
+  path: ValuePath,
+  value: ControlValue
+): DraftValues {
+  const [name, second, member] = path
+  if (second === undefined) return { ...values, [name]: value }
+  if (typeof second === 'string') {
+    return {
+      ...values,
+      [name]: { ...(values[name] as Record<string, ControlValue>), [second]: value },
+    }
+  }
+
+  const rows = [...(values[name] as ListRowValue[])]
+  rows[second] =
+    member === undefined
+      ? value
+      : { ...(rows[second] as Record<string, ControlValue>), [member]: value }
+  return { ...values, [name]: rows }
+}
 
 /** Continuous controls debounce their URL write so typing/dragging isn't spammy. */
 function isContinuous(def: ControlDef): boolean {
@@ -57,22 +100,12 @@ function PanelControls({ controls, splat }: PanelControlsProps) {
   const values = draft as DraftValues
 
   /**
-   * Writes one control's value into the draft. `group` names the object prop a
-   * control belongs to, so a group member replaces its own key inside the nested
-   * object rather than the whole group.
+   * Writes one control's value into the draft, wherever it sits, and to the URL:
+   * at once for a discrete control, after a pause for a continuous one, so typing
+   * into a row's text field is no spammier than typing at the top level.
    */
-  const handleChange = (
-    group: string | null,
-    name: string,
-    def: ControlDef,
-    value: ControlValue
-  ) => {
-    const next = group
-      ? {
-          ...values,
-          [group]: { ...(values[group] as Record<string, ControlValue>), [name]: value },
-        }
-      : { ...values, [name]: value }
+  const handleChange = (path: ValuePath, def: ControlDef, value: ControlValue) => {
+    const next = setAtPath(values, path, value)
 
     setDraft(next as typeof draft)
 
@@ -84,6 +117,14 @@ function PanelControls({ controls, splat }: PanelControlsProps) {
     }
   }
 
+  /** Replaces a list's rows outright, on an add or a remove. Discrete, so written at once. */
+  const handleRowsChange = (name: string, rows: ListRowValue[]) => {
+    const next = { ...values, [name]: rows }
+
+    setDraft(next as typeof draft)
+    writeUrl(next as typeof draft)
+  }
+
   return (
     <>
       {Object.entries(controls).map(([name, entry]) =>
@@ -93,9 +134,24 @@ function PanelControls({ controls, splat }: PanelControlsProps) {
             name={name}
             def={entry}
             value={values[name] as ControlValue}
-            onChange={(value) => handleChange(null, name, entry, value)}
+            onChange={(value) => handleChange([name], entry, value)}
           />
-        ) : isListControlDef(entry) ? null : ( // the list field lands with its own change
+        ) : isListControlDef(entry) ? (
+          <ListField
+            key={name}
+            name={name}
+            def={entry}
+            rows={values[name] as ListRowValue[]}
+            onRowChange={(index, member, def, value) =>
+              handleChange(
+                member === null ? [name, index] : [name, index, member],
+                def,
+                value
+              )
+            }
+            onRowsChange={(rows) => handleRowsChange(name, rows)}
+          />
+        ) : (
           <fieldset key={name} className={propsPanelStyles.group}>
             <legend className={propsPanelStyles.groupLabel}>{labelFor(name)}</legend>
             {Object.entries(entry).map(([member, def]) => (
@@ -104,7 +160,7 @@ function PanelControls({ controls, splat }: PanelControlsProps) {
                 name={member}
                 def={def}
                 value={(values[name] as Record<string, ControlValue>)[member]}
-                onChange={(value) => handleChange(name, member, def, value)}
+                onChange={(value) => handleChange([name, member], def, value)}
               />
             ))}
           </fieldset>

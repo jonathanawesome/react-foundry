@@ -1,7 +1,10 @@
 import { style, themeContract } from '@react-foundry/style'
 
+import { iconColor } from './icon/icon.css'
+
 // 24x24 hit target with a 16px icon, flat with a subtle hover and a filled
-// active state for toggles.
+// active state for toggles. The icon's color is driven through `iconColor`, since
+// the Icon wrapper sets its own `color` and would otherwise ignore ours.
 export const iconButtonStyles = style({
   display: 'flex',
   alignItems: 'center',
@@ -18,13 +21,13 @@ export const iconButtonStyles = style({
 
   ':hover': {
     background: themeContract.colors.stateHover,
-    color: themeContract.colors.textStrong,
+    vars: { [iconColor]: themeContract.colors.textStrong },
   },
 
   selectors: {
     '&[data-active="true"]': {
       background: themeContract.colors.border,
-      color: themeContract.colors.textStrong,
+      vars: { [iconColor]: themeContract.colors.textStrong },
     },
   },
 })
