@@ -1,6 +1,7 @@
 export {
   coerceControlValues,
   defaultValues,
+  deriveControlValues,
   encodeControlValues,
   isControlDef,
 } from './controls'
@@ -17,6 +18,8 @@ export type {
   ControlSchema,
   ControlValue,
   ControlValues,
+  Derive,
+  DerivedControlFor,
   FoundryProvider,
   FoundryProviderProps,
   NavItem,

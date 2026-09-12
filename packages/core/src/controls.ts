@@ -133,6 +133,60 @@ export function coerceControlValues(
   return values as ControlValues
 }
 
+/** True when any control in the schema, top-level or group member, carries a `derive`. */
+function hasDerive(schema: ControlSchema): boolean {
+  return Object.values(schema).some((entry) =>
+    isControlDef(entry)
+      ? entry.derive !== undefined
+      : Object.values(entry).some((def) => def.derive)
+  )
+}
+
+/**
+ * Applies one control's `derive`, if it has one, to that control's raw value.
+ *
+ * The cast is the one place the declared parameter types are stepped around:
+ * `derive` is typed against the value its own control produces, and `raw` is
+ * whatever {@link coerceControlValues} put there for that same control.
+ */
+function deriveValue(def: ControlDef, raw: unknown): unknown {
+  return def.derive ? def.derive(raw as never) : raw
+}
+
+/**
+ * Replaces the value of every control that carries a `derive` with what it
+ * returns, leaving the rest as they are. This is the last step before the values
+ * reach `render`: the panel and the URL only ever see the raw values.
+ *
+ * Each `derive` receives its own control's value and nothing else, which is what
+ * keeps it a per-prop mapping rather than a composition hook. A schema with no
+ * `derive` anywhere hands the same object back, so a host that memoizes on it
+ * sees nothing change.
+ */
+export function deriveControlValues(
+  schema: ControlSchema,
+  values: ControlValues
+): ControlValues {
+  if (!hasDerive(schema)) return values
+
+  const raw = values as Record<string, unknown>
+  const derived: Record<string, unknown> = {}
+  for (const [name, entry] of Object.entries(schema)) {
+    if (isControlDef(entry)) {
+      derived[name] = deriveValue(entry, raw[name])
+      continue
+    }
+
+    const members = (raw[name] ?? {}) as Record<string, unknown>
+    const group: Record<string, unknown> = {}
+    for (const [member, def] of Object.entries(entry)) {
+      group[member] = deriveValue(def, members[member])
+    }
+    derived[name] = group
+  }
+  return derived as ControlValues
+}
+
 /**
  * Encodes control values for the URL, omitting any equal to their default so
  * the query string stays short.

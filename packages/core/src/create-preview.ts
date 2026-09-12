@@ -4,6 +4,7 @@ import {
   type ControllableProps,
   type ControlSchema,
   type ControlValues,
+  type DeriveNarrowing,
   type NoExtraControls,
   PREVIEW,
   type Preview,
@@ -25,6 +26,9 @@ import {
  * })
  * type ButtonValues = ControlValues<typeof buttonControls>
  * ```
+ *
+ * A `derive` on a select or radio here receives `string`, not the union of its
+ * options; only {@link controlsFor} narrows it. See {@link DeriveNarrowing}.
  */
 export function defineControls<const S extends ControlSchema>(controls: S): S {
   return controls
@@ -46,24 +50,37 @@ export function defineControls<const S extends ControlSchema>(controls: S): S {
  * })
  * ```
  *
- * Props no control can drive are absent from the schema entirely, so a component
- * that cannot meaningfully have a props playground says so at the first control
- * you write.
+ * A prop no input can express takes a scalar control with a `derive`, which maps
+ * the control's value to the prop's type and is checked against it. The key must
+ * still be a prop; only the input is freed, and only through that mapping:
+ *
+ * ```ts
+ * const selectControls = controlsFor(Select, {
+ *   options: { type: 'range', min: 1, max: 10, default: 4, derive: (n) => CLIENTS.slice(0, n) },
+ *   icon: { type: 'select', options: ['globe', 'gauge'], default: 'globe', derive: (name) => ICONS[name] },
+ * })
+ * ```
  *
  * Prefer this whenever a preview exercises one component's API. Reach for
  * {@link defineControls} when a preview is deliberately mocking a page
  * composition and its controls drive JSX the preview assembles itself, which is a
- * legitimate thing to do and a different thing to be doing.
+ * legitimate thing to do and a different thing to be doing. `derive` does not
+ * change that line: it produces one prop's value from one input, and cannot see
+ * any other control.
  *
  * Take the schema inline. Hoisting it to a plain `const` first widens `type:
  * 'select'` to `string` before it ever arrives, and the resulting error names the
  * widening rather than the cause. Hoist the result instead:
  * `const cardControls = controlsFor(Card, { … })`.
+ *
+ * `O` and `G` are inferred, never written. See {@link DeriveNarrowing}.
  */
-export function controlsFor<C extends ElementType, const S extends ControllableProps<C>>(
-  component: C,
-  controls: S & NoExtraControls<C, S>
-): S {
+export function controlsFor<
+  C extends ElementType,
+  const S extends ControllableProps<C>,
+  O,
+  G,
+>(component: C, controls: S & NoExtraControls<C, S> & DeriveNarrowing<O, G>): S {
   // Unused at runtime and load-bearing for inference: `C` comes from here, and it
   // is what every check on `controls` is made against. `noUnusedParameters` flags
   // it otherwise, and `_component` would read badly in hover.

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   coerceControlValues,
   defaultValues,
+  deriveControlValues,
   encodeControlValues,
   isControlDef,
 } from '../src/controls'
@@ -219,5 +220,108 @@ describe('control groups', () => {
     expect(coerceControlValues(grouped, encodeControlValues(grouped, values))).toEqual(
       values
     )
+  })
+})
+
+// `derive` maps a control's value to what the prop takes, after coercion and before
+// render. The panel and the URL never see the derived value: they work on the raw
+// one, which is what these schemas hold the derive alongside.
+describe('deriveControlValues', () => {
+  const CLIENTS = ['acme', 'globex', 'initech', 'umbrella']
+
+  const derived: ControlSchema = {
+    options: {
+      type: 'range',
+      min: 1,
+      max: 4,
+      default: 2,
+      derive: (n) => CLIENTS.slice(0, n),
+    },
+    width: { type: 'radio', options: ['auto', 'full'], default: 'auto' },
+  }
+
+  it('replaces a derived control value with what derive returns', () => {
+    const values = deriveControlValues(derived, coerceControlValues(derived, {}))
+
+    expect(values.options).toEqual(['acme', 'globex'])
+  })
+
+  it('leaves a control without derive as it was', () => {
+    const values = deriveControlValues(derived, coerceControlValues(derived, {}))
+
+    expect(values.width).toBe('auto')
+  })
+
+  it('re-derives from a changed value', () => {
+    const values = deriveControlValues(
+      derived,
+      coerceControlValues(derived, { options: 4 })
+    )
+
+    expect(values.options).toEqual(CLIENTS)
+  })
+
+  it('hands each derive its own control value and nothing else', () => {
+    const seen: unknown[][] = []
+    const spied: ControlSchema = {
+      count: {
+        type: 'number',
+        default: 3,
+        derive: (...args) => {
+          seen.push(args)
+          return args[0]
+        },
+      },
+      other: { type: 'text', default: 'x' },
+    }
+
+    deriveControlValues(spied, coerceControlValues(spied, {}))
+
+    expect(seen).toEqual([[3]])
+  })
+
+  it('derives a group member, leaving the rest of the group alone', () => {
+    const schema: ControlSchema = {
+      variants: {
+        onSurface: { type: 'radio', options: ['base', 'raised'], default: 'base' },
+        tone: {
+          type: 'boolean',
+          default: true,
+          derive: (ok) => (ok ? 'success' : 'danger'),
+        },
+      },
+    }
+
+    const values = deriveControlValues(schema, coerceControlValues(schema, {}))
+
+    expect(values.variants).toEqual({ onSurface: 'base', tone: 'success' })
+  })
+
+  it('tolerates values missing a group entirely', () => {
+    const schema: ControlSchema = {
+      variants: {
+        tone: { type: 'boolean', derive: (ok) => (ok ? 'success' : 'danger') },
+      },
+    }
+
+    expect(deriveControlValues(schema, {})).toEqual({ variants: { tone: 'danger' } })
+  })
+
+  // A host memoizes the values it hands to render. With nothing to derive there is
+  // no reason to give it a new object to compare.
+  it('returns the same values object when nothing in the schema derives', () => {
+    const values = coerceControlValues(schema, {})
+
+    expect(deriveControlValues(schema, values)).toBe(values)
+    expect(deriveControlValues(grouped, values)).toBe(values)
+  })
+
+  it('does not mutate the raw values', () => {
+    const raw = coerceControlValues(derived, {})
+    const before = structuredClone(raw)
+
+    deriveControlValues(derived, raw)
+
+    expect(raw).toEqual(before)
   })
 })

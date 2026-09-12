@@ -1,6 +1,7 @@
 import {
   type ComponentProps,
   type ComponentType,
+  createElement,
   forwardRef,
   type ReactNode,
 } from 'react'
@@ -9,6 +10,7 @@ import { describe, expectTypeOf, it } from 'vitest'
 import { controlsFor, createPreview, defineControls } from '../src/create-preview'
 import type {
   ControllableProps,
+  ControlSchema,
   ControlValues,
   NavPath,
   NavPathsOf,
@@ -359,20 +361,28 @@ describe('controlsFor', () => {
     })
   })
 
-  // The point of the whole exercise: a component with nothing to control says so at
-  // the first control you write, rather than presenting a UI no call site can produce.
-  it('leaves a component with no controllable prop with no controls at all', () => {
-    expectTypeOf<keyof ControllableProps<typeof SlotOnly>>().toBeNever()
+  // The point of the whole exercise: a component with nothing an input can express
+  // says so at the first control you write, rather than presenting a UI no call site
+  // can produce. Its render prop is reachable through `derive` and nothing else.
+  it('leaves a component with no input-driven prop with no plain controls at all', () => {
+    expectTypeOf<keyof ControllableProps<typeof SlotOnly>>().toEqualTypeOf<'renderItem'>()
 
     controlsFor(SlotOnly, {
       // @ts-expect-error SlotOnly has no prop any control can drive
       anything: { type: 'text' },
     })
+
+    controlsFor(SlotOnly, {
+      // @ts-expect-error a render prop takes no input; only a derive can produce one
+      renderItem: { type: 'text' },
+    })
   })
 
-  it('excludes props no control can drive, rather than mapping them to never', () => {
+  // `onClick` is here because a derive can produce a function; every other prop is
+  // here because an input can drive it directly.
+  it('keeps every real prop, since a derive can target any of them', () => {
     expectTypeOf<keyof ControllableProps<typeof Button>>().toEqualTypeOf<
-      'variant' | 'size' | 'disabled' | 'title' | 'count' | 'children'
+      'variant' | 'size' | 'disabled' | 'title' | 'count' | 'children' | 'onClick'
     >()
   })
 
@@ -510,10 +520,11 @@ describe('controlsFor control groups', () => {
   })
 
   // ComponentType is a callable unioned with a constructable; neither half's
-  // signature describes the union, so this is the guard that catches it.
-  it('drops a component-typed prop instead of grouping its members', () => {
+  // signature describes the union, so this is the guard that catches it. The prop
+  // stays in the key set, reachable through a derive, but never as a group.
+  it('refuses to group a component-typed prop', () => {
     expectTypeOf<keyof ControllableProps<typeof StatCard>>().toEqualTypeOf<
-      'title' | 'value' | 'hint' | 'variants' | 'period'
+      'title' | 'value' | 'hint' | 'icon' | 'variants' | 'period' | 'slots' | 'nested'
     >()
 
     controlsFor(StatCard, {
@@ -554,6 +565,251 @@ describe('controlsFor control groups', () => {
       // @ts-expect-error `colour` is not a CSS property
       style: { colour: { type: 'color' } },
     })
+  })
+})
+
+/**
+ * Fixtures for `derive`: the three prop shapes no input can express. An array
+ * (`options`), a component (`icon`, on StatCard above), and a node built from a
+ * flag (`titleAccessory`).
+ */
+interface SelectOption {
+  value: string
+  label: string
+}
+
+const CLIENTS: SelectOption[] = [
+  { value: 'acme', label: 'Acme' },
+  { value: 'globex', label: 'Globex' },
+]
+
+interface SelectProps {
+  options: SelectOption[]
+  value?: string
+  onValueChange?: (value: string) => void
+  width?: 'auto' | 'sm' | 'md' | 'lg' | 'full'
+}
+
+const Select = (_props: SelectProps): ReactNode => null
+
+const Globe = (_props: { className?: string }): ReactNode => null
+const Gauge = (_props: { className?: string }): ReactNode => null
+const ICONS = { globe: Globe, gauge: Gauge }
+
+const Badge = (_props: { content: string }): ReactNode => null
+
+const PageLead = (_props: { title: string; titleAccessory?: ReactNode }): ReactNode =>
+  null
+
+describe('controlsFor derive', () => {
+  it('derives an array prop from a range, and types the value as the array', () => {
+    const controls = controlsFor(Select, {
+      options: {
+        type: 'range',
+        min: 1,
+        max: 10,
+        default: 4,
+        derive: (n) => {
+          expectTypeOf(n).toEqualTypeOf<number>()
+          return CLIENTS.slice(0, n)
+        },
+      },
+      width: {
+        type: 'radio',
+        options: ['auto', 'sm', 'md', 'lg', 'full'],
+        default: 'auto',
+      },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['options']>().toEqualTypeOf<
+      SelectOption[]
+    >()
+    expectTypeOf<ControlValues<typeof controls>['width']>().toEqualTypeOf<
+      'auto' | 'sm' | 'md' | 'lg' | 'full'
+    >()
+  })
+
+  // The parameter comes from the options written beside it, not from the prop, so
+  // a lookup table keyed by those options needs no cast.
+  it('derives a component prop from a select, with the parameter narrowed to its options', () => {
+    const controls = controlsFor(StatCard, {
+      icon: {
+        type: 'select',
+        options: ['globe', 'gauge'],
+        default: 'globe',
+        derive: (name) => {
+          expectTypeOf(name).toEqualTypeOf<'globe' | 'gauge'>()
+          return ICONS[name]
+        },
+      },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['icon']>().toEqualTypeOf<
+      (_props: { className?: string }) => ReactNode
+    >()
+  })
+
+  it('derives a ReactNode prop from a boolean', () => {
+    const controls = controlsFor(PageLead, {
+      titleAccessory: {
+        type: 'boolean',
+        default: false,
+        derive: (on) => {
+          expectTypeOf(on).toEqualTypeOf<boolean>()
+          return on ? createElement(Badge, { content: 'Beta' }) : undefined
+        },
+      },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['titleAccessory']>().toExtend<ReactNode>()
+  })
+
+  it('rejects a derive whose return type does not match the prop', () => {
+    controlsFor(Select, {
+      // @ts-expect-error a string is not SelectOption[]
+      options: { type: 'range', derive: (n) => String(n) },
+    })
+
+    controlsFor(StatCard, {
+      // @ts-expect-error a string is not a component
+      icon: { type: 'select', options: ['globe', 'gauge'], derive: (name) => name },
+    })
+  })
+
+  it('rejects a derive typed narrower than the options beside it', () => {
+    controlsFor(StatCard, {
+      icon: {
+        type: 'select',
+        options: ['globe', 'gauge'],
+        // @ts-expect-error `gauge` is an option this derive never accepts
+        derive: (name: 'globe') => ICONS[name],
+      },
+    })
+  })
+
+  // The key stays checked. Only the input is freed, and only through the mapping.
+  it('rejects a derived control on a prop the component does not have', () => {
+    controlsFor(Select, {
+      // @ts-expect-error `optoins` is a typo, not a prop of Select
+      optoins: { type: 'range', derive: (n) => CLIENTS.slice(0, n) },
+    })
+  })
+
+  it('leaves a scalar control without derive exactly as it was', () => {
+    const controls = controlsFor(Select, {
+      width: { type: 'radio', options: ['auto', 'full'], default: 'auto' },
+    })
+
+    expectTypeOf(controls.width).toEqualTypeOf<{
+      readonly type: 'radio'
+      readonly options: readonly ['auto', 'full']
+      readonly default: 'auto'
+    }>()
+    expectTypeOf<ControlValues<typeof controls>['width']>().toEqualTypeOf<
+      'auto' | 'full'
+    >()
+  })
+
+  it('accepts a derive on a member of a control group', () => {
+    const controls = controlsFor(StatCard, {
+      variants: {
+        onSurface: {
+          type: 'select',
+          options: ['up', 'down'],
+          derive: (direction) => {
+            expectTypeOf(direction).toEqualTypeOf<'up' | 'down'>()
+            return direction === 'up' ? 'raised' : 'base'
+          },
+        },
+        tone: { type: 'boolean', derive: (ok) => (ok ? 'success' : 'danger') },
+      },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['variants']>().toEqualTypeOf<{
+      readonly onSurface: 'base' | 'raised'
+      readonly tone: 'success' | 'danger'
+    }>()
+  })
+
+  it('rejects a derive inside a group whose return does not match the member', () => {
+    controlsFor(StatCard, {
+      variants: {
+        // @ts-expect-error a number is not a tone
+        tone: { type: 'boolean', derive: (ok) => (ok ? 1 : 0) },
+      },
+    })
+  })
+
+  // Off controlsFor there is no component to bind to, and the option narrowing goes
+  // with it: a select's derive sees `string`. Every other kind is typed from its
+  // own arm, and the derived value still types render.
+  it('types a derive from ControlDef alone in defineControls and an inline schema', () => {
+    const controls = defineControls({
+      icon: {
+        type: 'select',
+        options: ['globe', 'gauge'],
+        derive: (name) => {
+          expectTypeOf(name).toEqualTypeOf<string>()
+          return name.length
+        },
+      },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['icon']>().toEqualTypeOf<number>()
+
+    createPreview({
+      controls: {
+        options: {
+          type: 'range',
+          default: 2,
+          derive: (n) => {
+            expectTypeOf(n).toEqualTypeOf<number>()
+            return CLIENTS.slice(0, n)
+          },
+        },
+      },
+      render: (v) => {
+        expectTypeOf(v.options).toEqualTypeOf<SelectOption[]>()
+        return null
+      },
+    })
+  })
+
+  // A schema narrowed by controlsFor is still a ControlSchema, which is what lets
+  // createPreview take it: a derive typed against `'globe' | 'gauge'` has to satisfy
+  // a select arm declared against `string`.
+  it('keeps a schema with a narrowed derive assignable to ControlSchema', () => {
+    const controls = controlsFor(StatCard, {
+      icon: {
+        type: 'select',
+        options: ['globe', 'gauge'],
+        derive: (name) => ICONS[name],
+      },
+    })
+    const schema: ControlSchema = controls
+
+    createPreview({
+      controls,
+      render: (v) => {
+        expectTypeOf(v.icon).toEqualTypeOf<
+          (_props: { className?: string }) => ReactNode
+        >()
+        return null
+      },
+    })
+    void schema
+  })
+
+  // A schema that arrives already widened has no literal to narrow from, and must
+  // still be accepted: a `derive` on it is typed against ControlDef alone.
+  it('still accepts a schema typed as ControlSchema', () => {
+    const schema: ControlSchema = {
+      count: { type: 'range', derive: (n) => n * 2 },
+      icon: { type: 'select', options: ['globe'], derive: (name) => name.length },
+    }
+
+    defineControls(schema)
+    createPreview({ controls: schema, render: () => null })
   })
 })
 
