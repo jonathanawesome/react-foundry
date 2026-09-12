@@ -10,11 +10,11 @@ import { chromeSurfaceProps } from '@react-foundry/style'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 
-import { useUIStore } from '../state'
-import { ControlField, labelFor } from './control-field'
-import { ListField, type ListRowValue } from './list-field'
+import { useUIStore } from '../../state'
+import { ControlField, labelFor } from '../control-field/control-field'
+import { ListField, type ListRowValue } from '../list-field/list-field'
+import { Scrollable } from '../scrollable/scrollable'
 import { propsPanelStyles } from './props-panel.css'
-import { Scrollable } from './scrollable'
 
 type ControlValue = string | number | boolean
 

@@ -3,7 +3,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { PropsPanel } from '../src/components/props-panel'
+import { PropsPanel } from '../src/components/props-panel/props-panel'
 import { useUIStore } from '../src/state'
 import { renderWithRouter } from './test-utils'
 

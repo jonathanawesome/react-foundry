@@ -2,9 +2,9 @@ import { collectNodePaths, type NavNode } from '@react-foundry/core'
 import { chromeSurfaceProps } from '@react-foundry/style'
 import { Link, useParams } from '@tanstack/react-router'
 import { useEffect } from 'react'
-import { useUIStore } from '../state'
-import { Icon } from './icon/icon'
-import { Scrollable } from './scrollable'
+import { useUIStore } from '../../state'
+import { Icon } from '../icon/icon'
+import { Scrollable } from '../scrollable/scrollable'
 
 import { shelfStyles } from './shelf.css'
 

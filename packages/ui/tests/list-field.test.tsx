@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 
-import { ListField, type ListRowValue } from '../src/components/list-field'
+import { ListField, type ListRowValue } from '../src/components/list-field/list-field'
 
 const sectionRow: ControlGroup = {
   title: { type: 'text', default: 'Untitled' },

@@ -2,7 +2,7 @@ import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { Tooltip } from '../src/components/tooltip'
+import { Tooltip } from '../src/components/tooltip/tooltip'
 
 /**
  * jsdom lays nothing out: every rect and offset is zero, so placement would be

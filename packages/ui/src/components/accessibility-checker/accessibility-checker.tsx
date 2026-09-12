@@ -1,12 +1,12 @@
 import { chromeSurfaceProps, ThemeContext } from '@react-foundry/style'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { Badge, type BadgeTone } from '../badge/badge'
+import { Icon } from '../icon/icon'
+import { IconButton } from '../icon-button/icon-button'
+import { Scrollable } from '../scrollable/scrollable'
+import { Tooltip } from '../tooltip/tooltip'
 import { resolveTarget, selectorOf, type Violation } from './a11y-scan'
 import { accessibilityCheckerStyles } from './accessibility-checker.css'
-import { Badge, type BadgeTone } from './badge'
-import { Icon } from './icon/icon'
-import { IconButton } from './icon-button'
-import { Scrollable } from './scrollable'
-import { Tooltip } from './tooltip'
 
 interface AccessibilityCheckerProps {
   targetRef: React.RefObject<HTMLDivElement | null>

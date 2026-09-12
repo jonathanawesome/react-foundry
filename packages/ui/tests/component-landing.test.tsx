@@ -2,7 +2,7 @@ import type { NavNode, PreviewLeaf } from '@react-foundry/core'
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { ComponentLanding } from '../src/components/component-landing'
+import { ComponentLanding } from '../src/components/component-landing/component-landing'
 import { renderWithRouter } from './test-utils'
 
 const load = async () => ({})

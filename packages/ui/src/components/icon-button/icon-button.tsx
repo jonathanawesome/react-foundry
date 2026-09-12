@@ -1,5 +1,5 @@
-import type { IconName } from './icon/icon'
-import { Icon } from './icon/icon'
+import type { IconName } from '../icon/icon'
+import { Icon } from '../icon/icon'
 import { iconButtonStyles } from './icon-button.css'
 
 export interface IconButtonProps {

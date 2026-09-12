@@ -4,8 +4,8 @@ import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { Preview } from '../src/components/preview'
-import { PropsPanel } from '../src/components/props-panel'
+import { Preview } from '../src/components/preview/preview'
+import { PropsPanel } from '../src/components/props-panel/props-panel'
 import { useUIStore } from '../src/state'
 import { renderWithRouter } from './test-utils'
 

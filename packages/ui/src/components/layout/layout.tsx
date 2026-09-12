@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 
-import { useUIStore } from '../state'
+import { useUIStore } from '../../state'
 import * as styles from './layout.css'
 
 interface LayoutProps {

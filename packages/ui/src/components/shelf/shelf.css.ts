@@ -1,6 +1,6 @@
 import { style, themeContract } from '@react-foundry/style'
 
-import { SHELF_WIDTH } from '../constants'
+import { SHELF_WIDTH } from '../../constants'
 
 export const shelfStyles = {
   overlay: style({

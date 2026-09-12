@@ -5,8 +5,8 @@ import userEvent from '@testing-library/user-event'
 import { useRef } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { AccessibilityChecker } from '../src/components/accessibility-checker'
-import { Preview } from '../src/components/preview'
+import { AccessibilityChecker } from '../src/components/accessibility-checker/accessibility-checker'
+import { Preview } from '../src/components/preview/preview'
 import { useUIStore } from '../src/state'
 import { renderWithRouter } from './test-utils'
 
@@ -119,7 +119,9 @@ describe('locate button', () => {
     await userEvent.click(screen.getAllByTitle(LOCATE)[0])
     expect(overlay()).toBeInTheDocument()
 
-    await userEvent.click(screen.getByTitle('Re-run accessibility check'))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Re-run accessibility check' })
+    )
 
     await waitFor(() => expect(overlay()).not.toBeInTheDocument())
   })

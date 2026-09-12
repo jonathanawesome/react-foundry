@@ -5,9 +5,9 @@ import {
   listRowDefault,
 } from '@react-foundry/core'
 
-import { ControlField, labelFor } from './control-field'
-import { Icon } from './icon/icon'
-import { IconButton } from './icon-button'
+import { ControlField, labelFor } from '../control-field/control-field'
+import { Icon } from '../icon/icon'
+import { IconButton } from '../icon-button/icon-button'
 import { listFieldStyles as s } from './list-field.css'
 
 type ControlValue = string | number | boolean

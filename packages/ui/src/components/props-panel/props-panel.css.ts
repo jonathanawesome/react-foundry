@@ -1,6 +1,6 @@
 import { style, themeContract } from '@react-foundry/style'
 
-import { PANEL_WIDTH } from '../constants'
+import { PANEL_WIDTH } from '../../constants'
 
 export const propsPanelStyles = {
   // Mirror of the shelf, on the right: slides in from the right edge, border on
@@ -16,7 +16,7 @@ export const propsPanelStyles = {
     display: 'flex',
     flexDirection: 'column',
 
-    paddingTop: 48,
+    paddingTop: themeContract.px[16],
 
     background: themeContract.colors.panel,
     borderLeft: `1px solid ${themeContract.colors.border}`,

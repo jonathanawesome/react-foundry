@@ -1,6 +1,6 @@
 import { style, themeContract } from '@react-foundry/style'
 
-import { iconColor } from './icon/icon.css'
+import { iconColor } from '../icon/icon.css'
 
 // 24x24 hit target with a 16px icon, flat with a subtle hover and a filled
 // active state for toggles. The icon's color is driven through `iconColor`, since

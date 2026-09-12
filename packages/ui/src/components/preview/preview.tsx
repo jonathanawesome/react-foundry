@@ -16,10 +16,10 @@ import {
   useState,
 } from 'react'
 
-import { useUIStore } from '../state'
+import { useUIStore } from '../../state'
 
-import { AccessibilityChecker } from './accessibility-checker'
-import { HighlightOverlay } from './highlight-overlay'
+import { AccessibilityChecker } from '../accessibility-checker/accessibility-checker'
+import { HighlightOverlay } from '../highlight-overlay/highlight-overlay'
 import { previewStyles } from './preview.css'
 
 /** Used when the consumer has no `foundry.providers.tsx`: render the preview as-is. */

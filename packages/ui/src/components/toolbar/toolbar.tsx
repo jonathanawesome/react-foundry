@@ -1,10 +1,10 @@
 import { chromeSurfaceProps, useTheme } from '@react-foundry/style'
 
-import { useUIStore } from '../state'
-import { IconButton, type IconButtonProps } from './icon-button'
+import { useUIStore } from '../../state'
+import { IconButton, type IconButtonProps } from '../icon-button/icon-button'
+import { Tooltip } from '../tooltip/tooltip'
 import { toolbarStyles } from './toolbar.css'
 import { TOOLBAR_SHORTCUTS, useToolbarShortcuts } from './toolbar-shortcuts'
-import { Tooltip } from './tooltip'
 
 interface ToolbarButtonProps
   extends Pick<IconButtonProps, 'icon' | 'onClick' | 'title' | 'active'> {
