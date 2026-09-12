@@ -6,8 +6,10 @@ import {
   deriveControlValues,
   encodeControlValues,
   isControlDef,
+  isListControlDef,
+  listRowDefault,
 } from '../src/controls'
-import type { ControlSchema } from '../src/types'
+import type { ControlSchema, ListControlDef } from '../src/types'
 
 const schema: ControlSchema = {
   label: { type: 'text', default: 'Go' },
@@ -41,6 +43,21 @@ describe('isControlDef', () => {
   // legitimate member of an object prop, and `<button type>` is the obvious case.
   it('reads a group whose own member is named type as a group', () => {
     expect(isControlDef({ type: { type: 'text' } })).toBe(false)
+  })
+
+  it('reads a list as not a control', () => {
+    expect(isControlDef({ type: 'list', of: { type: 'text' } })).toBe(false)
+  })
+})
+
+describe('isListControlDef', () => {
+  it('reads a list by its type', () => {
+    expect(isListControlDef({ type: 'list', of: { type: 'text' } })).toBe(true)
+  })
+
+  it('reads a control and a group as not a list', () => {
+    expect(isListControlDef({ type: 'text' })).toBe(false)
+    expect(isListControlDef({ tone: { type: 'text' } })).toBe(false)
   })
 })
 
@@ -338,5 +355,142 @@ describe('deriveControlValues', () => {
     deriveControlValues(derived, raw)
 
     expect(raw).toEqual(before)
+  })
+})
+
+// A list's value is an array of rows, each drawn from its `of`. The URL carries it
+// whole as JSON, and the router hands it back parsed, so coercion sees an array.
+describe('list controls', () => {
+  const sections: ControlSchema = {
+    sections: {
+      type: 'list',
+      of: {
+        title: { type: 'text', default: 'Untitled' },
+        open: { type: 'boolean', default: false },
+      },
+      default: [{ title: 'One', open: true }],
+    },
+  }
+
+  const tags: ControlSchema = {
+    tags: { type: 'list', of: { type: 'select', options: ['a', 'b'], default: 'a' } },
+  }
+
+  it('defaults to the declared rows, or to no rows', () => {
+    expect(defaultValues(sections)).toEqual({ sections: [{ title: 'One', open: true }] })
+    expect(defaultValues(tags)).toEqual({ tags: [] })
+  })
+
+  it('builds a new row from the row schema defaults', () => {
+    expect(listRowDefault(sections.sections as ListControlDef)).toEqual({
+      title: 'Untitled',
+      open: false,
+    })
+    expect(listRowDefault(tags.tags as ListControlDef)).toBe('a')
+  })
+
+  it('coerces each row of an array by the row schema', () => {
+    const values = coerceControlValues(sections, {
+      sections: [
+        { title: 'A', open: 'true' },
+        { title: 42, open: false },
+      ],
+    })
+
+    expect(values.sections).toEqual([
+      { title: 'A', open: true },
+      { title: '42', open: false },
+    ])
+  })
+
+  it('coerces a scalar row, dropping an option outside the list', () => {
+    expect(coerceControlValues(tags, { tags: ['b', 'zzz', 'a'] }).tags).toEqual([
+      'b',
+      'a',
+      'a',
+    ])
+  })
+
+  it('fills a missing member of a row from its default', () => {
+    expect(
+      coerceControlValues(sections, { sections: [{ title: 'Only' }] }).sections
+    ).toEqual([{ title: 'Only', open: false }])
+  })
+
+  it('reads a row that is not an object as a row of defaults', () => {
+    expect(coerceControlValues(sections, { sections: ['nope'] }).sections).toEqual([
+      { title: 'Untitled', open: false },
+    ])
+  })
+
+  // A hand-edited URL, or an older router, can carry the JSON as a string.
+  it('parses rows given as a JSON string', () => {
+    const raw = JSON.stringify([{ title: 'Parsed', open: true }])
+
+    expect(coerceControlValues(sections, { sections: raw }).sections).toEqual([
+      { title: 'Parsed', open: true },
+    ])
+  })
+
+  it('falls back to the default for a value that is not a list', () => {
+    expect(coerceControlValues(sections, { sections: 'not json' })).toEqual(
+      defaultValues(sections)
+    )
+    expect(coerceControlValues(sections, { sections: { title: 'x' } })).toEqual(
+      defaultValues(sections)
+    )
+  })
+
+  it('keeps an empty list, which is not the default here', () => {
+    expect(coerceControlValues(sections, { sections: [] }).sections).toEqual([])
+  })
+
+  it('omits a list left at its default from the URL, by content', () => {
+    expect(encodeControlValues(sections, defaultValues(sections))).toEqual({})
+    expect(
+      encodeControlValues(sections, { sections: [{ title: 'One', open: true }] })
+    ).toEqual({})
+  })
+
+  it('encodes a changed list whole', () => {
+    const values = {
+      sections: [
+        { title: 'One', open: true },
+        { title: 'Two', open: false },
+      ],
+    }
+
+    expect(encodeControlValues(sections, values)).toEqual(values)
+  })
+
+  it('round-trips a list through encode and coerce', () => {
+    const values = { tags: ['b', 'b', 'a'] }
+
+    expect(coerceControlValues(tags, encodeControlValues(tags, values))).toEqual(values)
+  })
+
+  it('derives each row through the row schema', () => {
+    const schema: ControlSchema = {
+      tags: { type: 'list', of: { type: 'range', min: 1, derive: (n) => 'x'.repeat(n) } },
+      rows: {
+        type: 'list',
+        of: {
+          n: { type: 'number' },
+          on: { type: 'boolean', derive: (on) => (on ? 'yes' : 'no') },
+        },
+      },
+    }
+    const raw = coerceControlValues(schema, { tags: [1, 3], rows: [{ n: 2, on: true }] })
+
+    expect(deriveControlValues(schema, raw)).toEqual({
+      tags: ['x', 'xxx'],
+      rows: [{ n: 2, on: 'yes' }],
+    })
+  })
+
+  it('returns the same values object when no row derives', () => {
+    const values = coerceControlValues(sections, {})
+
+    expect(deriveControlValues(sections, values)).toBe(values)
   })
 })

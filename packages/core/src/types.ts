@@ -162,14 +162,43 @@ export type ControlDef =
  */
 export type ControlGroup = Record<string, ControlDef>
 
+/** One row of a list control's value, as its input holds it: what one `of` entry produces. */
+export type ListRow =
+  | string
+  | number
+  | boolean
+  | Record<string, string | number | boolean>
+
 /**
- * One entry in a schema: a control, or a group of controls for an object prop.
+ * A control for an array-typed prop: a list of rows, each drawn from the same
+ * `of` schema, with add and remove in the props panel.
  *
- * The two are told apart structurally, by whether `type` holds a string. A
- * control always carries one and a group's own values are controls, so no marker
- * property is needed at runtime or in the types.
+ * `of` is a scalar control (a list of strings, say) or a group of them (a list of
+ * objects), never another list. That is the one level of nesting below the list
+ * the schema allows, which keeps the panel legible and the types cheap to
+ * instantiate. A member of a group `of` may derive as any group member does; the
+ * list itself does not, since its value already is the array, and mapping rows
+ * belongs in `render`.
+ *
+ * Rows travel in the URL as JSON, and the whole list is omitted when it equals
+ * its default.
  */
-export type ControlEntry = ControlDef | ControlGroup
+export type ListControlDef = {
+  type: 'list'
+  of: ControlDef | ControlGroup
+  default?: readonly ListRow[]
+}
+
+/**
+ * One entry in a schema: a control, a list, or a group of controls for an object
+ * prop.
+ *
+ * They are told apart structurally. A control and a list carry a string `type`,
+ * which a group never does since its own values are controls; a list's `type` is
+ * `'list'` and a control's never is. So no marker property is needed at runtime
+ * or in the types.
+ */
+export type ControlEntry = ControlDef | ListControlDef | ControlGroup
 
 export type ControlSchema = Record<string, ControlEntry>
 
@@ -210,19 +239,22 @@ export type ControlGroupValues<G extends ControlGroup> = {
 
 /**
  * The value a single schema entry resolves to: a scalar for a control, a nested
- * object for a group.
+ * object for a group, an array of rows for a list.
  *
  * `E` is naked so a union of entries distributes, which is what keeps an
  * unparameterized {@link ControlValues} meaningful. `Extract` rather than a bare
  * `E` because {@link ResolvedControlValue} and {@link ControlGroupValues} are
  * constrained, and a conditional's true branch does not narrow a type parameter
- * enough to satisfy one.
+ * enough to satisfy one. A list resolves through its `of`, which is a control or
+ * a group and so ends the recursion one level down.
  */
-type ControlEntryValue<E> = E extends ControlDef
-  ? ResolvedControlValue<Extract<E, ControlDef>>
-  : E extends ControlGroup
-    ? ControlGroupValues<Extract<E, ControlGroup>>
-    : never
+type ControlEntryValue<E> = E extends ListControlDef
+  ? ControlEntryValue<Extract<E, ListControlDef>['of']>[]
+  : E extends ControlDef
+    ? ResolvedControlValue<Extract<E, ControlDef>>
+    : E extends ControlGroup
+      ? ControlGroupValues<Extract<E, ControlGroup>>
+      : never
 
 /**
  * The values object a controlled preview's `render` receives, typed from its
@@ -235,6 +267,7 @@ type ControlEntryValue<E> = E extends ControlDef
  *
  * A control with a `derive` resolves to what it returns, not to the input's
  * value: a range deriving `SelectOption[]` reads as `SelectOption[]` in `render`.
+ * A list resolves to an array of what its `of` resolves to.
  */
 export type ControlValues<S extends ControlSchema = ControlSchema> = {
   [K in keyof S]: ControlEntryValue<S[K]>
@@ -409,9 +442,55 @@ type ObjectControlFor<T> = unknown extends T
 type NonNull<T> = Exclude<T, null | undefined>
 
 /**
+ * The single-level arms of {@link ControlFor}: a scalar control, a derived one,
+ * or a group. Everything but a list, so it can also type a list's rows.
+ */
+type EntryControlFor<T> =
+  | DerivedControlFor<T>
+  | ScalarControlFor<NonNull<T>>
+  | ([ScalarControlFor<NonNull<T>>] extends [never]
+      ? ObjectControlFor<NonNull<T>>
+      : never)
+
+/**
+ * What a row in a list's `default` may hold: the input values its `of` can
+ * produce. A scalar for a scalar or derived row, and for an object item the
+ * group's own keys, so a typo in a default row is an excess-property error.
+ */
+type ListRowDefaultFor<Item> =
+  | string
+  | number
+  | boolean
+  | ([ObjectControlFor<NonNull<Item>>] extends [never]
+      ? never
+      : { [K in keyof ControlGroupFor<NonNull<Item>>]?: string | number | boolean })
+
+/**
+ * The list an array-typed prop can be driven by, or `never` for anything else.
+ *
+ * The rows take the same arms the prop itself would if it were a single item,
+ * minus a list: that is the one level below the list the schema allows.
+ *
+ * `any[]`, `unknown[]` and `never[]` are rejected as the other arms reject their
+ * items.
+ */
+type ListControlFor<T> = [NonNull<T>] extends [readonly (infer Item)[]]
+  ? unknown extends Item
+    ? never
+    : [Item] extends [never]
+      ? never
+      : {
+          type: 'list'
+          of: EntryControlFor<Item>
+          default?: readonly ListRowDefaultFor<Item>[]
+        }
+  : never
+
+/**
  * The controls a prop of type `T` can be driven by, or `never` when it can't be
  * driven by any of them: a single control for a scalar prop, a group of them for
- * an object prop, and for any prop a scalar control that derives the value.
+ * an object prop, a list for an array prop, and for any prop a scalar control
+ * that derives the value.
  *
  * `T` is the prop's type as declared, `null` and `undefined` included. The scalar
  * and object arms see it stripped of both: `VariantProps` produces `variant?:
@@ -424,15 +503,11 @@ type NonNull<T> = Exclude<T, null | undefined>
  *
  * The object arm is a fallthrough rather than a plain union member so the scalar
  * arms keep their precedence over it by construction, which is what a
- * `ReactNode` prop depends on to stay a text control. The derived arm needs no
- * such guard: it carries a `type` key, so it is never mistaken for a group.
+ * `ReactNode` prop depends on to stay a text control. The derived and list arms
+ * need no such guard: each carries a `type` key, so neither is mistaken for a
+ * group.
  */
-export type ControlFor<T> =
-  | DerivedControlFor<T>
-  | ScalarControlFor<NonNull<T>>
-  | ([ScalarControlFor<NonNull<T>>] extends [never]
-      ? ObjectControlFor<NonNull<T>>
-      : never)
+export type ControlFor<T> = EntryControlFor<T> | ListControlFor<T>
 
 /**
  * A component's props with React's own props dropped, each typed as declared.
@@ -465,6 +540,9 @@ export type ControllableProps<C extends ElementType> = {
 /** The group arm of a prop's {@link ControlFor}: the one member without a `type` key. */
 type GroupArm<G> = Exclude<G, { type: string }>
 
+/** The rows a prop's list arm takes, or `never` when the prop takes no list. */
+type ListRowsArm<G> = Extract<G, { type: 'list' }> extends { of: infer Of } ? Of : never
+
 /**
  * Turns a key inside a control group that the prop does not have into an error
  * naming why.
@@ -472,7 +550,9 @@ type GroupArm<G> = Exclude<G, { type: string }>
  * `G` is what {@link ControlFor} derived for the prop, `E` the entry the author
  * actually wrote. An entry carrying a `type` key is a control rather than a
  * group, so there is nothing to look inside: it is left unconstrained and the
- * entry's own type does the checking.
+ * entry's own type does the checking. A list is the exception: its `of` is
+ * checked the same way, against the rows the prop's list arm takes, so a typo
+ * inside a row schema names the key too.
  *
  * A group entry is also pinned to the group arm here, which is about the error
  * and not the verdict. {@link ControlFor} is a union, and the `options` mirror
@@ -484,11 +564,42 @@ type GroupArm<G> = Exclude<G, { type: string }>
  * its members share, which for a group is none, so `keyof` is read off the arm.
  */
 type NoExtraGroupControls<G, E> = 'type' extends keyof E
-  ? unknown
+  ? E extends { type: 'list'; of: infer Of }
+    ? [ListRowsArm<G>] extends [never]
+      ? unknown
+      : { of?: NoExtraGroupControls<ListRowsArm<G>, Of> } & NoExtraDefaultRowKeys<
+          GroupArm<ListRowsArm<G>>,
+          E
+        >
+    : unknown
   : [GroupArm<G>] extends [never]
     ? Record<keyof E, 'not a control of this prop'>
     : GroupArm<G> &
         Record<Exclude<keyof E, keyof GroupArm<G>>, 'not a control of this prop'>
+
+/** Every key of every member of a union, where `keyof` alone gives the shared ones. */
+type AnyKeyOf<U> = U extends unknown ? keyof U : never
+
+/**
+ * Turns a key in a list's default rows that the row schema does not have into an
+ * error naming it.
+ *
+ * Needed because the constraint alone cannot: a default row is checked against
+ * the row type by plain assignability, which lets an extra key through. So the
+ * keys no row may have are gathered across every default row and each row is
+ * required to carry them with an error string as their type, which no literal
+ * satisfies. Only for a group row; a scalar row's keys are a string's.
+ */
+type NoExtraDefaultRowKeys<Row, E> = [Row] extends [never]
+  ? unknown
+  : E extends { default: readonly (infer D)[] }
+    ? {
+        default?: readonly Record<
+          Exclude<AnyKeyOf<D>, keyof Row>,
+          'not a member of this list row'
+        >[]
+      }
+    : unknown
 
 /**
  * Turns a key that is not a controllable prop into an error naming why, at the
@@ -533,6 +644,15 @@ type GroupControlOptions<G> = {
 }
 
 /**
+ * {@link ControlOptions}, for the members of each list's row schema, when that
+ * schema is a group. A scalar row schema is a member of the list entry itself and
+ * so is already read by {@link GroupControlOptions}.
+ */
+type ListRowControlOptions<R> = {
+  [K in keyof R]: { of?: { [M in keyof R[K]]?: { options?: R[K][M] } } }
+}
+
+/**
  * The narrowed `derive` for one control, given the options it was written with:
  * nothing at all unless those are an array.
  *
@@ -550,12 +670,14 @@ type NarrowedDerive<Options> = Options extends readonly (infer V)[]
  * as the union of those options.
  *
  * A schema entry that holds a `derive` is not inferable as a whole until that
- * function has been typed, and typing it is what needs the options. So `O` and
- * `G` are inferred separately, by reverse-mapping {@link ControlOptions} and
- * {@link GroupControlOptions} over the literal, which reads the `options`
- * property alone and needs nothing else. This type then contributes the narrowed
- * parameter when `derive` is contextually typed, and is wrapped in `NoInfer` so
- * that it is instantiated at that point rather than inferred from.
+ * function has been typed, and typing it is what needs the options. So `O`, `G`
+ * and `R` are inferred separately, by reverse-mapping {@link ControlOptions},
+ * {@link GroupControlOptions} and {@link ListRowControlOptions} over the literal,
+ * which read the `options` property alone (at the top level, in a group's
+ * members, and in the members of a list's row group) and need nothing else. This
+ * type then contributes the narrowed parameter when `derive` is contextually
+ * typed, and is wrapped in `NoInfer` so that it is instantiated at that point
+ * rather than inferred from.
  *
  * Every control kind other than select and radio types its parameter from its
  * own arm; this adds nothing for them, and nothing for a control that does not
@@ -579,8 +701,9 @@ type NarrowedDerive<Options> = Options extends readonly (infer V)[]
  * Exported so `controlsFor` can reference it, not because it is part of the
  * public API; the barrels do not re-export it.
  */
-export type DeriveNarrowing<O, G> = ControlOptions<O> &
+export type DeriveNarrowing<O, G, R> = ControlOptions<O> &
   GroupControlOptions<G> &
+  ListRowControlOptions<R> &
   NoInfer<
     string extends keyof O
       ? unknown
@@ -588,6 +711,9 @@ export type DeriveNarrowing<O, G> = ControlOptions<O> &
           [K in keyof O]?: NarrowedDerive<O[K]> &
             (K extends keyof G
               ? { [M in keyof G[K]]?: NarrowedDerive<G[K][M]> }
+              : unknown) &
+            (K extends keyof R
+              ? { of?: { [M in keyof R[K]]?: NarrowedDerive<R[K][M]> } }
               : unknown)
         }
   >

@@ -4,6 +4,7 @@ import {
   coerceControlValues,
   encodeControlValues,
   isControlDef,
+  isListControlDef,
 } from '@react-foundry/core'
 import { chromeSurfaceProps } from '@react-foundry/style'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
@@ -94,7 +95,7 @@ function PanelControls({ controls, splat }: PanelControlsProps) {
             value={values[name] as ControlValue}
             onChange={(value) => handleChange(null, name, entry, value)}
           />
-        ) : (
+        ) : isListControlDef(entry) ? null : ( // the list field lands with its own change
           <fieldset key={name} className={propsPanelStyles.group}>
             <legend className={propsPanelStyles.groupLabel}>{labelFor(name)}</legend>
             {Object.entries(entry).map(([member, def]) => (

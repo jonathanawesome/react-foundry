@@ -4,6 +4,8 @@ import type {
   ControlGroup,
   ControlSchema,
   ControlValues,
+  ListControlDef,
+  ListRow,
 } from './types'
 
 /**
@@ -16,15 +18,22 @@ import type {
 const GROUP_SEPARATOR = '.'
 
 /**
- * True for a schema entry that is a single control rather than a group.
+ * True for a schema entry that is a single control rather than a list or a group.
  *
- * Structural, and it has to be: `type` holding a string is what a control always
- * has and a group never does, since a group's own values are controls. A group
- * *key* named `type` is fine, which is why this reads the value's type rather
- * than testing for the key.
+ * Structural, and it has to be: `type` holding a string is what a control and a
+ * list always have and a group never does, since a group's own values are
+ * controls, and `'list'` is the one type no control has. A group *key* named
+ * `type` is fine, which is why this reads the value's type rather than testing
+ * for the key.
  */
 export function isControlDef(entry: ControlEntry): entry is ControlDef {
-  return typeof (entry as ControlDef).type === 'string'
+  const type = (entry as ControlDef | ListControlDef).type
+  return typeof type === 'string' && type !== 'list'
+}
+
+/** True for a schema entry that is a list of rows. See {@link isControlDef}. */
+export function isListControlDef(entry: ControlEntry): entry is ListControlDef {
+  return (entry as ListControlDef).type === 'list'
 }
 
 /** The value a control falls back to when no `default` is declared. */
@@ -57,11 +66,25 @@ function groupDefaults(group: ControlGroup): Record<string, unknown> {
   return values
 }
 
+/** The default value for one list: its declared rows, else no rows. */
+function listDefault(def: ListControlDef): readonly ListRow[] {
+  return def.default ?? []
+}
+
+/** The default value for one new row of a list: what its `of` produces by default. */
+export function listRowDefault(def: ListControlDef): unknown {
+  return isControlDef(def.of) ? defaultValue(def.of) : groupDefaults(def.of)
+}
+
 /** The default values object for a whole schema. */
 export function defaultValues(schema: ControlSchema): ControlValues {
   const values: Record<string, unknown> = {}
   for (const [name, entry] of Object.entries(schema)) {
-    values[name] = isControlDef(entry) ? defaultValue(entry) : groupDefaults(entry)
+    values[name] = isControlDef(entry)
+      ? defaultValue(entry)
+      : isListControlDef(entry)
+        ? listDefault(entry)
+        : groupDefaults(entry)
   }
   return values as ControlValues
 }
@@ -105,11 +128,50 @@ function coerceValue(
 }
 
 /**
+ * Coerces one row of a list to what its `of` declares, member by member for a
+ * group, with the same fallback to the default as a top-level control.
+ */
+function coerceRow(of: ListControlDef['of'], raw: unknown): unknown {
+  if (isControlDef(of)) return coerceValue(of, raw) ?? defaultValue(of)
+
+  const members = (raw !== null && typeof raw === 'object' ? raw : {}) as Record<
+    string,
+    unknown
+  >
+  const row: Record<string, unknown> = {}
+  for (const [member, def] of Object.entries(of)) {
+    row[member] = coerceValue(def, members[member]) ?? defaultValue(def)
+  }
+  return row
+}
+
+/**
+ * Coerces a list's raw value, or returns `undefined` when it is not a list at all.
+ *
+ * The router hands rows back parsed, so the value is normally an array already.
+ * A hand-edited URL can carry the JSON as a string, which is parsed here; text
+ * that is neither is what a broken link looks like, and falls back to the default.
+ */
+function coerceList(def: ListControlDef, raw: unknown): unknown[] | undefined {
+  let rows = raw
+  if (typeof raw === 'string') {
+    try {
+      rows = JSON.parse(raw)
+    } catch {
+      return undefined
+    }
+  }
+  if (!Array.isArray(rows)) return undefined
+  return rows.map((row) => coerceRow(def.of, row))
+}
+
+/**
  * Merges raw URL values over a schema's defaults, coercing each to its declared
  * type. Missing, unparseable, or unknown params fall back to the default.
  *
  * Group members are read from flattened `group.member` params and rebuilt into a
- * nested object, so what `render` receives mirrors the prop it drives.
+ * nested object, so what `render` receives mirrors the prop it drives. A list is
+ * read whole, from the JSON the router already parsed.
  */
 export function coerceControlValues(
   schema: ControlSchema,
@@ -123,6 +185,11 @@ export function coerceControlValues(
       continue
     }
 
+    if (isListControlDef(entry)) {
+      values[name] = coerceList(entry, raw[name]) ?? listDefault(entry)
+      continue
+    }
+
     const group: Record<string, unknown> = {}
     for (const [member, def] of Object.entries(entry)) {
       const key = `${name}${GROUP_SEPARATOR}${member}`
@@ -133,12 +200,17 @@ export function coerceControlValues(
   return values as ControlValues
 }
 
-/** True when any control in the schema, top-level or group member, carries a `derive`. */
+/** True when a control, or any member of a group, carries a `derive`. */
+function entryDerives(entry: ControlDef | ControlGroup): boolean {
+  return isControlDef(entry)
+    ? entry.derive !== undefined
+    : Object.values(entry).some((def) => def.derive)
+}
+
+/** True when any control in the schema, at any level, carries a `derive`. */
 function hasDerive(schema: ControlSchema): boolean {
   return Object.values(schema).some((entry) =>
-    isControlDef(entry)
-      ? entry.derive !== undefined
-      : Object.values(entry).some((def) => def.derive)
+    isListControlDef(entry) ? entryDerives(entry.of) : entryDerives(entry)
   )
 }
 
@@ -153,15 +225,28 @@ function deriveValue(def: ControlDef, raw: unknown): unknown {
   return def.derive ? def.derive(raw as never) : raw
 }
 
+/** Applies the derives of a control or of a group's members to one value. */
+function deriveEntry(entry: ControlDef | ControlGroup, raw: unknown): unknown {
+  if (isControlDef(entry)) return deriveValue(entry, raw)
+
+  const members = (raw ?? {}) as Record<string, unknown>
+  const group: Record<string, unknown> = {}
+  for (const [member, def] of Object.entries(entry)) {
+    group[member] = deriveValue(def, members[member])
+  }
+  return group
+}
+
 /**
  * Replaces the value of every control that carries a `derive` with what it
  * returns, leaving the rest as they are. This is the last step before the values
  * reach `render`: the panel and the URL only ever see the raw values.
  *
  * Each `derive` receives its own control's value and nothing else, which is what
- * keeps it a per-prop mapping rather than a composition hook. A schema with no
- * `derive` anywhere hands the same object back, so a host that memoizes on it
- * sees nothing change.
+ * keeps it a per-prop mapping rather than a composition hook. A list's rows are
+ * derived one at a time, each through its `of`. A schema with no `derive`
+ * anywhere hands the same object back, so a host that memoizes on it sees
+ * nothing change.
  */
 export function deriveControlValues(
   schema: ControlSchema,
@@ -172,23 +257,21 @@ export function deriveControlValues(
   const raw = values as Record<string, unknown>
   const derived: Record<string, unknown> = {}
   for (const [name, entry] of Object.entries(schema)) {
-    if (isControlDef(entry)) {
-      derived[name] = deriveValue(entry, raw[name])
+    if (isListControlDef(entry)) {
+      const rows = Array.isArray(raw[name]) ? (raw[name] as unknown[]) : []
+      derived[name] = rows.map((row) => deriveEntry(entry.of, row))
       continue
     }
-
-    const members = (raw[name] ?? {}) as Record<string, unknown>
-    const group: Record<string, unknown> = {}
-    for (const [member, def] of Object.entries(entry)) {
-      group[member] = deriveValue(def, members[member])
-    }
-    derived[name] = group
+    derived[name] = deriveEntry(entry, raw[name])
   }
   return derived as ControlValues
 }
 
-/** A control's value as it goes into the URL: its own type, never stringified here. */
-type EncodedControlValue = string | number | boolean
+/**
+ * A control's value as it goes into the URL: its own type, never stringified
+ * here. A list goes whole; the router serializes it as JSON.
+ */
+type EncodedControlValue = string | number | boolean | readonly ListRow[]
 
 /**
  * Encodes control values for the URL, omitting any equal to their default so
@@ -202,7 +285,9 @@ type EncodedControlValue = string | number | boolean
  * value back as readily as a string, so a link written the old way still resolves.
  *
  * A group is flattened one key per member rather than serialized whole, so a
- * single edited member costs one short param and the rest stay out of the URL.
+ * single edited member costs one short param and the rest stay out of the URL. A
+ * list goes whole: its rows have no fixed names to flatten to, and the router
+ * writes an array as JSON.
  */
 export function encodeControlValues(
   schema: ControlSchema,
@@ -214,6 +299,19 @@ export function encodeControlValues(
 
     if (isControlDef(entry)) {
       if (value === undefined || value === defaultValue(entry)) continue
+      encoded[name] = value as EncodedControlValue
+      continue
+    }
+
+    // Rows are compared by content: a list left at its default is a fresh array
+    // built from the schema, never the same object.
+    if (isListControlDef(entry)) {
+      if (
+        value === undefined ||
+        JSON.stringify(value) === JSON.stringify(listDefault(entry))
+      ) {
+        continue
+      }
       encoded[name] = value as EncodedControlValue
       continue
     }

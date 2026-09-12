@@ -73,14 +73,15 @@ export function defineControls<const S extends ControlSchema>(controls: S): S {
  * widening rather than the cause. Hoist the result instead:
  * `const cardControls = controlsFor(Card, { … })`.
  *
- * `O` and `G` are inferred, never written. See {@link DeriveNarrowing}.
+ * `O`, `G` and `R` are inferred, never written. See {@link DeriveNarrowing}.
  */
 export function controlsFor<
   C extends ElementType,
   const S extends ControllableProps<C>,
   O,
   G,
->(component: C, controls: S & NoExtraControls<C, S> & DeriveNarrowing<O, G>): S {
+  R,
+>(component: C, controls: S & NoExtraControls<C, S> & DeriveNarrowing<O, G, R>): S {
   // Unused at runtime and load-bearing for inference: `C` comes from here, and it
   // is what every check on `controls` is made against. `noUnusedParameters` flags
   // it otherwise, and `_component` would read badly in hover.

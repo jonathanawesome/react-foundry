@@ -4,6 +4,8 @@ export {
   deriveControlValues,
   encodeControlValues,
   isControlDef,
+  isListControlDef,
+  listRowDefault,
 } from './controls'
 export { controlsFor, createPreview, defineControls, isPreview } from './create-preview'
 export { createDiscovery, deCamelCase, navPathFromFilename } from './discovery'
@@ -22,6 +24,8 @@ export type {
   DerivedControlFor,
   FoundryProvider,
   FoundryProviderProps,
+  ListControlDef,
+  ListRow,
   NavItem,
   NavNode,
   NavPath,

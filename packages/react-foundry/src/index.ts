@@ -18,6 +18,8 @@ export type {
   ControlValues,
   FoundryProvider,
   FoundryProviderProps,
+  ListControlDef,
+  ListRow,
   NavPath,
   NavPathsOf,
   Preview,

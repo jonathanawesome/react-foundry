@@ -813,6 +813,199 @@ describe('controlsFor derive', () => {
   })
 })
 
+/** Fixtures for the list control: an array of objects, an array of strings, a nested array. */
+interface TagListProps {
+  tags?: string[]
+  matrix?: string[][]
+  handlers?: (() => void)[]
+  // biome-ignore lint/suspicious/noExplicitAny: an array of any is the case under test
+  anything?: any[]
+}
+
+const TagList = (_props: TagListProps): ReactNode => null
+
+describe('controlsFor list', () => {
+  it('drives an array of objects with a list of groups, and types the rows', () => {
+    const controls = controlsFor(Select, {
+      options: {
+        type: 'list',
+        of: { value: { type: 'text' }, label: { type: 'text', default: 'Untitled' } },
+        default: [{ value: 'acme', label: 'Acme' }],
+      },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['options']>().toEqualTypeOf<
+      { readonly value: string; readonly label: string }[]
+    >()
+  })
+
+  it('drives an array of strings with a list of one control', () => {
+    const controls = controlsFor(TagList, {
+      tags: { type: 'list', of: { type: 'text' }, default: ['new'] },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['tags']>().toEqualTypeOf<string[]>()
+  })
+
+  it('accepts a derive on a row, and on a member of a row', () => {
+    const controls = controlsFor(TagList, {
+      tags: {
+        type: 'list',
+        of: { type: 'range', min: 1, max: 5, derive: (n) => 'x'.repeat(n) },
+      },
+    })
+    expectTypeOf<ControlValues<typeof controls>['tags']>().toEqualTypeOf<string[]>()
+
+    const members = controlsFor(Select, {
+      options: {
+        type: 'list',
+        of: {
+          value: { type: 'text' },
+          label: { type: 'boolean', derive: (on) => (on ? 'On' : 'Off') },
+        },
+      },
+    })
+    expectTypeOf<ControlValues<typeof members>['options']>().toEqualTypeOf<
+      { readonly value: string; readonly label: 'On' | 'Off' }[]
+    >()
+  })
+
+  // The option narrowing reaches a row's select the same as a top-level one, both
+  // when the row is that select and when the select is a member of a row group.
+  it('narrows a select derive in a row to its options', () => {
+    controlsFor(TagList, {
+      tags: {
+        type: 'list',
+        of: {
+          type: 'select',
+          options: ['a', 'b'],
+          derive: (k) => {
+            expectTypeOf(k).toEqualTypeOf<'a' | 'b'>()
+            return k
+          },
+        },
+      },
+    })
+
+    controlsFor(Select, {
+      options: {
+        type: 'list',
+        of: {
+          value: { type: 'text' },
+          label: {
+            type: 'select',
+            options: ['x', 'y'],
+            derive: (k) => {
+              expectTypeOf(k).toEqualTypeOf<'x' | 'y'>()
+              return k.toUpperCase()
+            },
+          },
+        },
+      },
+    })
+  })
+
+  it('rejects a key in a row schema that the item does not have', () => {
+    controlsFor(Select, {
+      options: {
+        type: 'list',
+        of: {
+          value: { type: 'text' },
+          // @ts-expect-error `lable` is a typo, not a key of SelectOption
+          lable: { type: 'text' },
+        },
+      },
+    })
+  })
+
+  it('rejects a row control the item cannot take', () => {
+    controlsFor(Select, {
+      options: {
+        type: 'list',
+        // @ts-expect-error a SelectOption is an object; a checkbox cannot be one
+        of: { value: { type: 'boolean' } },
+      },
+    })
+  })
+
+  it('rejects a list on a prop that is not an array', () => {
+    controlsFor(Button, {
+      // @ts-expect-error `title` is a string, not an array
+      title: { type: 'list', of: { type: 'text' } },
+    })
+  })
+
+  it('rejects a default row the row schema cannot produce', () => {
+    controlsFor(Select, {
+      options: {
+        type: 'list',
+        of: { value: { type: 'text' }, label: { type: 'text' } },
+        // @ts-expect-error `lable` is a typo in the default row
+        default: [{ value: 'a', lable: 'A' }],
+      },
+    })
+  })
+
+  // One level below the list is the whole feature. A list of lists has no panel
+  // to draw it in, and an array item offers no arm at all.
+  it('does not nest a list inside a list', () => {
+    controlsFor(TagList, {
+      // @ts-expect-error `matrix` is an array of arrays; a row cannot be a list
+      matrix: { type: 'list', of: { type: 'list', of: { type: 'text' } } },
+    })
+  })
+
+  it('does not put a list inside a group', () => {
+    controlsFor(StatCard, {
+      variants: {
+        // @ts-expect-error a group holds controls, never a list
+        tone: { type: 'list', of: { type: 'text' } },
+      },
+    })
+  })
+
+  it('offers a list of derived rows for an array of callables, and nothing plainer', () => {
+    controlsFor(TagList, {
+      handlers: {
+        type: 'list',
+        of: { type: 'boolean', derive: (on) => (on ? () => {} : () => {}) },
+      },
+    })
+
+    controlsFor(TagList, {
+      // @ts-expect-error a function is not a text box
+      handlers: { type: 'list', of: { type: 'text' } },
+    })
+  })
+
+  it('offers no list for an array of any', () => {
+    controlsFor(TagList, {
+      // @ts-expect-error `anything` is any[], which no list can check
+      anything: { type: 'list', of: { type: 'text' } },
+    })
+  })
+
+  it('types a list in defineControls and reads it back in render', () => {
+    const controls = defineControls({
+      sections: {
+        type: 'list',
+        of: { title: { type: 'text' }, body: { type: 'text' } },
+        default: [{ title: 'One', body: 'First' }],
+      },
+    })
+
+    createPreview({
+      controls,
+      render: (v) => {
+        expectTypeOf(v.sections).toEqualTypeOf<
+          { readonly title: string; readonly body: string }[]
+        >()
+        return null
+      },
+    })
+  })
+})
+
 // Each of these compiled silently, or resolved to the wrong control, in a draft of
 // these types. They are guards rather than documentation of intent.
 describe('controlsFor edge cases', () => {
