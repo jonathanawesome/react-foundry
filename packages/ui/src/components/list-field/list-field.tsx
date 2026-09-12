@@ -5,9 +5,11 @@ import {
   listRowDefault,
 } from '@react-foundry/core'
 
+import { CollapsibleSection } from '../collapsible-section/collapsible-section'
 import { ControlField, labelFor } from '../control-field/control-field'
 import { Icon } from '../icon/icon'
 import { IconButton } from '../icon-button/icon-button'
+import { Tooltip } from '../tooltip/tooltip'
 import { listFieldStyles as s } from './list-field.css'
 
 type ControlValue = string | number | boolean
@@ -35,7 +37,8 @@ interface ListFieldProps {
 
 /**
  * The panel's input for a list control: a section per row, drawn from the list's
- * `of` schema, with a remove button on each and an add button at the end.
+ * `of` schema, with a remove button on each and an add button at the end. The
+ * list and each group row fold shut, so a long list can be read as its labels.
  *
  * Controlled, like {@link ControlField}: it renders `rows` and reports changes
  * through the two callbacks, so debouncing and URL writes stay the panel's job.
@@ -60,9 +63,7 @@ export function ListField({
   const add = () => onRowsChange([...rows, listRowDefault(def) as ListRowValue])
 
   return (
-    <fieldset className={s.list}>
-      <legend className={s.label}>{label}</legend>
-
+    <CollapsibleSection label={label}>
       {rows.map((row, index) =>
         isControlDef(def.of) ? (
           // A scalar row is one field, labelled as the row since the field is the row.
@@ -77,21 +78,32 @@ export function ListField({
                 }
               />
             </div>
-            <IconButton
-              icon="X"
-              title={`Remove ${rowLabel(index).toLowerCase()}`}
-              onClick={() => remove(index)}
-            />
+            <Tooltip label={`Remove ${rowLabel(index).toLowerCase()}`}>
+              <IconButton
+                icon="X"
+                title={`Remove ${rowLabel(index).toLowerCase()}`}
+                nativeTooltip={false}
+                onClick={() => remove(index)}
+              />
+            </Tooltip>
           </div>
         ) : (
-          <fieldset key={index} className={s.row}>
-            <legend className={s.rowLabel}>{rowLabel(index)}</legend>
-            <IconButton
-              icon="X"
-              title={`Remove ${rowLabel(index).toLowerCase()}`}
-              className={s.remove}
-              onClick={() => remove(index)}
-            />
+          <CollapsibleSection
+            key={index}
+            label={rowLabel(index)}
+            tight
+            actions={
+              <Tooltip label={`Remove ${rowLabel(index).toLowerCase()}`}>
+                <IconButton
+                  icon="X"
+                  size="sm"
+                  title={`Remove ${rowLabel(index).toLowerCase()}`}
+                  nativeTooltip={false}
+                  onClick={() => remove(index)}
+                />
+              </Tooltip>
+            }
+          >
             {Object.entries(def.of).map(([member, memberDef]) => (
               <ControlField
                 key={member}
@@ -101,7 +113,7 @@ export function ListField({
                 onChange={(value) => onRowChange(index, member, memberDef, value)}
               />
             ))}
-          </fieldset>
+          </CollapsibleSection>
         )
       )}
 
@@ -109,6 +121,6 @@ export function ListField({
         <Icon name="Plus" size="sm" />
         Add row
       </button>
-    </fieldset>
+    </CollapsibleSection>
   )
 }

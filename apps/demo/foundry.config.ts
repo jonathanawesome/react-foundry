@@ -11,6 +11,7 @@ export default defineConfig({
       children: [
         { label: 'Accessibility Violations' },
         { label: 'Badge' },
+        { label: 'Collapsible Section' },
         { label: 'Control Field' },
         { label: 'Icon' },
         { label: 'Icon Button' },

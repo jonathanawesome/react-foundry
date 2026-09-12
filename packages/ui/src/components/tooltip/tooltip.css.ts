@@ -12,10 +12,11 @@ export const tooltipStyles = {
   // here: an offset written in both places would be one the JS could disagree
   // with, and the JS is the half that has to do the arithmetic.
   bubble: style({
-    position: 'absolute',
-    // The toolbar container is the stacking context; this only has to clear the
-    // buttons rendered after it.
-    zIndex: 1,
+    // Portaled onto the body and fixed to the viewport, so it lives in the page's
+    // stacking context and has to clear every chrome surface: the toolbar is the
+    // highest at 1001.
+    position: 'fixed',
+    zIndex: 1002,
 
     display: 'flex',
     alignItems: 'center',

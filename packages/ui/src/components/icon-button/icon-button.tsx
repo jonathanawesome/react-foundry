@@ -1,14 +1,20 @@
-import type { IconName } from '../icon/icon'
+import type { IconName, IconProps } from '../icon/icon'
 import { Icon } from '../icon/icon'
 import { iconButtonStyles } from './icon-button.css'
 
 export interface IconButtonProps {
   icon: IconName
+  /** Turns the icon, for a caret that points where a disclosure will go. */
+  rotate?: IconProps['rotate']
+  /** `md` is the toolbar's 24px; `sm` is 20px around a 12px icon, for a control in a line of text. */
+  size?: 'sm' | 'md'
   onClick: () => void
   /** Tooltip and accessible name. */
   title: string
   /** Fills the button to show a toggle is on. */
   active?: boolean
+  /** For a button that discloses a region: whether that region is open. */
+  'aria-expanded'?: boolean
   /**
    * Whether to render the browser's own tooltip. Turn it off when the button is
    * wrapped in a {@link Tooltip}, or the two stack up on hover.
@@ -38,9 +44,12 @@ export interface IconButtonProps {
  */
 export function IconButton({
   icon,
+  rotate,
+  size = 'md',
   onClick,
   title,
   active,
+  'aria-expanded': expanded,
   className,
   nativeTooltip = true,
   onPointerEnter,
@@ -49,10 +58,12 @@ export function IconButton({
   onBlur,
   'aria-describedby': describedBy,
 }: IconButtonProps) {
+  const base = iconButtonStyles({ size })
+
   return (
     <button
       type="button"
-      className={className ? `${iconButtonStyles} ${className}` : iconButtonStyles}
+      className={className ? `${base} ${className}` : base}
       onClick={onClick}
       onPointerEnter={onPointerEnter}
       onPointerLeave={onPointerLeave}
@@ -62,9 +73,10 @@ export function IconButton({
       aria-label={title}
       aria-describedby={describedBy}
       aria-pressed={active}
+      aria-expanded={expanded}
       data-active={active}
     >
-      <Icon name={icon} size="md" />
+      <Icon name={icon} size={size} rotate={rotate} />
     </button>
   )
 }

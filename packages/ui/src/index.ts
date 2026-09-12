@@ -13,6 +13,10 @@ export {
 
 export { AccessibilityChecker } from './components/accessibility-checker/accessibility-checker'
 export { Badge, type BadgeProps, type BadgeTone } from './components/badge/badge'
+export {
+  CollapsibleSection,
+  type CollapsibleSectionProps,
+} from './components/collapsible-section/collapsible-section'
 export { ComponentLanding } from './components/component-landing/component-landing'
 export { ControlField } from './components/control-field/control-field'
 // Components

@@ -1,3 +1,4 @@
+import { chromeSurfaceProps } from '@react-foundry/style'
 import {
   cloneElement,
   isValidElement,
@@ -10,6 +11,7 @@ import {
   useRef,
   useState,
 } from 'react'
+import { createPortal } from 'react-dom'
 
 import { tooltipStyles } from './tooltip.css'
 
@@ -19,7 +21,7 @@ const GAP = 8
 /** How close to the window's edge the bubble may sit before it is pulled back. */
 const VIEWPORT_MARGIN = 8
 
-/** Where the bubble sits, in pixels relative to the wrapper's top-left corner. */
+/** Where the bubble sits, in viewport pixels. */
 interface Placement {
   left: number
   top: number
@@ -43,10 +45,11 @@ export interface TooltipProps {
  * there is no room below. That is the whole of what a tooltip needs, which is
  * why this measures directly instead of pulling in a positioning library.
  *
- * The window is the only thing it knows about, though. The bubble is positioned
- * absolutely, so an ancestor that clips — `overflow: hidden`, or a
- * {@link Scrollable} — will cut it off, and a control in one needs a portal
- * this does not have yet.
+ * The bubble renders in a portal on `document.body`, fixed to the viewport, so
+ * no ancestor of the control can clip it: a control inside a {@link Scrollable}
+ * gets the same bubble as one in the toolbar. Being outside every chrome
+ * surface, the bubble marks itself as one, which is what gives it foundry's
+ * typography and resets rather than the consumer's document's.
  *
  * The bubble itself is decoration, not the accessible name: the control already
  * carries one, and announcing the same words twice is worse than silence, so it
@@ -100,10 +103,8 @@ export function Tooltip({ label, shortcut, children }: TooltipProps) {
     const fitsBelow = anchor.bottom + GAP + height <= window.innerHeight - VIEWPORT_MARGIN
 
     setPlacement({
-      // Back into the wrapper's coordinates: it is the containing block, and its
-      // border box starts exactly at the anchor rect's corner.
-      left: clampedLeft - anchor.left,
-      top: fitsBelow ? anchor.height + GAP : -(height + GAP),
+      left: clampedLeft,
+      top: fitsBelow ? anchor.bottom + GAP : anchor.top - GAP - height,
     })
   }, [])
 
@@ -119,11 +120,18 @@ export function Tooltip({ label, shortcut, children }: TooltipProps) {
     place()
   }, [isOpen, label, shortcut, place])
 
+  // Scroll as well as resize, in the capture phase: the control may sit in a
+  // scrolling region, and a fixed bubble would otherwise stay where the control
+  // was.
   useEffect(() => {
     if (!isOpen) return
 
     window.addEventListener('resize', place)
-    return () => window.removeEventListener('resize', place)
+    window.addEventListener('scroll', place, true)
+    return () => {
+      window.removeEventListener('resize', place)
+      window.removeEventListener('scroll', place, true)
+    }
   }, [isOpen, place])
 
   return (
@@ -149,24 +157,26 @@ export function Tooltip({ label, shortcut, children }: TooltipProps) {
         </span>
       )}
 
-      {isOpen && (
-        <span
-          ref={bubbleRef}
-          className={tooltipStyles.bubble}
-          style={{
-            left: placement?.left,
-            top: placement?.top,
-            // One frame at the wrong spot would be a visible jump. useLayoutEffect
-            // should land the measurement before paint; this is the belt to that
-            // suspenders, and covers a ref that never resolved.
-            visibility: placement ? undefined : 'hidden',
-          }}
-          aria-hidden
-        >
-          <span className={tooltipStyles.label}>{label}</span>
-          {shortcut && <kbd className={tooltipStyles.shortcut}>{shortcut}</kbd>}
-        </span>
-      )}
+      {isOpen &&
+        createPortal(
+          <span
+            ref={bubbleRef}
+            {...chromeSurfaceProps(tooltipStyles.bubble)}
+            style={{
+              left: placement?.left,
+              top: placement?.top,
+              // One frame at the wrong spot would be a visible jump. useLayoutEffect
+              // should land the measurement before paint; this is the belt to that
+              // suspenders, and covers a ref that never resolved.
+              visibility: placement ? undefined : 'hidden',
+            }}
+            aria-hidden
+          >
+            <span className={tooltipStyles.label}>{label}</span>
+            {shortcut && <kbd className={tooltipStyles.shortcut}>{shortcut}</kbd>}
+          </span>,
+          document.body
+        )}
     </span>
   )
 }

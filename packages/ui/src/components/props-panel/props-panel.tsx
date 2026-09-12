@@ -11,6 +11,7 @@ import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useRef, useState } from 'react'
 
 import { useUIStore } from '../../state'
+import { CollapsibleSection } from '../collapsible-section/collapsible-section'
 import { ControlField, labelFor } from '../control-field/control-field'
 import { ListField, type ListRowValue } from '../list-field/list-field'
 import { Scrollable } from '../scrollable/scrollable'
@@ -152,8 +153,7 @@ function PanelControls({ controls, splat }: PanelControlsProps) {
             onRowsChange={(rows) => handleRowsChange(name, rows)}
           />
         ) : (
-          <fieldset key={name} className={propsPanelStyles.group}>
-            <legend className={propsPanelStyles.groupLabel}>{labelFor(name)}</legend>
+          <CollapsibleSection key={name} label={labelFor(name)}>
             {Object.entries(entry).map(([member, def]) => (
               <ControlField
                 key={member}
@@ -163,7 +163,7 @@ function PanelControls({ controls, splat }: PanelControlsProps) {
                 onChange={(value) => handleChange([name, member], def, value)}
               />
             ))}
-          </fieldset>
+          </CollapsibleSection>
         )
       )}
     </>
