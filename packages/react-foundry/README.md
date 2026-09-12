@@ -502,9 +502,9 @@ const cardControls = controlsFor(Card, {
 ```
 
 A control naming no prop, a control type the prop cannot take, and an option outside the
-prop's own union all stop compiling. Props that no control can drive are absent from the
-schema entirely, so a component that cannot meaningfully have a props playground says so at
-the first control you write.
+prop's own union all stop compiling. A prop no input can express takes no plain control
+at all, only a `derive` (below), so a text box on a render prop is a compile error rather
+than a panel offering a value no call site can produce.
 
 Either way, a controls schema is a props declaration. Written inline or through
 `defineControls`, it declares props for the preview's own render function, which is itself a
@@ -518,11 +518,55 @@ Worth knowing:
   widens `type: 'select'` to `string` before `controlsFor` sees it, and the error you get
   names the widening rather than the cause.
 - **A `ReactNode` prop takes a `text` control**, since a string is a valid `ReactNode`. So
-  `children: { type: 'text' }` works. A props panel cannot author JSX.
-- **A prop typed `string | number` gets no control**, and one typed `2 | 3 | 4` gets a plain
-  number input rather than a dropdown, because `options` currently holds strings.
+  `children: { type: 'text' }` works. A props panel cannot author JSX; a `derive` can, see
+  below.
+- **A prop typed `string | number` gets no plain control**, and one typed `2 | 3 | 4` gets a
+  plain number input rather than a dropdown, because `options` currently holds strings.
 - **Props inherited from a DOM element come along**, so a component extending
   `ComponentProps<'button'>` offers every `aria-*` attribute in autocomplete.
+
+#### Deriving a prop's value from a control
+
+Some props have types no input can express: an array (`options: SelectOption[]`), a
+component (`icon: LucideIcon`), a node built from a flag. Any scalar control can carry a
+`derive` that maps the control's own value to the prop's type:
+
+```tsx
+const selectControls = controlsFor(Select, {
+  options: { type: 'range', min: 1, max: 10, default: 4, derive: (n) => CLIENTS.slice(0, n) },
+  width: { type: 'radio', options: ['auto', 'sm', 'md', 'lg', 'full'], default: 'auto' },
+})
+
+const statCardControls = controlsFor(StatCard, {
+  icon: { type: 'select', options: ['globe', 'gauge'], default: 'globe', derive: (name) => ICONS[name] },
+})
+
+const pageLeadControls = controlsFor(PageLead, {
+  titleAccessory: { type: 'boolean', default: false, derive: (on) => (on ? <Badge content="Beta" /> : undefined) },
+})
+```
+
+The panel draws the input exactly as it would without the `derive`, and the URL holds the
+input's value. What changes is what `render` receives: `v.options` is `SelectOption[]`, not a
+number. The key is still checked against the component, so `optoins` is still a compile
+error; only the input type is freed, and only through the mapping. The return type is
+checked against the prop, so a `derive` that returns a string where the prop wants a
+component is a compile error too. The parameter is typed from the control: a range hands it
+a number, a boolean a boolean, and a select the union of its options, so `ICONS[name]`
+above needs no cast. A `derive` is accepted on a group member as well.
+
+`derive` receives its own control's value and nothing else. It cannot read another control,
+which keeps it a per-prop mapping rather than a place to compose the preview. That is the
+line between the two helpers: `derive` produces one prop's value from one input, and
+`defineControls` is for controls that drive a composition the preview assembles itself in
+`render`. A `derive` on a select or radio in `defineControls` or an inline schema receives
+`string`; the narrowing to the option union is `controlsFor`'s.
+
+There is no `list` control. A `{ type: 'list', of: ControlGroup }` with per-row add and
+remove would be a second level of nesting, a list of groups, which the schema deliberately
+caps at one for instantiation cost and panel legibility. `derive` covers the array,
+component and node cases; a list control is a possible follow-up if a real preview needs
+per-row editing.
 
 ## Accessibility
 

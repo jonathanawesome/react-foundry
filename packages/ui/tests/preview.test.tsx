@@ -117,6 +117,97 @@ describe('Preview', () => {
     expect(screen.getByRole('button', { name: 'danger clicked 2' })).toBeInTheDocument()
   })
 
+  // `derive` maps a control's value to what the prop takes. It runs here, between
+  // coercing the URL and mounting render, so the panel and the URL only ever hold
+  // the raw value.
+  describe('a derived control', () => {
+    const CLIENTS = ['acme', 'globex', 'initech']
+
+    function derivedPreview(onDerive?: () => void) {
+      return createPreview({
+        controls: {
+          count: {
+            type: 'select',
+            options: ['1', '2', '3'],
+            default: '1',
+            derive: (n) => {
+              onDerive?.()
+              return CLIENTS.slice(0, Number(n))
+            },
+          },
+        },
+        render: (v) => <p>{v.count.join(', ')}</p>,
+      })
+    }
+
+    it('hands render the derived value', async () => {
+      await renderWithRouter(<Preview preview={derivedPreview()} />, '/Forms/Select')
+
+      expect(screen.getByText('acme')).toBeInTheDocument()
+    })
+
+    it('derives from a value read off the URL', async () => {
+      await renderWithRouter(
+        <Preview preview={derivedPreview()} />,
+        '/Forms/Select?count=3'
+      )
+
+      expect(screen.getByText('acme, globex, initech')).toBeInTheDocument()
+    })
+
+    it('re-derives when the control changes', async () => {
+      const preview = derivedPreview()
+      useUIStore.setState({ isPanelOpen: true })
+
+      await renderWithRouter(
+        <>
+          <Preview preview={preview} />
+          <PropsPanel controls={preview.controls} />
+        </>,
+        '/Forms/Select'
+      )
+      await userEvent.selectOptions(screen.getByRole('combobox'), '2')
+
+      expect(screen.getByText('acme, globex')).toBeInTheDocument()
+    })
+
+    // The canvas re-renders for reasons that have nothing to do with the values, a
+    // pinned node or a theme flip among them. A derive is a user function of unknown
+    // cost, so it runs once per values change and not once per render.
+    it('derives once per values change, not on every render', async () => {
+      let derived = 0
+      const preview = derivedPreview(() => {
+        derived += 1
+      })
+      useUIStore.setState({ isPanelOpen: true })
+
+      // Re-renders Preview with a fresh element each time, so React cannot bail out
+      // on element identity and the memo inside is what has to hold.
+      function Harness() {
+        const [tick, setTick] = useState(0)
+        return (
+          <>
+            <Preview preview={preview} emptyMessage={`tick ${tick}`} />
+            <PropsPanel controls={preview.controls} />
+            <button type="button" onClick={() => setTick(tick + 1)}>
+              rerender
+            </button>
+          </>
+        )
+      }
+
+      await renderWithRouter(<Harness />, '/Forms/Select')
+      expect(derived).toBe(1)
+
+      await userEvent.click(screen.getByRole('button', { name: 'rerender' }))
+      expect(derived).toBe(1)
+
+      await userEvent.selectOptions(screen.getByRole('combobox'), '3')
+      expect(screen.getByText('acme, globex, initech')).toBeInTheDocument()
+      expect(derived).toBe(2)
+    })
+  })
+
   // The consumer's global provider wraps the preview inside the canvas, and receives
   // foundry's resolved mode. Outside a ThemeProvider that mode defaults to light.
   it('wraps the preview in the given Provider and passes the resolved theme', async () => {
