@@ -115,24 +115,31 @@ export type Derive<V, R = unknown> = (value: V) => R
  * schema has to remain a `ControlSchema`, so those two arms declare `derive` as a
  * method: a method's parameter is checked bivariantly, and a `derive` typed
  * against `'globe' | 'gauge'` still satisfies one declared against `string`.
+ *
+ * `label` names the control in the panel. Without it the panel humanizes the
+ * key (`onSurface` reads "On Surface"); with it the key still names the prop, and
+ * the panel shows the key beside the prop's definition so the two stay linked.
  */
 export type ControlDef =
-  | { type: 'text'; default?: string; derive?: Derive<string> }
-  | { type: 'boolean'; default?: boolean; derive?: Derive<boolean> }
+  | { type: 'text'; label?: string; default?: string; derive?: Derive<string> }
+  | { type: 'boolean'; label?: string; default?: boolean; derive?: Derive<boolean> }
   | {
       type: 'select'
+      label?: string
       options: readonly string[]
       default?: string
       derive?(value: string): unknown
     }
   | {
       type: 'radio'
+      label?: string
       options: readonly string[]
       default?: string
       derive?(value: string): unknown
     }
   | {
       type: 'number'
+      label?: string
       default?: number
       min?: number
       max?: number
@@ -141,13 +148,14 @@ export type ControlDef =
     }
   | {
       type: 'range'
+      label?: string
       default?: number
       min?: number
       max?: number
       step?: number
       derive?: Derive<number>
     }
-  | { type: 'color'; default?: string; derive?: Derive<string> }
+  | { type: 'color'; label?: string; default?: string; derive?: Derive<string> }
 
 /**
  * Controls for the members of an object-typed prop, drawn as a labelled section
@@ -185,6 +193,7 @@ export type ListRow =
  */
 export type ListControlDef = {
   type: 'list'
+  label?: string
   of: ControlDef | ControlGroup
   default?: readonly ListRow[]
 }
@@ -281,6 +290,7 @@ export type ControlValues<S extends ControlSchema = ControlSchema> = {
  */
 type OptionsControl<T> = {
   type: 'select' | 'radio'
+  label?: string
   options: readonly [T, ...T[]]
   default?: T
 }
@@ -481,6 +491,7 @@ type ListControlFor<T> = [NonNull<T>] extends [readonly (infer Item)[]]
       ? never
       : {
           type: 'list'
+          label?: string
           of: EntryControlFor<Item>
           default?: readonly ListRowDefaultFor<Item>[]
         }

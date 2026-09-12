@@ -32,6 +32,17 @@ describe('PropsPanel', () => {
     expect(screen.getByText('This preview has no controls.')).toBeInTheDocument()
   })
 
+  it('labels a control by its declared label, else its humanized name', async () => {
+    const labelled: ControlSchema = {
+      onSurface: { type: 'boolean' },
+      tone: { type: 'text', label: 'Colour tone' },
+    }
+    await renderWithRouter(<PropsPanel controls={labelled} />, '/Forms/Button')
+
+    expect(screen.getByLabelText('On Surface')).toBeInTheDocument()
+    expect(screen.getByLabelText('Colour tone')).toBeInTheDocument()
+  })
+
   it('renders an input per control', async () => {
     await renderWithRouter(<PropsPanel controls={controls} />, '/Forms/Button')
 

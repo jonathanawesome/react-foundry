@@ -475,6 +475,10 @@ Values are typed from the schema, so `values.variant` narrows to `'primary' | 'd
 and a typo is a compile error. Control types: `text`, `boolean`, `number`, `range`, `select`,
 `radio`, `color`, and `list` for an array of any of them (see [Lists](#lists)).
 
+The panel names each control after its key, humanized (`onSurface` reads "On Surface").
+Give a control a `label` to name it yourself; the key still names the prop, and the
+panel keeps the two linked by showing the key beside the prop's definition.
+
 `render` is a component, so a preview of a controlled component keeps its value in a hook
 right there, and a control edit re-renders it with the new props rather than remounting it:
 

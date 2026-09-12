@@ -38,6 +38,15 @@ describe('ListField', () => {
     expect(screen.getByRole('group', { name: 'Sections' })).toBeInTheDocument()
   })
 
+  it('names the section by a declared label, and rows by their number regardless', () => {
+    renderList({ ...tags, label: 'Labels' }, ['a'], 'tags')
+    renderList({ type: 'list', of: { ...tagRow, label: 'Tag' } }, ['b'], 'more')
+
+    expect(screen.getByRole('group', { name: 'Labels' })).toBeInTheDocument()
+    expect(screen.getAllByLabelText('Row 1')).toHaveLength(2)
+    expect(screen.queryByLabelText('Tag')).not.toBeInTheDocument()
+  })
+
   it('draws a group row as a section per row with a field per member', () => {
     renderList(sections, [
       { title: 'One', open: true },

@@ -16,6 +16,13 @@ function renderField(
 }
 
 describe('ControlField', () => {
+  it('shows a declared label over the humanized name', () => {
+    renderField({ type: 'text', label: 'Button text' }, 'x', 'buttonLabel')
+
+    expect(screen.getByLabelText('Button text')).toBeInTheDocument()
+    expect(screen.queryByText('Button Label')).not.toBeInTheDocument()
+  })
+
   it('de-camelCases the control name into a label', () => {
     renderField({ type: 'text' }, 'x', 'buttonLabel')
 

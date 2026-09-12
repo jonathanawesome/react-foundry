@@ -24,13 +24,21 @@ export function labelFor(name: string): string {
 }
 
 /**
+ * The label a control shows: the one its schema declares, else its name
+ * humanized. Exported for the list field, which labels a list the same way.
+ */
+export function labelOf(name: string, def: { label?: string }): string {
+  return def.label ?? labelFor(name)
+}
+
+/**
  * A single labelled control input. Fully controlled: it renders `value` and
  * reports changes through `onChange`. Debouncing and URL writes are the panel's
  * job, so this stays pure and easy to test.
  */
 export function ControlField({ name, def, value, onChange }: ControlFieldProps) {
   const id = useId()
-  const label = labelFor(name)
+  const label = labelOf(name, def)
 
   if (def.type === 'boolean') {
     return (

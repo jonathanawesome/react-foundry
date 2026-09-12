@@ -6,7 +6,7 @@ import {
 } from '@react-foundry/core'
 
 import { CollapsibleSection } from '../collapsible-section/collapsible-section'
-import { ControlField, labelFor } from '../control-field/control-field'
+import { ControlField, labelOf } from '../control-field/control-field'
 import { Icon } from '../icon/icon'
 import { IconButton } from '../icon-button/icon-button'
 import { Tooltip } from '../tooltip/tooltip'
@@ -56,7 +56,7 @@ export function ListField({
   onRowChange,
   onRowsChange,
 }: ListFieldProps) {
-  const label = labelFor(name)
+  const label = labelOf(name, def)
   const rowLabel = (index: number) => `Row ${index + 1}`
 
   const remove = (index: number) => onRowsChange(rows.filter((_, i) => i !== index))
@@ -67,11 +67,13 @@ export function ListField({
       {rows.map((row, index) =>
         isControlDef(def.of) ? (
           // A scalar row is one field, labelled as the row since the field is the row.
+          // The list carries the schema's label, so the row schema's own is set aside
+          // rather than repeated on every row.
           <div key={index} className={s.scalarRow}>
             <div className={s.scalarField}>
               <ControlField
                 name={rowLabel(index)}
-                def={def.of}
+                def={{ ...def.of, label: undefined }}
                 value={row as ControlValue}
                 onChange={(value) =>
                   onRowChange(index, null, def.of as ControlDef, value)

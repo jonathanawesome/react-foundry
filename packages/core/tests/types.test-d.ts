@@ -695,6 +695,25 @@ describe('controlsFor derive', () => {
     })
   })
 
+  it('accepts a label on any control, without changing its value', () => {
+    const controls = controlsFor(Select, {
+      width: { type: 'radio', label: 'Width', options: ['auto', 'full'] },
+      options: {
+        type: 'list',
+        label: 'Choices',
+        of: { value: { type: 'text', label: 'Value' } },
+      },
+      value: { type: 'text', label: 'Selected' },
+    })
+
+    expectTypeOf<ControlValues<typeof controls>['width']>().toEqualTypeOf<
+      'auto' | 'full'
+    >()
+    expectTypeOf<ControlValues<typeof controls>['options']>().toEqualTypeOf<
+      { readonly value: string }[]
+    >()
+  })
+
   it('leaves a scalar control without derive exactly as it was', () => {
     const controls = controlsFor(Select, {
       width: { type: 'radio', options: ['auto', 'full'], default: 'auto' },
