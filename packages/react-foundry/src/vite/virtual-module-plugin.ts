@@ -4,8 +4,30 @@ import { glob } from 'glob'
 import pc from 'picocolors'
 import type { Plugin, ViteDevServer } from 'vite'
 
+import { createPropDocsService, type PropDocsService } from './prop-docs'
+
 const VIRTUAL_MODULE_ID = 'virtual:react-foundry-previews'
 const RESOLVED_VIRTUAL_MODULE_ID = `\0${VIRTUAL_MODULE_ID}`
+
+/**
+ * One docs module per preview file, addressed by the file's path. Its own module
+ * rather than part of the previews module so reading prop types with the
+ * TypeScript checker happens when a preview is opened, never on the first load.
+ */
+const DOCS_MODULE_PREFIX = 'virtual:react-foundry-docs:'
+const RESOLVED_DOCS_MODULE_PREFIX = `\0${DOCS_MODULE_PREFIX}`
+
+/** The docs module id for a preview file. */
+export function docsModuleId(normalizedPath: string): string {
+  return `${DOCS_MODULE_PREFIX}${encodeURIComponent(normalizedPath)}`
+}
+
+/** The preview file a resolved docs module id addresses, or null for any other id. */
+function docsModuleFile(id: string): string | null {
+  return id.startsWith(RESOLVED_DOCS_MODULE_PREFIX)
+    ? decodeURIComponent(id.slice(RESOLVED_DOCS_MODULE_PREFIX.length))
+    : null
+}
 
 /** Matches `export const nav = '...'`, with or without a type annotation. */
 const NAV_PATTERN = /^export\s+const\s+nav\s*(?::[^=]+)?=\s*['"]([^'"]*)['"]/m
@@ -408,7 +430,10 @@ export function applyPreviewChange(
   // The generated module names each file's previews and nav path, so it has to be
   // rebuilt before the reload reads it. The edited file goes too: its own transform
   // would otherwise still be the one Vite serves for the entry the module points at.
-  const dropped = invalidateFile(server, file) + invalidateVirtualModule(server)
+  const dropped =
+    invalidateFile(server, file) +
+    invalidateVirtualModule(server) +
+    invalidateDocsModule(server, normalizedPath)
 
   // The tree is memoized per module instance, so a hot update alone would leave the
   // shelf showing the previous structure.
@@ -465,11 +490,25 @@ export function createVirtualModulePlugin(
   // declare `$RefreshReg$` or act on the call.
   let refresh = false
 
+  // Built on first use, since it loads the consumer's TypeScript and a project
+  // without one has no docs to read. Fed the files the last load found, so the
+  // program covers every preview and reuses what it has checked between requests.
+  let propDocs: PropDocsService | null | undefined
+  const docsService = () => {
+    if (propDocs === undefined) {
+      propDocs = createPropDocsService(userRoot, () => [...fileMeta.keys()])
+    }
+    return propDocs
+  }
+
   return {
     name: 'react-foundry:virtual-previews',
     resolveId(id) {
       if (id === VIRTUAL_MODULE_ID) {
         return RESOLVED_VIRTUAL_MODULE_ID
+      }
+      if (id.startsWith(DOCS_MODULE_PREFIX)) {
+        return `\0${id}`
       }
     },
 
@@ -531,6 +570,12 @@ export function createVirtualModulePlugin(
     },
 
     async load(id) {
+      const docsFile = docsModuleFile(id)
+      if (docsFile !== null) {
+        const docs = docsService()?.docsFor(docsFile) ?? {}
+        return `export default ${JSON.stringify(docs)};\n`
+      }
+
       if (id !== RESOLVED_VIRTUAL_MODULE_ID) return
 
       const files = await glob(searchPattern, { absolute: true })
@@ -608,8 +653,9 @@ export function generateModuleSource(entries: ModuleEntry[]): string {
   const moduleObject = entries
     .map(({ normalizedPath, nav, previews }) => {
       const leaves = previews.map(({ exportName, label }) => ({ exportName, label }))
+      const docs = `import(${JSON.stringify(docsModuleId(normalizedPath))}).then((m) => m.default)`
 
-      return `  ${JSON.stringify(normalizedPath)}: { nav: ${JSON.stringify(nav)}, previews: ${JSON.stringify(leaves)}, load: () => import(${JSON.stringify(normalizedPath)}) },`
+      return `  ${JSON.stringify(normalizedPath)}: { nav: ${JSON.stringify(nav)}, previews: ${JSON.stringify(leaves)}, load: () => import(${JSON.stringify(normalizedPath)}), docs: () => ${docs} },`
     })
     .join('\n')
 
@@ -674,6 +720,26 @@ export function invalidateVirtualModule(server: ViteDevServer): number {
   const mod =
     server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_MODULE_ID) ??
     server.moduleGraph.getModuleById(VIRTUAL_MODULE_ID)
+
+  if (!mod) return 0
+
+  const seen = new Set<string>()
+  invalidateWithImporters(server, mod as unknown as GraphModule, seen)
+
+  return seen.size
+}
+
+/**
+ * Drops a preview file's docs module, if it was ever loaded, so the next open
+ * reads the prop types again. Returns how many modules went, zero or one.
+ */
+export function invalidateDocsModule(
+  server: ViteDevServer,
+  normalizedPath: string
+): number {
+  const id = docsModuleId(normalizedPath)
+  const mod =
+    server.moduleGraph.getModuleById(`\0${id}`) ?? server.moduleGraph.getModuleById(id)
 
   if (!mod) return 0
 

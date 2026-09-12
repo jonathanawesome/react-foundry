@@ -797,6 +797,26 @@ export interface FoundryProviderProps {
  */
 export type FoundryProvider = (props: FoundryProviderProps) => ReactNode
 
+/**
+ * One prop of the component a schema is bound to, as declared, for the panel to
+ * show beside the control that drives it.
+ *
+ * Read at build time by the dev server, with the TypeScript checker, from the
+ * `controlsFor` call a preview's `controls` came from. `type` is the type as the
+ * author wrote it, alias names included.
+ */
+export interface PropDoc {
+  /** The prop's name on the component, which is also the control's key. */
+  name: string
+  type: string
+  optional: boolean
+  /** The prop's JSDoc, when it has one. */
+  description?: string
+}
+
+/** The docs for one preview's controls, keyed by control name. */
+export type ControlDocs = Record<string, PropDoc>
+
 /** One navigable preview: a leaf of the nav tree. */
 export interface PreviewLeaf {
   /** Url path, built from the nav path and the export name. */
@@ -806,6 +826,11 @@ export interface PreviewLeaf {
   exportName: string
   /** Lazily imports the module this preview lives in, for rendering on demand. */
   load: () => Promise<Record<string, unknown>>
+  /**
+   * Lazily fetches the docs for this preview's controls, when the dev server
+   * could read them. Undefined for a preview whose schema binds no component.
+   */
+  docs?: () => Promise<ControlDocs | undefined>
 }
 
 /**
@@ -845,4 +870,9 @@ export interface PreviewFile {
   /** The file's previews, in the order they are written. */
   previews: PreviewEntry[]
   load: () => Promise<Record<string, unknown>>
+  /**
+   * Lazily fetches the file's control docs, keyed by export name. Its own chunk,
+   * separate from `load`, so reading prop types never delays rendering a preview.
+   */
+  docs?: () => Promise<Record<string, ControlDocs>>
 }

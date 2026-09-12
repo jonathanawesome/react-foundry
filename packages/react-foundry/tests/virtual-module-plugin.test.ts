@@ -9,8 +9,10 @@ import {
   applyPreviewChange,
   classifyChange,
   createVirtualModulePlugin,
+  docsModuleId,
   generateModuleSource,
   globBaseDir,
+  invalidateDocsModule,
   invalidateFile,
   invalidateVirtualModule,
   isStructuralChange,
@@ -770,7 +772,17 @@ describe('generateModuleSource', () => {
     ])
 
     expect(source).toContain(
-      '"/p/a.preview.tsx": { nav: "Forms/Button", previews: [{"exportName":"Primary","label":"Primary"},{"exportName":"Danger","label":null}], load: () => import("/p/a.preview.tsx") }'
+      '"/p/a.preview.tsx": { nav: "Forms/Button", previews: [{"exportName":"Primary","label":"Primary"},{"exportName":"Danger","label":null}], load: () => import("/p/a.preview.tsx"), docs: () => import("virtual:react-foundry-docs:%2Fp%2Fa.preview.tsx").then((m) => m.default) }'
+    )
+  })
+
+  // Its own dynamic import, so reading prop types with the checker is paid when a
+  // preview is opened and never on the first load of the shell.
+  it('points each file at its own lazily imported docs module', () => {
+    const source = generateModuleSource([entry('/p/a.preview.tsx', null, [])])
+
+    expect(source).toContain(
+      'docs: () => import("virtual:react-foundry-docs:%2Fp%2Fa.preview.tsx")'
     )
   })
 
@@ -965,5 +977,84 @@ describe('the transform hook', () => {
     const { file, transform } = await setUp({ command: 'serve', hmr: false })
 
     expect(transform(file)).toBeUndefined()
+  })
+})
+
+// The docs module is generated on demand from the previews the module already
+// parsed, through the checker, and dropped with the file so a reload rereads it.
+describe('the docs module', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'foundry-docs-module-'))
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+    vi.restoreAllMocks()
+  })
+
+  function hook<T>(value: T | { handler: T } | undefined): T {
+    if (!value) throw new Error('hook not defined')
+    return typeof value === 'function' ? value : (value as { handler: T }).handler
+  }
+
+  it('resolves its id to a virtual one and loads the file docs as JSON', async () => {
+    writeFileSync(
+      resolve(dir, 'tsconfig.json'),
+      JSON.stringify({ compilerOptions: { strict: true, moduleResolution: 'bundler' } })
+    )
+    writeFileSync(
+      resolve(dir, 'button.tsx'),
+      'export const Button = (_props: { variant?: "a" | "b" }) => null\n'
+    )
+    const file = resolve(dir, 'a.preview.tsx')
+    writeFileSync(
+      file,
+      [
+        "import { controlsFor, createPreview } from 'react-foundry'",
+        "import { Button } from './button'",
+        'export const Playground = createPreview({ controls: controlsFor(Button, { variant: { type: "text" } }), render: () => null })',
+      ].join('\n'),
+      'utf-8'
+    )
+
+    const plugin = createVirtualModulePlugin('*.preview.tsx', dir)
+    await hook(plugin.load).call({} as never, '\0virtual:react-foundry-previews')
+
+    const id = docsModuleId(file)
+    const resolved = hook(plugin.resolveId).call({} as never, id, undefined, {} as never)
+    expect(resolved).toBe(`\0${id}`)
+
+    const source = await hook(plugin.load).call({} as never, `\0${id}`)
+    expect(source).toContain('export default ')
+    expect(
+      JSON.parse(
+        String(source)
+          .replace(/^export default /, '')
+          .replace(/;\s*$/, '')
+      )
+    ).toEqual({
+      Playground: { variant: { name: 'variant', type: '"a" | "b"', optional: true } },
+    })
+  })
+
+  it('drops the docs module for a file, and reports nothing for one never loaded', () => {
+    const invalidated: string[] = []
+    const id = `\0${docsModuleId('/p/a.preview.tsx')}`
+    const mod = { id, importers: new Set() }
+    const server = {
+      moduleGraph: {
+        getModuleById: (wanted: string) => (wanted === id ? mod : undefined),
+        getModulesByFile: () => undefined,
+        invalidateModule: (m: { id: string }) => invalidated.push(m.id),
+      },
+      ws: { send: () => {} },
+    } as unknown as ViteDevServer
+
+    expect(invalidateDocsModule(server, '/p/a.preview.tsx')).toBe(1)
+    expect(invalidated).toEqual([id])
+    expect(invalidateDocsModule(server, '/p/b.preview.tsx')).toBe(0)
   })
 })
