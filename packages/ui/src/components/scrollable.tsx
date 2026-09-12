@@ -1,8 +1,14 @@
-import type { HTMLAttributes } from 'react'
+import type { ReactNode } from 'react'
 
 import { scrollable } from './scrollable.css'
 
-export type ScrollableProps = HTMLAttributes<HTMLDivElement>
+export interface ScrollableProps {
+  children?: ReactNode
+  /** Composes after the base style: the caller's layout, size, and spacing. */
+  className?: string
+  /** Makes the region and everything in it inert, as when its panel is collapsed. */
+  inert?: boolean
+}
 
 /**
  * A scroll container whose scrollbar foundry styles.
@@ -13,10 +19,13 @@ export type ScrollableProps = HTMLAttributes<HTMLDivElement>
  * canvas, where the consumer's component must render with its own scrollbars.
  *
  * A passed `className` composes after the base, so a caller can add layout
- * (flex, padding) without re-declaring the scroll behaviour.
+ * (flex, padding, a fixed height) without re-declaring the scroll behaviour.
+ * That is the whole surface: nothing else passes through to the `<div>`.
  */
-export function Scrollable({ className, ...rest }: ScrollableProps) {
+export function Scrollable({ children, className, inert }: ScrollableProps) {
   return (
-    <div className={className ? `${scrollable} ${className}` : scrollable} {...rest} />
+    <div className={className ? `${scrollable} ${className}` : scrollable} inert={inert}>
+      {children}
+    </div>
   )
 }
