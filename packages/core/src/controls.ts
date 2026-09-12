@@ -187,9 +187,19 @@ export function deriveControlValues(
   return derived as ControlValues
 }
 
+/** A control's value as it goes into the URL: its own type, never stringified here. */
+type EncodedControlValue = string | number | boolean
+
 /**
  * Encodes control values for the URL, omitting any equal to their default so
  * the query string stays short.
+ *
+ * Values keep their own types. The router serializes them, and it writes a number
+ * or boolean bare (`?count=3`) but JSON-quotes a string that would parse as one
+ * (`?count=%223%22`), so stringifying here made every number and boolean control
+ * unreadable in the address bar. The values are already coerced to their declared
+ * types by the time they get here, and {@link coerceControlValues} reads a typed
+ * value back as readily as a string, so a link written the old way still resolves.
  *
  * A group is flattened one key per member rather than serialized whole, so a
  * single edited member costs one short param and the rest stay out of the URL.
@@ -197,14 +207,14 @@ export function deriveControlValues(
 export function encodeControlValues(
   schema: ControlSchema,
   values: ControlValues
-): Record<string, string> {
-  const encoded: Record<string, string> = {}
+): Record<string, EncodedControlValue> {
+  const encoded: Record<string, EncodedControlValue> = {}
   for (const [name, entry] of Object.entries(schema)) {
     const value = (values as Record<string, unknown>)[name]
 
     if (isControlDef(entry)) {
       if (value === undefined || value === defaultValue(entry)) continue
-      encoded[name] = String(value)
+      encoded[name] = value as EncodedControlValue
       continue
     }
 
@@ -212,7 +222,7 @@ export function encodeControlValues(
     for (const [member, def] of Object.entries(entry)) {
       const memberValue = group[member]
       if (memberValue === undefined || memberValue === defaultValue(def)) continue
-      encoded[`${name}${GROUP_SEPARATOR}${member}`] = String(memberValue)
+      encoded[`${name}${GROUP_SEPARATOR}${member}`] = memberValue as EncodedControlValue
     }
   }
   return encoded

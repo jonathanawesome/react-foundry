@@ -136,13 +136,28 @@ describe('encodeControlValues', () => {
   it('encodes only the values that differ from the default', () => {
     const values = { ...defaultValues(schema), variant: 'danger', count: 3 }
 
-    expect(encodeControlValues(schema, values)).toEqual({ variant: 'danger', count: '3' })
+    expect(encodeControlValues(schema, values)).toEqual({ variant: 'danger', count: 3 })
   })
 
   it('encodes a falsy non-default value', () => {
     const values = { ...defaultValues(schema), count: 0 }
 
-    expect(encodeControlValues(schema, values)).toEqual({ count: '0' })
+    expect(encodeControlValues(schema, values)).toEqual({ count: 0 })
+  })
+
+  // Typed, not stringified: the router writes a number or boolean bare, but quotes a
+  // string that would parse as one, which is what put `%223%22` in the address bar.
+  it('keeps numbers and booleans as their own types', () => {
+    const values = { ...defaultValues(schema), volume: 8, disabled: true }
+
+    expect(encodeControlValues(schema, values)).toEqual({ volume: 8, disabled: true })
+  })
+
+  // A link written by the old encoder, or by hand, still resolves.
+  it('coerces a stringified value the same as a typed one', () => {
+    expect(coerceControlValues(schema, { count: '3', disabled: 'true' })).toEqual(
+      coerceControlValues(schema, { count: 3, disabled: true })
+    )
   })
 
   // The whole point of the URL round-trip: what you encode coerces back intact.

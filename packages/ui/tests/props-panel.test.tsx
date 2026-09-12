@@ -71,6 +71,21 @@ describe('PropsPanel', () => {
 
     expect(router.state.location.search).toEqual({})
   })
+
+  // The value reaches the URL typed, so the router writes it bare. Stringified, it
+  // would be JSON-quoted to keep it a string, and the address bar would read
+  // `disabled=%22true%22`.
+  it('writes a boolean as itself, readable in the address bar', async () => {
+    const { router } = await renderWithRouter(
+      <PropsPanel controls={controls} />,
+      '/Forms/Button'
+    )
+
+    await userEvent.click(screen.getByRole('checkbox'))
+
+    expect(router.state.location.search).toEqual({ disabled: true })
+    expect(router.state.location.searchStr).toBe('?disabled=true')
+  })
 })
 
 // Controls for an object-typed prop: drawn as a section, and carried in the URL
