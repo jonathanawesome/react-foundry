@@ -1,5 +1,5 @@
 import { Accordion } from '@base-ui/react/accordion'
-import { createPreview, type NavPath } from 'react-foundry'
+import { createPreview, defineControls, type NavPath } from 'react-foundry'
 
 import { accordion } from './base-ui.css'
 
@@ -19,6 +19,35 @@ const sections = [
     body: 'The export name, never the label, so rewording a label cannot break a link.',
   },
 ]
+
+// The sections as a list control: add, remove and edit rows from the panel, and the
+// rows ride in the URL as JSON. defineControls rather than controlsFor, since the
+// list drives a composition this preview assembles from Base UI parts, not one
+// component's prop.
+export const Playground = createPreview({
+  controls: defineControls({
+    sections: {
+      type: 'list',
+      of: { title: { type: 'text', default: 'New section' }, body: { type: 'text' } },
+      default: sections,
+    },
+    multiple: { type: 'boolean', default: true },
+  }),
+  render: (v) => (
+    <Accordion.Root className={accordion.root} multiple={v.multiple}>
+      {v.sections.map((section, index) => (
+        <Accordion.Item key={index} value={index} className={accordion.item}>
+          <Accordion.Header>
+            <Accordion.Trigger className={accordion.trigger}>
+              {section.title}
+            </Accordion.Trigger>
+          </Accordion.Header>
+          <Accordion.Panel className={accordion.panel}>{section.body}</Accordion.Panel>
+        </Accordion.Item>
+      ))}
+    </Accordion.Root>
+  ),
+})
 
 export const Default = createPreview(() => (
   <Accordion.Root className={accordion.root}>
