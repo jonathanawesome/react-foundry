@@ -25,6 +25,7 @@ export { IconButton, type IconButtonProps } from './components/icon-button/icon-
 export { Layout } from './components/layout/layout'
 export { ListField, type ListRowValue } from './components/list-field/list-field'
 export { Preview } from './components/preview/preview'
+export { PropInfo, type PropInfoProps } from './components/prop-info/prop-info'
 export { PropsPanel } from './components/props-panel/props-panel'
 export { Scrollable, type ScrollableProps } from './components/scrollable/scrollable'
 export { Shelf } from './components/shelf/shelf'

@@ -38,6 +38,16 @@ describe('CollapsibleSection', () => {
     expect(screen.getByText('inside')).toBeInTheDocument()
   })
 
+  it('draws an info mark beside its name', () => {
+    render(
+      <CollapsibleSection label="Variants" info={<button type="button">about</button>}>
+        <p>inside</p>
+      </CollapsibleSection>
+    )
+
+    expect(screen.getByRole('button', { name: 'about' })).toBeInTheDocument()
+  })
+
   // The actions sit on the border line, so a collapsed row can still be removed.
   it('keeps its actions reachable while collapsed', async () => {
     render(

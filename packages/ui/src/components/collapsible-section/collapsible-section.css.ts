@@ -48,7 +48,12 @@ export const collapsibleSectionStyles = {
     },
   }),
 
+  // Inline-flex so an info mark sits on the line beside the name; the pinned
+  // line height is what keeps the border centered on it either way.
   label: style({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: themeContract.px[2],
     padding: `0 ${themeContract.px[4]}`,
     fontFamily: themeContract.fonts.sans,
     fontSize: themeContract.px[12],

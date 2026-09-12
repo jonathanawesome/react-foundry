@@ -7,6 +7,8 @@ import { collapsibleSectionStyles as s } from './collapsible-section.css'
 export interface CollapsibleSectionProps {
   /** The section's name, drawn as the legend on the left of the border line. */
   label: string
+  /** Drawn beside the name in the legend: the info mark for the prop this section drives. */
+  info?: ReactNode
   /** Drawn a step tighter, for a section nested inside another. */
   tight?: boolean
   /**
@@ -31,6 +33,7 @@ export interface CollapsibleSectionProps {
  */
 export function CollapsibleSection({
   label,
+  info,
   tight = false,
   actions,
   children,
@@ -40,7 +43,10 @@ export function CollapsibleSection({
 
   return (
     <fieldset className={s.section({ tight })} data-open={open}>
-      <legend className={s.label}>{label}</legend>
+      <legend className={s.label}>
+        {label}
+        {info}
+      </legend>
       <div className={s.header}>
         {actions}
         <Tooltip label={toggleLabel}>

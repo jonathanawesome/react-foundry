@@ -8,6 +8,7 @@ export { controlsFor, createPreview, defineControls } from '@react-foundry/core'
 // cleanly one hop from the definition file.
 export type {
   ControlDef,
+  ControlDocs,
   ControlEntry,
   ControlFor,
   ControlGroup,
@@ -24,6 +25,7 @@ export type {
   NavPathsOf,
   Preview,
   PreviewOptions,
+  PropDoc,
   Register,
   RenderFn,
   ResolveNavPath,

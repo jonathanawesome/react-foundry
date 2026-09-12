@@ -1,5 +1,6 @@
 import {
   type ControlDef,
+  type ControlDocs,
   type ControlSchema,
   coerceControlValues,
   encodeControlValues,
@@ -8,14 +9,18 @@ import {
 } from '@react-foundry/core'
 import { chromeSurfaceProps } from '@react-foundry/style'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { useUIStore } from '../../state'
 import { CollapsibleSection } from '../collapsible-section/collapsible-section'
 import { ControlField, labelFor } from '../control-field/control-field'
 import { ListField, type ListRowValue } from '../list-field/list-field'
+import { PropInfo } from '../prop-info/prop-info'
 import { Scrollable } from '../scrollable/scrollable'
 import { propsPanelStyles } from './props-panel.css'
+
+/** Fetches a preview's control docs, which the dev server reads on demand. */
+type DocsLoader = () => Promise<ControlDocs | undefined>
 
 type ControlValue = string | number | boolean
 
@@ -71,7 +76,32 @@ function isContinuous(def: ControlDef): boolean {
 
 interface PanelControlsProps {
   controls: ControlSchema
+  docs?: DocsLoader
   splat: string
+}
+
+/**
+ * The docs for the active preview, fetched once it is on screen. Undefined until
+ * they arrive and where there are none, and the info marks show the control's
+ * own definition in the meantime, so nothing waits on the checker.
+ */
+function useControlDocs(load: DocsLoader | undefined): ControlDocs | undefined {
+  const [docs, setDocs] = useState<ControlDocs>()
+
+  useEffect(() => {
+    if (!load) return
+    let current = true
+    load()
+      .then((loaded) => {
+        if (current) setDocs(loaded)
+      })
+      .catch(() => {})
+    return () => {
+      current = false
+    }
+  }, [load])
+
+  return docs
 }
 
 /**
@@ -82,9 +112,10 @@ interface PanelControlsProps {
  * regardless of the URL round-trip. Writes use `replace`, so control edits never
  * push history — which also means there is no back-button state to sync back in.
  */
-function PanelControls({ controls, splat }: PanelControlsProps) {
+function PanelControls({ controls, docs: loadDocs, splat }: PanelControlsProps) {
   const search = useSearch({ strict: false }) as Record<string, unknown>
   const navigate = useNavigate()
+  const docs = useControlDocs(loadDocs)
 
   const [draft, setDraft] = useState(() => coerceControlValues(controls, search))
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -126,6 +157,10 @@ function PanelControls({ controls, splat }: PanelControlsProps) {
     writeUrl(next as typeof draft)
   }
 
+  const infoFor = (name: string, entry: ControlDef | ControlSchema[string]) => (
+    <PropInfo name={name} entry={entry} doc={docs?.[name]} />
+  )
+
   return (
     <>
       {Object.entries(controls).map(([name, entry]) =>
@@ -136,6 +171,7 @@ function PanelControls({ controls, splat }: PanelControlsProps) {
             def={entry}
             value={values[name] as ControlValue}
             onChange={(value) => handleChange([name], entry, value)}
+            info={infoFor(name, entry)}
           />
         ) : isListControlDef(entry) ? (
           <ListField
@@ -143,6 +179,7 @@ function PanelControls({ controls, splat }: PanelControlsProps) {
             name={name}
             def={entry}
             rows={values[name] as ListRowValue[]}
+            info={infoFor(name, entry)}
             onRowChange={(index, member, def, value) =>
               handleChange(
                 member === null ? [name, index] : [name, index, member],
@@ -153,7 +190,11 @@ function PanelControls({ controls, splat }: PanelControlsProps) {
             onRowsChange={(rows) => handleRowsChange(name, rows)}
           />
         ) : (
-          <CollapsibleSection key={name} label={labelFor(name)}>
+          <CollapsibleSection
+            key={name}
+            label={labelFor(name)}
+            info={infoFor(name, entry)}
+          >
             {Object.entries(entry).map(([member, def]) => (
               <ControlField
                 key={member}
@@ -173,13 +214,18 @@ function PanelControls({ controls, splat }: PanelControlsProps) {
 interface PropsPanelProps {
   /** The active preview's controls, or undefined when it has none. */
   controls?: ControlSchema
+  /**
+   * Fetches the docs for those controls: each prop as declared on the component,
+   * read by the dev server. Undefined where it could read none.
+   */
+  docs?: DocsLoader
 }
 
 /**
  * Right-side panel for a preview's controls. Mirrors the shelf: reserves its
  * gutter whenever pinned, so an uncontrolled preview shows an empty state.
  */
-export function PropsPanel({ controls }: PropsPanelProps) {
+export function PropsPanel({ controls, docs }: PropsPanelProps) {
   const isPanelOpen = useUIStore.use.isPanelOpen()
 
   const params = useParams({ strict: false })
@@ -192,7 +238,7 @@ export function PropsPanel({ controls }: PropsPanelProps) {
       <div className={propsPanelStyles.header}>Controls</div>
       <Scrollable className={propsPanelStyles.content}>
         {hasControls ? (
-          <PanelControls key={splat} controls={controls} splat={splat} />
+          <PanelControls key={splat} controls={controls} docs={docs} splat={splat} />
         ) : (
           <p className={propsPanelStyles.empty}>This preview has no controls.</p>
         )}

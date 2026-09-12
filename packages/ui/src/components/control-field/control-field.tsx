@@ -1,5 +1,5 @@
 import type { ControlDef } from '@react-foundry/core'
-import { useId } from 'react'
+import { type ReactNode, useId } from 'react'
 
 import { controlFieldStyles as s } from './control-field.css'
 
@@ -10,6 +10,8 @@ interface ControlFieldProps {
   def: ControlDef
   value: ControlValue
   onChange: (value: ControlValue) => void
+  /** Drawn beside the label: the info mark for the prop this control drives. */
+  info?: ReactNode
 }
 
 /**
@@ -36,13 +38,24 @@ export function labelOf(name: string, def: { label?: string }): string {
  * reports changes through `onChange`. Debouncing and URL writes are the panel's
  * job, so this stays pure and easy to test.
  */
-export function ControlField({ name, def, value, onChange }: ControlFieldProps) {
+export function ControlField({ name, def, value, onChange, info }: ControlFieldProps) {
   const id = useId()
   const label = labelOf(name, def)
 
+  // The label and, beside it, the info mark. The mark sits outside the <label>
+  // so that pressing it focuses nothing but itself.
+  const heading = (
+    <span className={s.labelRow}>
+      <label className={s.label} htmlFor={id}>
+        {label}
+      </label>
+      {info}
+    </span>
+  )
+
   if (def.type === 'boolean') {
     return (
-      <label className={s.inlineField} htmlFor={id}>
+      <span className={s.inlineField}>
         <input
           id={id}
           type="checkbox"
@@ -50,17 +63,15 @@ export function ControlField({ name, def, value, onChange }: ControlFieldProps) 
           checked={Boolean(value)}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <span className={s.label}>{label}</span>
-      </label>
+        {heading}
+      </span>
     )
   }
 
   if (def.type === 'select') {
     return (
       <div className={s.field}>
-        <label className={s.label} htmlFor={id}>
-          {label}
-        </label>
+        {heading}
         <select
           id={id}
           className={s.input}
@@ -80,8 +91,13 @@ export function ControlField({ name, def, value, onChange }: ControlFieldProps) 
   if (def.type === 'radio') {
     return (
       <div className={s.field}>
-        <span className={s.label}>{label}</span>
-        <div className={s.radioGroup} role="radiogroup" aria-label={label}>
+        <span className={s.labelRow}>
+          <span className={s.label} id={id}>
+            {label}
+          </span>
+          {info}
+        </span>
+        <div className={s.radioGroup} role="radiogroup" aria-labelledby={id}>
           {def.options.map((option) => (
             <label key={option} className={s.radioOption}>
               <input
@@ -103,9 +119,7 @@ export function ControlField({ name, def, value, onChange }: ControlFieldProps) 
   if (def.type === 'range') {
     return (
       <div className={s.field}>
-        <label className={s.label} htmlFor={id}>
-          {label}
-        </label>
+        {heading}
         <div className={s.rangeRow}>
           <input
             id={id}
@@ -126,9 +140,7 @@ export function ControlField({ name, def, value, onChange }: ControlFieldProps) 
   if (def.type === 'number') {
     return (
       <div className={s.field}>
-        <label className={s.label} htmlFor={id}>
-          {label}
-        </label>
+        {heading}
         <input
           id={id}
           type="number"
@@ -146,7 +158,7 @@ export function ControlField({ name, def, value, onChange }: ControlFieldProps) 
 
   if (def.type === 'color') {
     return (
-      <label className={s.inlineField} htmlFor={id}>
+      <span className={s.inlineField}>
         <input
           id={id}
           type="color"
@@ -154,17 +166,15 @@ export function ControlField({ name, def, value, onChange }: ControlFieldProps) 
           value={String(value)}
           onChange={(e) => onChange(e.target.value)}
         />
-        <span className={s.label}>{label}</span>
-      </label>
+        {heading}
+      </span>
     )
   }
 
   // text
   return (
     <div className={s.field}>
-      <label className={s.label} htmlFor={id}>
-        {label}
-      </label>
+      {heading}
       <input
         id={id}
         type="text"

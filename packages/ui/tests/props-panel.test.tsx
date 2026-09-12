@@ -1,4 +1,4 @@
-import type { ControlSchema } from '@react-foundry/core'
+import type { ControlDocs, ControlSchema } from '@react-foundry/core'
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -268,5 +268,63 @@ describe('PropsPanel with a list', () => {
     await userEvent.click(screen.getByLabelText('Open'))
 
     expect(router.state.location.search).toEqual({})
+  })
+})
+
+// Every control carries an info mark. Its words come from the prop as declared,
+// once the dev server's docs arrive, and from the control's own definition until
+// then and wherever there are none.
+describe('PropsPanel info marks', () => {
+  beforeEach(() => {
+    useUIStore.setState({ isPanelOpen: true })
+  })
+
+  const docs: ControlDocs = {
+    variant: {
+      name: 'variant',
+      type: "'primary' | 'danger'",
+      optional: true,
+      description: 'Look.',
+    },
+  }
+
+  it('describes each control from its docs once they load', async () => {
+    await renderWithRouter(
+      <PropsPanel controls={controls} docs={async () => docs} />,
+      '/Forms/Button'
+    )
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: "variant?: 'primary' | 'danger'. Look." })
+      ).toBeInTheDocument()
+    )
+    // No doc for `disabled`, so its control definition stands in.
+    expect(
+      screen.getByRole('button', { name: 'disabled: boolean = false' })
+    ).toBeInTheDocument()
+  })
+
+  it('describes each control from its definition when there are no docs', async () => {
+    await renderWithRouter(<PropsPanel controls={controls} />, '/Forms/Button')
+
+    expect(
+      screen.getByRole('button', {
+        name: 'variant: select "primary" | "danger" = "primary"',
+      })
+    ).toBeInTheDocument()
+  })
+
+  it('marks a group and a list by their prop too', async () => {
+    const schema: ControlSchema = {
+      variants: { tone: { type: 'text' } },
+      tags: { type: 'list', of: { type: 'text' } },
+    }
+    await renderWithRouter(<PropsPanel controls={schema} />, '/Forms/StatCard')
+
+    expect(
+      screen.getByRole('button', { name: 'variants: { tone: text }' })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'tags: list of text' })).toBeInTheDocument()
   })
 })

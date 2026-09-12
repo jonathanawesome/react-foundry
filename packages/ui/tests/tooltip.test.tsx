@@ -100,6 +100,21 @@ describe('Tooltip', () => {
     expect(screen.getByText('t').tagName).toBe('KBD')
   })
 
+  it('adds a detail line under the label when given one', async () => {
+    render(
+      <Tooltip
+        label={<code>variant?: string</code>}
+        detail="Which look the button takes."
+      >
+        <button type="button">info</button>
+      </Tooltip>
+    )
+    await userEvent.hover(screen.getByRole('button', { name: 'info' }))
+
+    expect(screen.getByText('variant?: string')).toBeInTheDocument()
+    expect(screen.getByText('Which look the button takes.')).toBeInTheDocument()
+  })
+
   it('omits the key cap when there is no shortcut', async () => {
     render(
       <Tooltip label="Toggle Theme">

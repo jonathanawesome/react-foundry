@@ -1,7 +1,7 @@
 import { Menu } from '@base-ui/react/menu'
 import { createPreview, type NavPath } from 'react-foundry'
 import { menu } from './base-ui.css'
-import { Button } from './button'
+import { buttonStyles } from './button.css'
 
 export const nav: NavPath = 'Demo/Overlays/Menu'
 
@@ -18,7 +18,9 @@ export const nav: NavPath = 'Demo/Overlays/Menu'
  */
 export const Default = createPreview(() => (
   <Menu.Root>
-    <Menu.Trigger render={<Button variant="secondary">Project actions</Button>} />
+    <Menu.Trigger className={buttonStyles({ variant: 'secondary' })}>
+      Project actions
+    </Menu.Trigger>
     <Menu.Portal>
       <Menu.Positioner sideOffset={8}>
         <Menu.Popup className={menu.popup}>
@@ -63,7 +65,9 @@ export const WithSubmenu = createPreview({
   label: 'With a Submenu',
   render: () => (
     <Menu.Root>
-      <Menu.Trigger render={<Button variant="secondary">Move this file</Button>} />
+      <Menu.Trigger className={buttonStyles({ variant: 'secondary' })}>
+        Move this file
+      </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner sideOffset={8}>
           <Menu.Popup className={menu.popup}>

@@ -479,6 +479,16 @@ The panel names each control after its key, humanized (`onSurface` reads "On Sur
 Give a control a `label` to name it yourself; the key still names the prop, and the
 panel keeps the two linked by showing the key beside the prop's definition.
 
+Every control carries an info mark. Hover or focus it for the prop the control drives, as
+declared on the component: `variant?: 'primary' | 'danger'`, with the prop's JSDoc under
+it. The dev server reads these with the TypeScript compiler from the `controlsFor` call a
+preview's controls came from, following a hoisted or imported schema and a spread of one
+into another. Where there is nothing to read, a schema from `defineControls` or a project
+without `typescript`, the mark shows the control's own definition instead: its kind,
+options or range, and default. Two things to know: the docs for a preview are read when it
+is first opened, which can take a moment while the compiler loads the project's types, and
+an edit to a component's props reaches the panel on the preview file's next reload.
+
 `render` is a component, so a preview of a controlled component keeps its value in a hook
 right there, and a control edit re-renders it with the new props rather than remounting it:
 

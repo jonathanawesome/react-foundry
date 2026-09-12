@@ -55,4 +55,11 @@ export const buttonStyles = recipe({
       },
     },
   },
+
+  // The Button component's defaults, here too so a Base UI trigger styled with the
+  // recipe directly gets the same look as a plain `<Button>`.
+  defaultVariants: {
+    variant: 'primary',
+    size: 'medium',
+  },
 })

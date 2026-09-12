@@ -3,12 +3,13 @@ import { useState } from 'react'
 import { createPreview, type NavPath } from 'react-foundry'
 import { dialog, layout } from './base-ui.css'
 import { Button } from './button'
+import { buttonStyles } from './button.css'
 
 export const nav: NavPath = 'Demo/Overlays/Dialog'
 
 export const Default = createPreview(() => (
   <Dialog.Root>
-    <Dialog.Trigger render={<Button>Open dialog</Button>} />
+    <Dialog.Trigger className={buttonStyles()}>Open dialog</Dialog.Trigger>
     <Dialog.Portal>
       <Dialog.Backdrop className={dialog.backdrop} />
       <Dialog.Popup className={dialog.popup}>
@@ -17,8 +18,10 @@ export const Default = createPreview(() => (
           This makes the release visible to everyone with access to the project.
         </Dialog.Description>
         <div className={dialog.actions}>
-          <Dialog.Close render={<Button variant="secondary">Cancel</Button>} />
-          <Dialog.Close render={<Button>Publish</Button>} />
+          <Dialog.Close className={buttonStyles({ variant: 'secondary' })}>
+            Cancel
+          </Dialog.Close>
+          <Dialog.Close className={buttonStyles()}>Publish</Dialog.Close>
         </div>
       </Dialog.Popup>
     </Dialog.Portal>
@@ -27,7 +30,9 @@ export const Default = createPreview(() => (
 
 export const Destructive = createPreview(() => (
   <Dialog.Root>
-    <Dialog.Trigger render={<Button variant="danger">Delete project</Button>} />
+    <Dialog.Trigger className={buttonStyles({ variant: 'danger' })}>
+      Delete project
+    </Dialog.Trigger>
     <Dialog.Portal>
       <Dialog.Backdrop className={dialog.backdrop} />
       <Dialog.Popup className={dialog.popup}>
@@ -36,8 +41,12 @@ export const Destructive = createPreview(() => (
           This cannot be undone. Everything in the project is removed permanently.
         </Dialog.Description>
         <div className={dialog.actions}>
-          <Dialog.Close render={<Button variant="secondary">Keep it</Button>} />
-          <Dialog.Close render={<Button variant="danger">Delete</Button>} />
+          <Dialog.Close className={buttonStyles({ variant: 'secondary' })}>
+            Keep it
+          </Dialog.Close>
+          <Dialog.Close className={buttonStyles({ variant: 'danger' })}>
+            Delete
+          </Dialog.Close>
         </div>
       </Dialog.Popup>
     </Dialog.Portal>
@@ -67,7 +76,9 @@ export const Controlled = createPreview({
                 across opens.
               </Dialog.Description>
               <div className={dialog.actions}>
-                <Dialog.Close render={<Button variant="secondary">Cancel</Button>} />
+                <Dialog.Close className={buttonStyles({ variant: 'secondary' })}>
+                  Cancel
+                </Dialog.Close>
                 <Button
                   onClick={() => {
                     setConfirmations((n) => n + 1)

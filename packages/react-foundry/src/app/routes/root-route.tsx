@@ -34,6 +34,14 @@ function RootComponent() {
     select: (match) => match.loaderData?.component?.controls,
   })
 
+  // The docs thunk for those controls, fetched by the panel once the preview is
+  // on screen rather than awaited by the loader.
+  const docs = useMatch({
+    from: '/$',
+    shouldThrow: false,
+    select: (match) => match.loaderData?.docs,
+  })
+
   useEffect(() => {
     document.title = foundryTitle || 'React Foundry'
   })
@@ -43,7 +51,7 @@ function RootComponent() {
       <Layout>
         <Shelf nav={nav} />
         <Outlet />
-        <PropsPanel controls={controls} />
+        <PropsPanel controls={controls} docs={docs} />
         <Toolbar />
       </Layout>
     </ThemeProvider>

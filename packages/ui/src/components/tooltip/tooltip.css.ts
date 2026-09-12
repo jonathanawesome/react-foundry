@@ -20,8 +20,12 @@ export const tooltipStyles = {
 
     display: 'flex',
     alignItems: 'center',
+    // Wraps only for a detail line, which takes the whole second row.
+    flexWrap: 'wrap',
     gap: themeContract.px[6],
     padding: `${themeContract.px[4]} ${themeContract.px[8]}`,
+    // Wide enough for a prop signature, not so wide a description runs on.
+    maxWidth: '320px',
 
     background: themeContract.colors.panel,
     border: `1px solid ${themeContract.colors.border}`,
@@ -58,6 +62,13 @@ export const tooltipStyles = {
     // Explicit rather than an anonymous flex item, so the bubble's gap applies
     // between the words and the key cap the same way it would between elements.
     display: 'inline-block',
+  }),
+
+  // The second row: running text, so it wraps where the label does not.
+  detail: style({
+    flexBasis: '100%',
+    whiteSpace: 'normal',
+    color: themeContract.colors.textMuted,
   }),
 
   // A key cap for the shortcut letter.

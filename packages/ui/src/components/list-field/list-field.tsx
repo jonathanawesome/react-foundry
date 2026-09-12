@@ -4,6 +4,7 @@ import {
   type ListControlDef,
   listRowDefault,
 } from '@react-foundry/core'
+import type { ReactNode } from 'react'
 
 import { CollapsibleSection } from '../collapsible-section/collapsible-section'
 import { ControlField, labelOf } from '../control-field/control-field'
@@ -21,6 +22,8 @@ interface ListFieldProps {
   name: string
   def: ListControlDef
   rows: ListRowValue[]
+  /** Drawn beside the list's name: the info mark for the prop it drives. */
+  info?: ReactNode
   /**
    * A change to one field of one row. `member` names the field inside a group
    * row and is null for a scalar row, whose value is the field.
@@ -53,6 +56,7 @@ export function ListField({
   name,
   def,
   rows,
+  info,
   onRowChange,
   onRowsChange,
 }: ListFieldProps) {
@@ -63,7 +67,7 @@ export function ListField({
   const add = () => onRowsChange([...rows, listRowDefault(def) as ListRowValue])
 
   return (
-    <CollapsibleSection label={label}>
+    <CollapsibleSection label={label} info={info}>
       {rows.map((row, index) =>
         isControlDef(def.of) ? (
           // A scalar row is one field, labelled as the row since the field is the row.

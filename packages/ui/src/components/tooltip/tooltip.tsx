@@ -28,10 +28,12 @@ interface Placement {
 }
 
 export interface TooltipProps {
-  /** What the control does, e.g. `Toggle Theme`. */
-  label: string
+  /** What the control does, e.g. `Toggle Theme`. A node, so it can be code. */
+  label: ReactNode
   /** Keyboard shortcut for the control, rendered as a key cap after the label. */
   shortcut?: string
+  /** A second line under the label, in running text: a prop's description, say. */
+  detail?: ReactNode
   /** The control being described. Exactly one. */
   children: ReactNode
 }
@@ -56,7 +58,7 @@ export interface TooltipProps {
  * is hidden from assistive tech. The shortcut is the one thing a key cap cannot
  * convey without sight, so it goes out separately as a description.
  */
-export function Tooltip({ label, shortcut, children }: TooltipProps) {
+export function Tooltip({ label, shortcut, detail, children }: TooltipProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [placement, setPlacement] = useState<Placement | null>(null)
   const wrapperRef = useRef<HTMLSpanElement>(null)
@@ -174,6 +176,7 @@ export function Tooltip({ label, shortcut, children }: TooltipProps) {
           >
             <span className={tooltipStyles.label}>{label}</span>
             {shortcut && <kbd className={tooltipStyles.shortcut}>{shortcut}</kbd>}
+            {detail && <span className={tooltipStyles.detail}>{detail}</span>}
           </span>,
           document.body
         )}
