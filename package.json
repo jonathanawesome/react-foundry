@@ -38,7 +38,7 @@
     "pnpm": "10.x"
   },
   "dependencies": {
-    "@types/node": "24.10.1",
+    "@types/node": "24.13.3",
     "@types/react": "catalog:",
     "@types/react-dom": "catalog:",
     "react": "catalog:",
