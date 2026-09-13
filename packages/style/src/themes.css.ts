@@ -19,7 +19,7 @@ const anchors = {
 // spacing than light because discrimination is worse at low luminance.
 const ladder = {
   canvas: { dark: 8, light: 4 },
-  stateHover: { dark: 8, light: 4 },
+  stateHover: { dark: 16, light: 6 },
   border: { dark: 19, light: 14 },
   textMuted: { dark: 58, light: 53 },
   textBody: { dark: 91, light: 74 },

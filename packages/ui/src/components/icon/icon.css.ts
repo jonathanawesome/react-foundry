@@ -1,11 +1,16 @@
-import { recipe, themeContract } from '@react-foundry/style'
+import { createVar, fallbackVar, recipe, themeContract } from '@react-foundry/style'
+
+// The svg fills with currentColor, so this is the one knob a parent needs to recolor an
+// icon. Set it on a wrapper (hover, active) rather than relying on `color` inheritance,
+// which the base below deliberately interrupts with its muted default.
+export const iconColor = createVar()
 
 export const iconClass = recipe({
   base: {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    color: themeContract.colors.textMuted,
+    color: fallbackVar(iconColor, themeContract.colors.textMuted),
     transform: 'rotate(0deg)',
     transition: `all .15s ${themeContract.motion.authentic}`,
   },

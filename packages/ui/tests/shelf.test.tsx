@@ -3,7 +3,7 @@ import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { ancestorPaths, Shelf } from '../src/components/shelf'
+import { ancestorPaths, Shelf } from '../src/components/shelf/shelf'
 import { useUIStore } from '../src/state'
 import { renderWithRouter } from './test-utils'
 

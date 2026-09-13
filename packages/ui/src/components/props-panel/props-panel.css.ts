@@ -1,6 +1,6 @@
 import { style, themeContract } from '@react-foundry/style'
 
-import { PANEL_WIDTH } from '../constants'
+import { PANEL_WIDTH } from '../../constants'
 
 export const propsPanelStyles = {
   // Mirror of the shelf, on the right: slides in from the right edge, border on
@@ -16,7 +16,7 @@ export const propsPanelStyles = {
     display: 'flex',
     flexDirection: 'column',
 
-    paddingTop: 48,
+    paddingTop: themeContract.px[16],
 
     background: themeContract.colors.panel,
     borderLeft: `1px solid ${themeContract.colors.border}`,
@@ -50,28 +50,6 @@ export const propsPanelStyles = {
     display: 'flex',
     flexDirection: 'column',
     gap: themeContract.px[16],
-  }),
-
-  // Controls for one object-typed prop, drawn as a section so the panel reads the
-  // way the props do. A fieldset for the grouping semantics; its UA styles
-  // (min-inline-size, default border and padding) are all overridden here.
-  group: style({
-    display: 'flex',
-    flexDirection: 'column',
-    gap: themeContract.px[12],
-    minInlineSize: 0,
-    margin: 0,
-    padding: themeContract.px[12],
-    border: `1px solid ${themeContract.colors.border}`,
-    borderRadius: themeContract.radii.medium,
-  }),
-
-  groupLabel: style({
-    padding: `0 ${themeContract.px[4]}`,
-    fontFamily: themeContract.fonts.sans,
-    fontSize: themeContract.px[12],
-    fontWeight: 600,
-    color: themeContract.colors.textMuted,
   }),
 
   empty: style({

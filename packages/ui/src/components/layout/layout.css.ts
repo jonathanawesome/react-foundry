@@ -1,6 +1,6 @@
 import { style, themeContract } from '@react-foundry/style'
 
-import { PANEL_WIDTH, SHELF_WIDTH } from '../constants'
+import { PANEL_WIDTH, SHELF_WIDTH } from '../../constants'
 
 export const layout = style({
   // Declared here rather than taken from the chrome reset: this element is an ancestor of

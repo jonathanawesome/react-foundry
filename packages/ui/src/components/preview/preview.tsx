@@ -1,5 +1,6 @@
 import {
   coerceControlValues,
+  deriveControlValues,
   type FoundryProvider,
   type Preview as PreviewComponent,
 } from '@react-foundry/core'
@@ -10,14 +11,15 @@ import {
   type RefObject,
   useCallback,
   useContext,
+  useMemo,
   useRef,
   useState,
 } from 'react'
 
-import { useUIStore } from '../state'
+import { useUIStore } from '../../state'
 
-import { AccessibilityChecker } from './accessibility-checker'
-import { HighlightOverlay } from './highlight-overlay'
+import { AccessibilityChecker } from '../accessibility-checker/accessibility-checker'
+import { HighlightOverlay } from '../highlight-overlay/highlight-overlay'
 import { previewStyles } from './preview.css'
 
 /** Used when the consumer has no `foundry.providers.tsx`: render the preview as-is. */
@@ -87,11 +89,21 @@ export function Preview({
   const theme = useContext(ThemeContext)?.resolvedTheme ?? 'light'
 
   // Control values ride in the URL. Coerce them against the preview's own schema
-  // so a hand-edited or shared link resolves to typed values.
+  // so a hand-edited or shared link resolves to typed values, then apply each
+  // control's `derive` so render receives what its prop takes.
+  //
+  // Memoized on the search object, which the router keeps stable between
+  // navigations, so a derive runs once per values change and not on every render
+  // of this component: pinning a node or flipping the theme re-renders it too.
   const search = useSearch({ strict: false }) as Record<string, unknown>
-  const controlValues = preview?.controls
-    ? coerceControlValues(preview.controls, search)
-    : undefined
+  const controls = preview?.controls
+  const controlValues = useMemo(
+    () =>
+      controls
+        ? deriveControlValues(controls, coerceControlValues(controls, search))
+        : undefined,
+    [controls, search]
+  )
 
   // Capitalised so JSX treats it as a component. Rendering it as an element
   // rather than calling it gives the preview its own fiber, which is what makes

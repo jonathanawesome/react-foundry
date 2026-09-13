@@ -123,6 +123,12 @@ describing the previous shape. Foundry can't tell the two edits apart, because a
 reach the preview by name (`controls: buttonControls`) and then reads identically either
 side of an edit to it.
 
+A patch keeps the state held inside `render`, in both forms. React's refresh transform only
+registers a function passed straight to `createPreview`, so foundry registers an options-form
+`render` itself, under the export's name; React then treats the edited function as an update of
+the one on screen rather than as a new component. Changing the hooks inside it still remounts
+it, which is React's own rule.
+
 #### Keeping a refresh boundary
 
 React Fast Refresh patches a module in place only while every one of its exports is
@@ -399,6 +405,7 @@ The rules:
 - **Labels come from export names**, de-camelCased: `AllSizes` becomes `All Sizes`. Pass `label` to override.
 - **Order is what you wrote.** Previews appear in source order, sections in config order. Nothing is sorted behind your back.
 - **URLs use the export name, never the label.** `AllSizes` lives at `/Forms/Button/AllSizes` whatever you label it, so rewording a label never breaks a link.
+- **`render` is a component.** Foundry mounts it rather than calling it, so hooks work inside it in both forms, controls or not, and a controlled component's value can live right there with no wrapper component extracted to hold it. React keys that state on `render`'s identity, which is stable when it is written as a literal in a module-level `createPreview` call, as above. Do not build previews in a factory that runs during render and recreates `render` each time: every pass would be a new component to React, remounted with its state gone.
 
 ### How discovery reads your files
 
@@ -466,7 +473,36 @@ export const Playground = createPreview({
 
 Values are typed from the schema, so `values.variant` narrows to `'primary' | 'danger'`
 and a typo is a compile error. Control types: `text`, `boolean`, `number`, `range`, `select`,
-`radio`, `color`.
+`radio`, `color`, and `list` for an array of any of them (see [Lists](#lists)).
+
+The panel names each control after its key, humanized (`onSurface` reads "On Surface").
+Give a control a `label` to name it yourself; the key still names the prop, and the
+panel keeps the two linked by showing the key beside the prop's definition.
+
+Every control carries an info mark. Hover or focus it for the prop the control drives, as
+declared on the component: `variant?: 'primary' | 'danger'`, with the prop's JSDoc under
+it. The dev server reads these with the TypeScript compiler from the `controlsFor` call a
+preview's controls came from, following a hoisted or imported schema and a spread of one
+into another. Where there is nothing to read, a schema from `defineControls` or a project
+without `typescript`, the mark shows the control's own definition instead: its kind,
+options or range, and default. The docs for a preview are read when it is first opened,
+which can take a moment while the compiler loads the project's types, and read again when
+you edit a source file, so a change to a component's props shows up without a reload.
+
+`render` is a component, so a preview of a controlled component keeps its value in a hook
+right there, and a control edit re-renders it with the new props rather than remounting it:
+
+```tsx
+export const Playground = createPreview({
+  controls: controlsFor(Select, {
+    width: { type: 'radio', options: ['auto', 'full'], default: 'auto' },
+  }),
+  render: (v) => {
+    const [value, setValue] = useState('a')
+    return <Select options={OPTIONS} value={value} onValueChange={setValue} width={v.width} />
+  },
+})
+```
 
 Note that a file declaring `controls` reloads the page on every edit rather than patching
 in place, so the panel can never describe a schema the canvas has moved on from. See
@@ -486,9 +522,9 @@ const cardControls = controlsFor(Card, {
 ```
 
 A control naming no prop, a control type the prop cannot take, and an option outside the
-prop's own union all stop compiling. Props that no control can drive are absent from the
-schema entirely, so a component that cannot meaningfully have a props playground says so at
-the first control you write.
+prop's own union all stop compiling. A prop no input can express takes no plain control
+at all, only a `derive` (below), so a text box on a render prop is a compile error rather
+than a panel offering a value no call site can produce.
 
 Either way, a controls schema is a props declaration. Written inline or through
 `defineControls`, it declares props for the preview's own render function, which is itself a
@@ -502,11 +538,83 @@ Worth knowing:
   widens `type: 'select'` to `string` before `controlsFor` sees it, and the error you get
   names the widening rather than the cause.
 - **A `ReactNode` prop takes a `text` control**, since a string is a valid `ReactNode`. So
-  `children: { type: 'text' }` works. A props panel cannot author JSX.
-- **A prop typed `string | number` gets no control**, and one typed `2 | 3 | 4` gets a plain
-  number input rather than a dropdown, because `options` currently holds strings.
+  `children: { type: 'text' }` works. A props panel cannot author JSX; a `derive` can, see
+  below.
+- **A prop typed `string | number` gets no plain control**, and one typed `2 | 3 | 4` gets a
+  plain number input rather than a dropdown, because `options` currently holds strings.
 - **Props inherited from a DOM element come along**, so a component extending
   `ComponentProps<'button'>` offers every `aria-*` attribute in autocomplete.
+
+#### Deriving a prop's value from a control
+
+Some props have types no input can express: a component (`icon: LucideIcon`), a node built
+from a flag, an array you would rather size with a slider than edit row by row. Any scalar
+control can carry a `derive` that maps the control's own value to the prop's type:
+
+```tsx
+const selectControls = controlsFor(Select, {
+  options: { type: 'range', min: 1, max: 10, default: 4, derive: (n) => CLIENTS.slice(0, n) },
+  width: { type: 'radio', options: ['auto', 'sm', 'md', 'lg', 'full'], default: 'auto' },
+})
+
+const statCardControls = controlsFor(StatCard, {
+  icon: { type: 'select', options: ['globe', 'gauge'], default: 'globe', derive: (name) => ICONS[name] },
+})
+
+const pageLeadControls = controlsFor(PageLead, {
+  titleAccessory: { type: 'boolean', default: false, derive: (on) => (on ? <Badge content="Beta" /> : undefined) },
+})
+```
+
+The panel draws the input exactly as it would without the `derive`, and the URL holds the
+input's value. What changes is what `render` receives: `v.options` is `SelectOption[]`, not a
+number. The key is still checked against the component, so `optoins` is still a compile
+error; only the input type is freed, and only through the mapping. The return type is
+checked against the prop, so a `derive` that returns a string where the prop wants a
+component is a compile error too. The parameter is typed from the control: a range hands it
+a number, a boolean a boolean, and a select the union of its options, so `ICONS[name]`
+above needs no cast. A `derive` is accepted on a group member as well.
+
+`derive` receives its own control's value and nothing else. It cannot read another control,
+which keeps it a per-prop mapping rather than a place to compose the preview. That is the
+line between the two helpers: `derive` produces one prop's value from one input, and
+`defineControls` is for controls that drive a composition the preview assembles itself in
+`render`. A `derive` on a select or radio in `defineControls` or an inline schema receives
+`string`; the narrowing to the option union is `controlsFor`'s.
+
+#### Lists
+
+An array prop takes a `list`: rows drawn from one `of` schema, which is a scalar control for
+an array of strings or a group of them for an array of objects.
+
+```tsx
+const selectControls = controlsFor(Select, {
+  options: {
+    type: 'list',
+    of: { value: { type: 'text' }, label: { type: 'text', default: 'Untitled' } },
+    default: [{ value: 'acme', label: 'Acme' }],
+  },
+})
+
+const tagControls = controlsFor(TagList, {
+  tags: { type: 'list', of: { type: 'select', options: ['new', 'beta'] }, default: ['new'] },
+})
+```
+
+The panel draws a section per row with the row's fields and a remove button, and an add
+button that appends a row of the `of` defaults. `render` receives the array, typed from `of`:
+`v.options` is `{ value: string; label: string }[]`. The rows travel in the URL whole, as
+JSON, and the list is left out of the URL while it equals its default.
+
+`controlsFor` checks the row schema against the item type the same way it checks a group
+against an object prop: a key the item does not have, a control the key cannot take, and a
+typo in a `default` row are all compile errors. A row's controls may carry a `derive`, and a
+select in a row narrows to its options as one at the top level does.
+
+`of` is a control or a group, never another list, and a list cannot sit inside a group. That
+is the one level of nesting below the list the schema allows, for the same reasons a group
+holds no group: a deeper tree is hard to draw legibly in a panel and costs more type
+instantiation than it earns.
 
 ## Accessibility
 

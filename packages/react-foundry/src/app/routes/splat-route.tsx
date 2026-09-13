@@ -26,7 +26,7 @@ export const splatRoute = createRoute({
     const leaf = findLeaf(nav, path)
     const node = findNode(nav, path)
 
-    if (!leaf) return { node, path, component: null }
+    if (!leaf) return { node, path, component: null, docs: undefined }
 
     // Fetch the preview's module on demand. This dynamic import is the
     // code-split boundary: each preview is its own chunk rather than part of the
@@ -44,7 +44,10 @@ export const splatRoute = createRoute({
       )
     }
 
-    return { node, path, component }
+    // The docs thunk rides along unresolved: reading prop types with the checker
+    // can take a moment the first time, and the panel fetches them itself once the
+    // preview is on screen rather than holding the navigation for them.
+    return { node, path, component, docs: leaf.docs }
   },
 })
 

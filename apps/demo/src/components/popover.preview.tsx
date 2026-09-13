@@ -1,13 +1,15 @@
 import { Popover } from '@base-ui/react/popover'
 import { createPreview, type NavPath } from 'react-foundry'
 import { popover } from './base-ui.css'
-import { Button } from './button'
+import { buttonStyles } from './button.css'
 
 export const nav: NavPath = 'Demo/Overlays/Popover'
 
 export const Default = createPreview(() => (
   <Popover.Root>
-    <Popover.Trigger render={<Button variant="secondary">What is this?</Button>} />
+    <Popover.Trigger className={buttonStyles({ variant: 'secondary' })}>
+      What is this?
+    </Popover.Trigger>
     <Popover.Portal>
       <Popover.Positioner sideOffset={8}>
         <Popover.Popup className={popover.popup}>
@@ -25,7 +27,9 @@ export const AlignedToStart = createPreview({
   label: 'Aligned to Start',
   render: () => (
     <Popover.Root>
-      <Popover.Trigger render={<Button variant="secondary">Details</Button>} />
+      <Popover.Trigger className={buttonStyles({ variant: 'secondary' })}>
+        Details
+      </Popover.Trigger>
       <Popover.Portal>
         <Popover.Positioner side="bottom" align="start" sideOffset={8}>
           <Popover.Popup className={popover.popup}>
@@ -42,7 +46,9 @@ export const AlignedToStart = createPreview({
 
 export const OnTheRight = createPreview(() => (
   <Popover.Root>
-    <Popover.Trigger render={<Button variant="secondary">Open to the side</Button>} />
+    <Popover.Trigger className={buttonStyles({ variant: 'secondary' })}>
+      Open to the side
+    </Popover.Trigger>
     <Popover.Portal>
       <Popover.Positioner side="right" sideOffset={8}>
         <Popover.Popup className={popover.popup}>

@@ -2,7 +2,7 @@ import { act, render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { Tooltip } from '../src/components/tooltip'
+import { Tooltip } from '../src/components/tooltip/tooltip'
 
 /**
  * jsdom lays nothing out: every rect and offset is zero, so placement would be
@@ -98,6 +98,21 @@ describe('Tooltip', () => {
 
     await userEvent.hover(screen.getByRole('button', { name: 'theme' }))
     expect(screen.getByText('t').tagName).toBe('KBD')
+  })
+
+  it('adds a detail line under the label when given one', async () => {
+    render(
+      <Tooltip
+        label={<code>variant?: string</code>}
+        detail="Which look the button takes."
+      >
+        <button type="button">info</button>
+      </Tooltip>
+    )
+    await userEvent.hover(screen.getByRole('button', { name: 'info' }))
+
+    expect(screen.getByText('variant?: string')).toBeInTheDocument()
+    expect(screen.getByText('Which look the button takes.')).toBeInTheDocument()
   })
 
   it('omits the key cap when there is no shortcut', async () => {
@@ -196,8 +211,8 @@ describe('Tooltip', () => {
       await open()
 
       expect(placementOf('Toggle Controls Panel')).toEqual({
-        left: '-88px',
-        top: '32px',
+        left: '412px',
+        top: '132px',
       })
     })
 
@@ -210,8 +225,8 @@ describe('Tooltip', () => {
       })
       await open()
 
-      // Clamped to the 8px margin, which is 12px left of the anchor.
-      expect(placementOf('Toggle Controls Panel').left).toBe('-12px')
+      // Clamped to the 8px margin.
+      expect(placementOf('Toggle Controls Panel').left).toBe('8px')
     })
 
     // The same thing on the other side, for a toolbar that has moved.
@@ -223,8 +238,8 @@ describe('Tooltip', () => {
       })
       await open()
 
-      // Rightmost is 1000 - 8 - 200 = 792, which is 158px left of the anchor.
-      expect(placementOf('Toggle Controls Panel').left).toBe('-158px')
+      // Rightmost is 1000 - 8 - 200 = 792.
+      expect(placementOf('Toggle Controls Panel').left).toBe('792px')
     })
 
     it('flips the bubble above a control with no room below', async () => {
@@ -235,8 +250,8 @@ describe('Tooltip', () => {
       })
       await open()
 
-      // 784 + 8 + 28 runs past 792, so it goes above: -(28 + 8).
-      expect(placementOf('Toggle Controls Panel').top).toBe('-36px')
+      // 784 + 8 + 28 runs past 792, so it goes above: 760 - 8 - 28.
+      expect(placementOf('Toggle Controls Panel').top).toBe('724px')
     })
 
     it('keeps a bubble wider than the window pinned to the left edge', async () => {
@@ -247,7 +262,7 @@ describe('Tooltip', () => {
       })
       await open()
 
-      expect(placementOf('Toggle Controls Panel').left).toBe('-12px')
+      expect(placementOf('Toggle Controls Panel').left).toBe('8px')
     })
 
     it('re-places the bubble when the window resizes under it', async () => {
@@ -256,15 +271,53 @@ describe('Tooltip', () => {
         bubble: { width: 200, height: 28 },
       })
       await open()
-      expect(placementOf('Toggle Controls Panel').left).toBe('-88px')
+      expect(placementOf('Toggle Controls Panel').left).toBe('412px')
 
       vi.spyOn(window, 'innerWidth', 'get').mockReturnValue(600)
       act(() => {
         window.dispatchEvent(new Event('resize'))
       })
 
-      // Rightmost is now 600 - 8 - 200 = 392, which is 108px left of the anchor.
-      expect(placementOf('Toggle Controls Panel').left).toBe('-108px')
+      // Rightmost is now 600 - 8 - 200 = 392.
+      expect(placementOf('Toggle Controls Panel').left).toBe('392px')
     })
+
+    // The control may sit in a scrolling region, and the bubble is fixed to the
+    // viewport rather than to the control.
+    it('re-places the bubble when something scrolls under it', async () => {
+      stubLayout({
+        anchor: { left: 500, top: 100, width: 24, height: 24 },
+        bubble: { width: 200, height: 28 },
+      })
+      await open()
+      expect(placementOf('Toggle Controls Panel').top).toBe('132px')
+
+      stubLayout({
+        anchor: { left: 500, top: 60, width: 24, height: 24 },
+        bubble: { width: 200, height: 28 },
+      })
+      act(() => {
+        document.body.dispatchEvent(new Event('scroll', { bubbles: true }))
+      })
+
+      expect(placementOf('Toggle Controls Panel').top).toBe('92px')
+    })
+  })
+
+  // What lets a control inside a Scrollable have one: the bubble is not a
+  // descendant of anything that could clip it.
+  it('renders the bubble outside the control, on the body', async () => {
+    render(
+      <Tooltip label="Toggle Theme">
+        <button type="button">theme</button>
+      </Tooltip>
+    )
+    await userEvent.hover(screen.getByRole('button', { name: 'theme' }))
+
+    const bubble = screen.getByText('Toggle Theme').parentElement
+    expect(bubble?.parentElement).toBe(document.body)
+    expect(
+      screen.getByRole('button', { name: 'theme' }).parentElement
+    ).not.toContainElement(bubble)
   })
 })

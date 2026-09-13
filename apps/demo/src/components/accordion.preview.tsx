@@ -1,7 +1,6 @@
-import { Accordion } from '@base-ui/react/accordion'
-import { createPreview, type NavPath } from 'react-foundry'
+import { controlsFor, createPreview, type NavPath } from 'react-foundry'
 
-import { accordion } from './base-ui.css'
+import { Accordion } from './accordion'
 
 export const nav: NavPath = 'Demo/Disclosure/Accordion'
 
@@ -20,53 +19,29 @@ const sections = [
   },
 ]
 
-export const Default = createPreview(() => (
-  <Accordion.Root className={accordion.root}>
-    {sections.map((section) => (
-      <Accordion.Item key={section.title} className={accordion.item}>
-        <Accordion.Header>
-          <Accordion.Trigger className={accordion.trigger}>
-            {section.title}
-          </Accordion.Trigger>
-        </Accordion.Header>
-        <Accordion.Panel className={accordion.panel}>{section.body}</Accordion.Panel>
-      </Accordion.Item>
-    ))}
-  </Accordion.Root>
-))
+// The sections as a list control on the array prop, editable row by row from the
+// panel, with the rows riding in the URL as JSON. Bound with controlsFor, so each
+// control's info mark shows the prop as declared on Accordion, description included.
+export const Playground = createPreview({
+  controls: controlsFor(Accordion, {
+    sections: {
+      type: 'list',
+      of: { title: { type: 'text', default: 'New section' }, body: { type: 'text' } },
+      default: sections,
+    },
+    multiple: { type: 'boolean', default: true },
+  }),
+  render: (v) => <Accordion sections={v.sections} multiple={v.multiple} />,
+})
+
+export const Default = createPreview(() => <Accordion sections={sections} />)
 
 export const OpenByDefault = createPreview({
   label: 'First Section Open',
-  render: () => (
-    <Accordion.Root className={accordion.root} defaultValue={[0]}>
-      {sections.map((section, index) => (
-        <Accordion.Item key={section.title} value={index} className={accordion.item}>
-          <Accordion.Header>
-            <Accordion.Trigger className={accordion.trigger}>
-              {section.title}
-            </Accordion.Trigger>
-          </Accordion.Header>
-          <Accordion.Panel className={accordion.panel}>{section.body}</Accordion.Panel>
-        </Accordion.Item>
-      ))}
-    </Accordion.Root>
-  ),
+  render: () => <Accordion sections={sections} defaultOpen={[0]} />,
 })
 
 export const SingleAtATime = createPreview({
   label: 'One Open at a Time',
-  render: () => (
-    <Accordion.Root className={accordion.root} multiple={false}>
-      {sections.map((section) => (
-        <Accordion.Item key={section.title} className={accordion.item}>
-          <Accordion.Header>
-            <Accordion.Trigger className={accordion.trigger}>
-              {section.title}
-            </Accordion.Trigger>
-          </Accordion.Header>
-          <Accordion.Panel className={accordion.panel}>{section.body}</Accordion.Panel>
-        </Accordion.Item>
-      ))}
-    </Accordion.Root>
-  ),
+  render: () => <Accordion sections={sections} multiple={false} />,
 })

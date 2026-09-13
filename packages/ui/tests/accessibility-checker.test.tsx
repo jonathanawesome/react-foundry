@@ -2,7 +2,10 @@ import { render, screen, waitFor } from '@testing-library/react'
 import { createRef } from 'react'
 import { describe, expect, it } from 'vitest'
 
-import { AccessibilityChecker, impactTone } from '../src/components/accessibility-checker'
+import {
+  AccessibilityChecker,
+  impactTone,
+} from '../src/components/accessibility-checker/accessibility-checker'
 
 describe('impactTone', () => {
   it('maps each axe impact level to a badge tone', () => {

@@ -5,8 +5,8 @@ import userEvent from '@testing-library/user-event'
 import { useRef } from 'react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { AccessibilityChecker } from '../src/components/accessibility-checker'
-import { Preview } from '../src/components/preview'
+import { AccessibilityChecker } from '../src/components/accessibility-checker/accessibility-checker'
+import { Preview } from '../src/components/preview/preview'
 import { useUIStore } from '../src/state'
 import { renderWithRouter } from './test-utils'
 
@@ -34,9 +34,12 @@ const preview = createPreview(() => (
 /** Renders the canvas with the checker on, and waits out its 500ms scan debounce. */
 async function renderScanned() {
   const result = await renderWithRouter(<Preview preview={preview} />)
-  await waitFor(() => expect(screen.getAllByTitle(LOCATE)).toHaveLength(2), {
-    timeout: 3000,
-  })
+  await waitFor(
+    () => expect(screen.getAllByRole('button', { name: LOCATE })).toHaveLength(2),
+    {
+      timeout: 3000,
+    }
+  )
   return result
 }
 
@@ -64,20 +67,23 @@ describe('locate button', () => {
   it('renders one per resolvable node and none for the rest', async () => {
     await renderScanned()
 
-    expect(screen.getAllByTitle(LOCATE)).toHaveLength(2)
+    expect(screen.getAllByRole('button', { name: LOCATE })).toHaveLength(2)
   })
 
   it('pins on click and unpins on a second click', async () => {
     await renderScanned()
-    const [first] = screen.getAllByTitle(LOCATE)
+    const [first] = screen.getAllByRole('button', { name: LOCATE })
 
     await userEvent.click(first)
-    expect(screen.getByTitle(CLEAR)).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: CLEAR })).toHaveAttribute(
+      'aria-pressed',
+      'true'
+    )
     expect(overlay()).toHaveAttribute('data-pinned', 'true')
 
-    const pinned = screen.getByTitle(CLEAR)
+    const pinned = screen.getByRole('button', { name: CLEAR })
     await userEvent.click(pinned)
-    expect(screen.queryByTitle(CLEAR)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: CLEAR })).not.toBeInTheDocument()
 
     // The pointer never left the button, so unpinning drops back to a hover preview
     // rather than clearing the overlay outright.
@@ -89,21 +95,21 @@ describe('locate button', () => {
   it('moves the pin when a second node is clicked', async () => {
     await renderScanned()
 
-    await userEvent.click(screen.getAllByTitle(LOCATE)[0])
-    await userEvent.click(screen.getByTitle(LOCATE))
+    await userEvent.click(screen.getAllByRole('button', { name: LOCATE })[0])
+    await userEvent.click(screen.getByRole('button', { name: LOCATE }))
 
     // Exactly one pinned button, and it is no longer the first.
-    const pinned = screen.getByTitle(CLEAR)
+    const pinned = screen.getByRole('button', { name: CLEAR })
     expect(pinned).toHaveAttribute('aria-pressed', 'true')
-    expect(screen.getAllByTitle(LOCATE)).toHaveLength(1)
-    expect(pinned).not.toBe(screen.getAllByTitle(LOCATE)[0])
+    expect(screen.getAllByRole('button', { name: LOCATE })).toHaveLength(1)
+    expect(pinned).not.toBe(screen.getAllByRole('button', { name: LOCATE })[0])
   })
 
   // Hover is a preview of the pin, so it draws a fainter overlay and leaves no pressed
   // state behind once the pointer moves away.
   it('previews on hover without pinning', async () => {
     await renderScanned()
-    const [first] = screen.getAllByTitle(LOCATE)
+    const [first] = screen.getAllByRole('button', { name: LOCATE })
 
     await userEvent.hover(first)
     expect(overlay()).toHaveAttribute('data-pinned', 'false')
@@ -116,10 +122,12 @@ describe('locate button', () => {
   it('drops the pin on a rescan, which invalidates every resolved element', async () => {
     await renderScanned()
 
-    await userEvent.click(screen.getAllByTitle(LOCATE)[0])
+    await userEvent.click(screen.getAllByRole('button', { name: LOCATE })[0])
     expect(overlay()).toBeInTheDocument()
 
-    await userEvent.click(screen.getByTitle('Re-run accessibility check'))
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Re-run accessibility check' })
+    )
 
     await waitFor(() => expect(overlay()).not.toBeInTheDocument())
   })
@@ -184,7 +192,7 @@ describe('incomplete results', () => {
     expect(
       await screen.findByText('Could not be checked', {}, { timeout: 3000 })
     ).toBeInTheDocument()
-    expect(screen.getByTitle(LOCATE)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: LOCATE })).toBeInTheDocument()
   })
 
   // "Passed" beside results axe never reached a verdict on would overstate the scan.

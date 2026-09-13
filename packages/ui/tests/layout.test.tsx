@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { Layout } from '../src/components/layout'
+import { Layout } from '../src/components/layout/layout'
 import { useUIStore } from '../src/state'
 
 describe('Layout', () => {

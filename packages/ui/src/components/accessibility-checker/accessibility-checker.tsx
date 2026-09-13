@@ -1,11 +1,12 @@
 import { chromeSurfaceProps, ThemeContext } from '@react-foundry/style'
 import { useCallback, useContext, useEffect, useRef, useState } from 'react'
+import { Badge, type BadgeTone } from '../badge/badge'
+import { Icon } from '../icon/icon'
+import { IconButton } from '../icon-button/icon-button'
+import { Scrollable } from '../scrollable/scrollable'
+import { Tooltip } from '../tooltip/tooltip'
 import { resolveTarget, selectorOf, type Violation } from './a11y-scan'
 import { accessibilityCheckerStyles } from './accessibility-checker.css'
-import { Badge, type BadgeTone } from './badge'
-import { Icon } from './icon/icon'
-import { IconButton } from './icon-button'
-import { Scrollable } from './scrollable'
 
 interface AccessibilityCheckerProps {
   targetRef: React.RefObject<HTMLDivElement | null>
@@ -66,17 +67,22 @@ function RuleGroup({ rule, targetRef, onPin, onHover, pinnedTarget }: RuleGroupP
                     <code>{node.target.join(' > ')}</code>
                   </span>
                   {target && onPin && (
-                    <IconButton
-                      icon="Crosshair"
-                      className={accessibilityCheckerStyles.locateButton}
-                      title={isPinned ? 'Clear highlight' : 'Highlight in the preview'}
-                      active={isPinned}
-                      onClick={() => onPin(isPinned ? null : target)}
-                      onPointerEnter={() => onHover?.(target)}
-                      onPointerLeave={() => onHover?.(null)}
-                      onFocus={() => onHover?.(target)}
-                      onBlur={() => onHover?.(null)}
-                    />
+                    <Tooltip
+                      label={isPinned ? 'Clear highlight' : 'Highlight in the preview'}
+                    >
+                      <IconButton
+                        icon="Crosshair"
+                        className={accessibilityCheckerStyles.locateButton}
+                        title={isPinned ? 'Clear highlight' : 'Highlight in the preview'}
+                        nativeTooltip={false}
+                        active={isPinned}
+                        onClick={() => onPin(isPinned ? null : target)}
+                        onPointerEnter={() => onHover?.(target)}
+                        onPointerLeave={() => onHover?.(null)}
+                        onFocus={() => onHover?.(target)}
+                        onBlur={() => onHover?.(null)}
+                      />
+                    </Tooltip>
                   )}
                 </div>
                 <div className={accessibilityCheckerStyles.nodeMessage}>
@@ -255,15 +261,15 @@ export function AccessibilityChecker({
             </span>
           )}
         </button>
-        <button
-          type="button"
-          className={accessibilityCheckerStyles.rescanButton}
-          onClick={() => void runAccessibilityCheck()}
-          disabled={isScanning}
-          title="Re-run accessibility check"
-        >
-          re-run check
-        </button>
+
+        <Tooltip label="Re-run accessibility check">
+          <IconButton
+            icon="ArrowsClockwise"
+            onClick={() => void runAccessibilityCheck()}
+            title="Re-run accessibility check"
+            nativeTooltip={false}
+          />
+        </Tooltip>
       </div>
 
       {/* Stays mounted while collapsed so the height has something to animate against.

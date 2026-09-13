@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { resolveTarget, selectorOf } from '../src/components/a11y-scan'
+import {
+  resolveTarget,
+  selectorOf,
+} from '../src/components/accessibility-checker/a11y-scan'
 
 describe('selectorOf', () => {
   it('flattens an iframe or shadow path into one stable key', () => {

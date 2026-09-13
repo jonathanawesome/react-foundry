@@ -32,6 +32,24 @@ export const Playground = createPreview({
   ),
 })
 
+export const Derived = createPreview({
+  controls: controlsFor(Button, {
+    children: {
+      type: 'range',
+      min: 1,
+      max: 5,
+      default: 2,
+      derive: (n) => 'Go!!! '.repeat(n).trim(),
+    },
+    variant: {
+      type: 'select',
+      options: ['primary', 'secondary', 'danger'],
+      default: 'primary',
+    },
+  }),
+  render: (v) => <Button variant={v.variant}>{v.children}</Button>,
+})
+
 // The same schema reused, showing controls are not one-per-preview. Derived through
 // controlsFor as well, so overriding a default does not quietly opt back out of the
 // checking that buttonControls above is getting.
@@ -64,18 +82,27 @@ export const Large = createPreview(() => <Button size="large">Large Button</Butt
 
 export const Disabled = createPreview(() => <Button disabled>Disabled Button</Button>)
 
-// A stateful preview is the same primitive as the ones above.
+// A stateful preview is the same primitive as the ones above: render is mounted as a
+// component, so the count lives right here, and a control edit re-renders it with the
+// new props rather than remounting it. Click a few times, then change the variant.
 export const Interactive = createPreview({
   controls: buttonControls,
   label: 'Interactive Example',
-  render: () => {
+  render: (v) => {
     const [count, setCount] = useState(0)
 
     return (
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
         <div>
           <p style={{ marginBottom: '8px' }}>Click count: {count}</p>
-          <Button onClick={() => setCount(count + 1)}>Increment Counter</Button>
+          <Button
+            variant={v.variant}
+            size={v.size}
+            disabled={v.disabled}
+            onClick={() => setCount(count + 1)}
+          >
+            {v.children}
+          </Button>
         </div>
       </div>
     )

@@ -1,11 +1,21 @@
-import type { ControlSchema } from '@react-foundry/core'
-import { screen } from '@testing-library/react'
+import type { ControlDocs, ControlSchema } from '@react-foundry/core'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { PropsPanel } from '../src/components/props-panel'
+import { PropsPanel } from '../src/components/props-panel/props-panel'
 import { useUIStore } from '../src/state'
 import { renderWithRouter } from './test-utils'
+
+// The dev server's HMR channel, which does not exist under vitest: capture the
+// subscription so a test can fire the event itself.
+const hotListeners = new Map<string, () => void>()
+vi.mock('../src/hot', () => ({
+  onHotEvent: (event: string, listener: () => void) => {
+    hotListeners.set(event, listener)
+    return () => hotListeners.delete(event)
+  },
+}))
 
 const controls: ControlSchema = {
   variant: { type: 'select', options: ['primary', 'danger'], default: 'primary' },
@@ -30,6 +40,17 @@ describe('PropsPanel', () => {
     await renderWithRouter(<PropsPanel />)
 
     expect(screen.getByText('This preview has no controls.')).toBeInTheDocument()
+  })
+
+  it('labels a control by its declared label, else its humanized name', async () => {
+    const labelled: ControlSchema = {
+      onSurface: { type: 'boolean' },
+      tone: { type: 'text', label: 'Colour tone' },
+    }
+    await renderWithRouter(<PropsPanel controls={labelled} />, '/Forms/Button')
+
+    expect(screen.getByLabelText('On Surface')).toBeInTheDocument()
+    expect(screen.getByLabelText('Colour tone')).toBeInTheDocument()
   })
 
   it('renders an input per control', async () => {
@@ -70,6 +91,21 @@ describe('PropsPanel', () => {
     await userEvent.selectOptions(screen.getByRole('combobox'), 'primary')
 
     expect(router.state.location.search).toEqual({})
+  })
+
+  // The value reaches the URL typed, so the router writes it bare. Stringified, it
+  // would be JSON-quoted to keep it a string, and the address bar would read
+  // `disabled=%22true%22`.
+  it('writes a boolean as itself, readable in the address bar', async () => {
+    const { router } = await renderWithRouter(
+      <PropsPanel controls={controls} />,
+      '/Forms/Button'
+    )
+
+    await userEvent.click(screen.getByRole('checkbox'))
+
+    expect(router.state.location.search).toEqual({ disabled: true })
+    expect(router.state.location.searchStr).toBe('?disabled=true')
   })
 })
 
@@ -130,5 +166,207 @@ describe('PropsPanel control groups', () => {
     await userEvent.selectOptions(screen.getByLabelText('Tone'), 'default')
 
     expect(router.state.location.search).toEqual({})
+  })
+})
+
+// A list's rows travel in the URL whole, as JSON, and come back parsed. The panel
+// draws them through ListField and writes an add or remove at once; a field edit
+// inside a row is debounced like the same control would be at the top level.
+describe('PropsPanel with a list', () => {
+  const listed: ControlSchema = {
+    sections: {
+      type: 'list',
+      of: { title: { type: 'text', default: 'Untitled' }, open: { type: 'boolean' } },
+      default: [{ title: 'One', open: false }],
+    },
+  }
+
+  const rows = (value: unknown) =>
+    `/Forms/Accordion?sections=${encodeURIComponent(JSON.stringify(value))}`
+
+  beforeEach(() => {
+    useUIStore.setState({ isPanelOpen: true })
+  })
+
+  it('draws the default rows when the URL carries none', async () => {
+    await renderWithRouter(<PropsPanel controls={listed} />, '/Forms/Accordion')
+
+    expect(screen.getByRole('group', { name: 'Row 1' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Title')).toHaveValue('One')
+  })
+
+  it('reads rows from the URL', async () => {
+    await renderWithRouter(
+      <PropsPanel controls={listed} />,
+      rows([
+        { title: 'A', open: true },
+        { title: 'B', open: false },
+      ])
+    )
+
+    const second = screen.getByRole('group', { name: 'Row 2' })
+    expect(
+      within(screen.getByRole('group', { name: 'Row 1' })).getByLabelText('Open')
+    ).toBeChecked()
+    expect(within(second).getByLabelText('Title')).toHaveValue('B')
+  })
+
+  it('writes an added row to the URL at once', async () => {
+    const { router } = await renderWithRouter(
+      <PropsPanel controls={listed} />,
+      '/Forms/Accordion'
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Add row' }))
+
+    expect(router.state.location.search).toEqual({
+      sections: [
+        { title: 'One', open: false },
+        { title: 'Untitled', open: false },
+      ],
+    })
+    expect(screen.getByRole('group', { name: 'Row 2' })).toBeInTheDocument()
+  })
+
+  it('writes a removal at once, and an empty list rather than the default', async () => {
+    const { router } = await renderWithRouter(
+      <PropsPanel controls={listed} />,
+      '/Forms/Accordion'
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Remove row 1' }))
+
+    expect(router.state.location.search).toEqual({ sections: [] })
+    expect(screen.queryByRole('group', { name: 'Row 1' })).not.toBeInTheDocument()
+  })
+
+  it('writes a discrete member edit at once', async () => {
+    const { router } = await renderWithRouter(
+      <PropsPanel controls={listed} />,
+      '/Forms/Accordion'
+    )
+
+    await userEvent.click(screen.getByLabelText('Open'))
+
+    expect(router.state.location.search).toEqual({
+      sections: [{ title: 'One', open: true }],
+    })
+  })
+
+  it('debounces a continuous member edit, then writes the whole list', async () => {
+    const { router } = await renderWithRouter(
+      <PropsPanel controls={listed} />,
+      '/Forms/Accordion'
+    )
+
+    await userEvent.type(screen.getByLabelText('Title'), '!')
+
+    expect(router.state.location.search).toEqual({})
+    await waitFor(() =>
+      expect(router.state.location.search).toEqual({
+        sections: [{ title: 'One!', open: false }],
+      })
+    )
+  })
+
+  it('drops the list from the URL when it returns to its default', async () => {
+    const { router } = await renderWithRouter(
+      <PropsPanel controls={listed} />,
+      rows([{ title: 'One', open: true }])
+    )
+
+    await userEvent.click(screen.getByLabelText('Open'))
+
+    expect(router.state.location.search).toEqual({})
+  })
+})
+
+// Every control carries an info mark. Its words come from the prop as declared,
+// once the dev server's docs arrive, and from the control's own definition until
+// then and wherever there are none.
+describe('PropsPanel info marks', () => {
+  beforeEach(() => {
+    useUIStore.setState({ isPanelOpen: true })
+  })
+
+  const docs: ControlDocs = {
+    variant: {
+      name: 'variant',
+      type: "'primary' | 'danger'",
+      optional: true,
+      description: 'Look.',
+    },
+  }
+
+  it('describes each control from its docs once they load', async () => {
+    await renderWithRouter(
+      <PropsPanel controls={controls} docs={async () => docs} />,
+      '/Forms/Button'
+    )
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: "variant?: 'primary' | 'danger'. Look." })
+      ).toBeInTheDocument()
+    )
+    // No doc for `disabled`, so its control definition stands in.
+    expect(
+      screen.getByRole('button', { name: 'disabled: boolean = false' })
+    ).toBeInTheDocument()
+  })
+
+  // A component edit hot-patches the canvas without a reload; the dev server says
+  // so, and the marks pick up the prop as it now reads.
+  it('fetches the docs again when the dev server reports a source edit', async () => {
+    let current: ControlDocs = docs
+    await renderWithRouter(
+      <PropsPanel controls={controls} docs={async () => current} />,
+      '/Forms/Button'
+    )
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: "variant?: 'primary' | 'danger'. Look." })
+      ).toBeInTheDocument()
+    )
+
+    current = {
+      variant: {
+        name: 'variant',
+        type: "'primary' | 'danger' | 'ghost'",
+        optional: true,
+      },
+    }
+    await act(async () => {
+      hotListeners.get('react-foundry:docs-changed')?.()
+    })
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: "variant?: 'primary' | 'danger' | 'ghost'" })
+      ).toBeInTheDocument()
+    )
+  })
+
+  it('describes each control from its definition when there are no docs', async () => {
+    await renderWithRouter(<PropsPanel controls={controls} />, '/Forms/Button')
+
+    expect(
+      screen.getByRole('button', {
+        name: 'variant: select "primary" | "danger" = "primary"',
+      })
+    ).toBeInTheDocument()
+  })
+
+  it('marks a group and a list by their prop too', async () => {
+    const schema: ControlSchema = {
+      variants: { tone: { type: 'text' } },
+      tags: { type: 'list', of: { type: 'text' } },
+    }
+    await renderWithRouter(<PropsPanel controls={schema} />, '/Forms/StatCard')
+
+    expect(
+      screen.getByRole('button', { name: 'variants: { tone: text }' })
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'tags: list of text' })).toBeInTheDocument()
   })
 })

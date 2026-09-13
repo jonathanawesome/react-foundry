@@ -14,6 +14,13 @@ export const controlFieldStyles = {
     color: themeContract.colors.textBody,
   }),
 
+  // The label with the info mark beside it.
+  labelRow: style({
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: themeContract.px[2],
+  }),
+
   input: style({
     height: themeContract.px[32],
     padding: `0 ${themeContract.px[8]}`,

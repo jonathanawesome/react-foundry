@@ -1,9 +1,10 @@
-import type { ElementType, ReactNode } from 'react'
+import { createElement, type ElementType, type ReactNode } from 'react'
 
 import {
   type ControllableProps,
   type ControlSchema,
   type ControlValues,
+  type DeriveNarrowing,
   type NoExtraControls,
   PREVIEW,
   type Preview,
@@ -25,6 +26,9 @@ import {
  * })
  * type ButtonValues = ControlValues<typeof buttonControls>
  * ```
+ *
+ * A `derive` on a select or radio here receives `string`, not the union of its
+ * options; only {@link controlsFor} narrows it. See {@link DeriveNarrowing}.
  */
 export function defineControls<const S extends ControlSchema>(controls: S): S {
   return controls
@@ -46,24 +50,38 @@ export function defineControls<const S extends ControlSchema>(controls: S): S {
  * })
  * ```
  *
- * Props no control can drive are absent from the schema entirely, so a component
- * that cannot meaningfully have a props playground says so at the first control
- * you write.
+ * A prop no input can express takes a scalar control with a `derive`, which maps
+ * the control's value to the prop's type and is checked against it. The key must
+ * still be a prop; only the input is freed, and only through that mapping:
+ *
+ * ```ts
+ * const selectControls = controlsFor(Select, {
+ *   options: { type: 'range', min: 1, max: 10, default: 4, derive: (n) => CLIENTS.slice(0, n) },
+ *   icon: { type: 'select', options: ['globe', 'gauge'], default: 'globe', derive: (name) => ICONS[name] },
+ * })
+ * ```
  *
  * Prefer this whenever a preview exercises one component's API. Reach for
  * {@link defineControls} when a preview is deliberately mocking a page
  * composition and its controls drive JSX the preview assembles itself, which is a
- * legitimate thing to do and a different thing to be doing.
+ * legitimate thing to do and a different thing to be doing. `derive` does not
+ * change that line: it produces one prop's value from one input, and cannot see
+ * any other control.
  *
  * Take the schema inline. Hoisting it to a plain `const` first widens `type:
  * 'select'` to `string` before it ever arrives, and the resulting error names the
  * widening rather than the cause. Hoist the result instead:
  * `const cardControls = controlsFor(Card, { … })`.
+ *
+ * `O`, `G` and `R` are inferred, never written. See {@link DeriveNarrowing}.
  */
-export function controlsFor<C extends ElementType, const S extends ControllableProps<C>>(
-  component: C,
-  controls: S & NoExtraControls<C, S>
-): S {
+export function controlsFor<
+  C extends ElementType,
+  const S extends ControllableProps<C>,
+  O,
+  G,
+  R,
+>(component: C, controls: S & NoExtraControls<C, S> & DeriveNarrowing<O, G, R>): S {
   // Unused at runtime and load-bearing for inference: `C` comes from here, and it
   // is what every check on `controls` is made against. `noUnusedParameters` flags
   // it otherwise, and `_component` would read badly in hover.
@@ -88,6 +106,25 @@ export function controlsFor<C extends ElementType, const S extends ControllableP
  * })
  * ```
  *
+ * `render` is mounted as a React component with the control values as its props,
+ * not called as a function, so it can hold state and read context directly:
+ *
+ * ```tsx
+ * export const Controlled = createPreview({
+ *   controls: controlsFor(Select, { width: { type: 'radio', options: ['auto', 'full'] } }),
+ *   render: (v) => {
+ *     const [value, setValue] = useState('a')
+ *     return <Select value={value} onValueChange={setValue} width={v.width} />
+ *   },
+ * })
+ * ```
+ *
+ * That makes `render`'s identity what React keys its state on. It is stable when
+ * written as a literal inside a module-level `createPreview` call, which is the
+ * documented usage. Do not build previews inside a factory that runs during
+ * render and recreates `render` each time: React would see a new component type
+ * on every pass and remount it, losing the state inside.
+ *
  * Exports that are not wrapped are ignored, so a `.preview.tsx` file can also
  * export helpers and fixtures without them showing up in the nav.
  */
@@ -111,11 +148,20 @@ export function createPreview(
   const isBare = typeof input === 'function'
   const render = isBare ? input : input.render
 
-  // A React component taking the control values as one private prop, so control
-  // names can't collide with children/key/ref. Wrap rather than tag `render`
-  // so we never mutate a caller-owned function; module-scope identity stays
-  // stable for React. No hook or context here: tests call `preview()` directly,
-  // which would throw if the wrapper read one.
+  // A React component taking the control values as one private prop, so the host
+  // can pass them without the wrapper's own props bag colliding with children/key/
+  // ref. It mounts `render` as an element rather than calling it, which gives
+  // `render` its own fiber: hooks inside it belong to it, and the control values
+  // reach it as ordinary props. `render` is captured once here, so its identity is
+  // stable across re-renders and React keeps that fiber's state.
+  //
+  // Wrap rather than tag `render` so we never mutate a caller-owned function. No
+  // hook or context in the wrapper itself: tests call `preview()` directly, which
+  // would throw if the wrapper read one.
+  //
+  // The values become `render`'s props verbatim, so a control named `key` is taken
+  // by React and never reaches `render`. `controlsFor` cannot produce one, since
+  // `key` and `ref` are stripped from the props it checks against.
   //
   // Named, and named with a capital, because React Fast Refresh decides what is a
   // component by `fn.name` for plain functions. An anonymous arrow assigned to
@@ -125,12 +171,19 @@ export function createPreview(
   // also gates the runtime registration that covers previews written in the options
   // form, which the static transform does not detect on its own.
   const preview = function Preview(props) {
-    return render(props?.controlValues)
+    return createElement(render, props?.controlValues)
   } as Preview
 
   preview[PREVIEW] = true
   preview.label = isBare ? undefined : input.label
   preview.controls = isBare ? undefined : input.controls
+
+  // Exposed for the dev server. The refresh transform registers a function passed
+  // straight to `createPreview`, but not one sitting in an options object, so
+  // foundry's Vite plugin registers `render` itself, by export name, and it needs
+  // a handle on it to do so. Without that, a hot patch to an options-form preview
+  // gives React a new component type for `render` and remounts it, state and all.
+  preview.render = render
 
   return preview
 }

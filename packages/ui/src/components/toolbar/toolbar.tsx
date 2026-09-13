@@ -1,12 +1,13 @@
 import { chromeSurfaceProps, useTheme } from '@react-foundry/style'
 
-import { useUIStore } from '../state'
-import { IconButton, type IconButtonProps } from './icon-button'
+import { useUIStore } from '../../state'
+import { IconButton, type IconButtonProps } from '../icon-button/icon-button'
+import { Tooltip } from '../tooltip/tooltip'
 import { toolbarStyles } from './toolbar.css'
 import { TOOLBAR_SHORTCUTS, useToolbarShortcuts } from './toolbar-shortcuts'
-import { Tooltip } from './tooltip'
 
-interface ToolbarButtonProps extends Omit<IconButtonProps, 'nativeTooltip'> {
+interface ToolbarButtonProps
+  extends Pick<IconButtonProps, 'icon' | 'onClick' | 'title' | 'active'> {
   shortcut: string
 }
 
@@ -17,9 +18,21 @@ interface ToolbarButtonProps extends Omit<IconButtonProps, 'nativeTooltip'> {
  * button while naming another. The native tooltip is off because this one
  * replaces it; left on, both would stack up on hover.
  */
-const ToolbarButton = ({ shortcut, title, ...props }: ToolbarButtonProps) => (
+const ToolbarButton = ({
+  icon,
+  onClick,
+  title,
+  active,
+  shortcut,
+}: ToolbarButtonProps) => (
   <Tooltip label={title} shortcut={shortcut}>
-    <IconButton {...props} title={title} nativeTooltip={false} />
+    <IconButton
+      icon={icon}
+      onClick={onClick}
+      title={title}
+      active={active}
+      nativeTooltip={false}
+    />
   </Tooltip>
 )
 

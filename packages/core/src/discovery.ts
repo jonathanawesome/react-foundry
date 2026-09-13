@@ -116,6 +116,7 @@ function sortTree(nodes: NavNode[]): NavNode[] {
  * already filtered out during the static parse.
  */
 function collectLeaves(navPath: string, file: PreviewFile): PreviewLeaf[] {
+  const { docs } = file
   return file.previews.map(({ exportName, label }) => ({
     // The export name, never the label: renaming a label must not break a link,
     // and export names are already identifier-safe.
@@ -123,6 +124,7 @@ function collectLeaves(navPath: string, file: PreviewFile): PreviewLeaf[] {
     label: label ?? deCamelCase(exportName),
     exportName,
     load: file.load,
+    ...(docs ? { docs: async () => (await docs())[exportName] } : {}),
   }))
 }
 

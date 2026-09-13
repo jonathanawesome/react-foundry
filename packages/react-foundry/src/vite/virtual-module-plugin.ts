@@ -1,11 +1,56 @@
 import { existsSync, readFileSync, watch } from 'node:fs'
+import type { IncomingMessage, ServerResponse } from 'node:http'
 import { resolve } from 'node:path'
 import { glob } from 'glob'
 import pc from 'picocolors'
 import type { Plugin, ViteDevServer } from 'vite'
 
+import { createPropDocsService, type PropDocsService } from './prop-docs'
+
 const VIRTUAL_MODULE_ID = 'virtual:react-foundry-previews'
 const RESOLVED_VIRTUAL_MODULE_ID = `\0${VIRTUAL_MODULE_ID}`
+
+/**
+ * One docs module per preview file, addressed by the file's path. Its own module
+ * rather than part of the previews module so reading prop types with the
+ * TypeScript checker happens when a preview is opened, never on the first load.
+ */
+const DOCS_MODULE_PREFIX = 'virtual:react-foundry-docs:'
+const RESOLVED_DOCS_MODULE_PREFIX = `\0${DOCS_MODULE_PREFIX}`
+
+/** The docs module id for a preview file. */
+export function docsModuleId(normalizedPath: string): string {
+  return `${DOCS_MODULE_PREFIX}${encodeURIComponent(normalizedPath)}`
+}
+
+/** The preview file a resolved docs module id addresses, or null for any other id. */
+function docsModuleFile(id: string): string | null {
+  return id.startsWith(RESOLVED_DOCS_MODULE_PREFIX)
+    ? decodeURIComponent(id.slice(RESOLVED_DOCS_MODULE_PREFIX.length))
+    : null
+}
+
+/**
+ * Where the dev server serves a file's docs over HTTP. A request, not a module,
+ * because the browser caches a module by its URL: once a preview's docs module
+ * has been imported, importing it again after a component edit would hand back
+ * the stale copy. A fetch reads fresh every time, which is what lets the panel
+ * refresh in place. The static build has nothing to refresh and keeps the module.
+ */
+export const DOCS_ENDPOINT = '/@react-foundry-docs'
+
+/** The event the dev server sends when a source file other than a preview changes. */
+export const DOCS_CHANGED_EVENT = 'react-foundry:docs-changed'
+
+/** The URL the previews module fetches a file's docs from, under the app's base. */
+export function docsUrl(base: string, normalizedPath: string): string {
+  return `${base.replace(/\/$/, '')}${DOCS_ENDPOINT}?file=${encodeURIComponent(normalizedPath)}`
+}
+
+/** True for a source file whose edit could change a component's props. */
+export function isSourceFile(file: string): boolean {
+  return /\.[cm]?[jt]sx?$/.test(file) && !file.endsWith('.preview.tsx')
+}
 
 /** Matches `export const nav = '...'`, with or without a type annotation. */
 const NAV_PATTERN = /^export\s+const\s+nav\s*(?::[^=]+)?=\s*['"]([^'"]*)['"]/m
@@ -408,13 +453,49 @@ export function applyPreviewChange(
   // The generated module names each file's previews and nav path, so it has to be
   // rebuilt before the reload reads it. The edited file goes too: its own transform
   // would otherwise still be the one Vite serves for the entry the module points at.
-  const dropped = invalidateFile(server, file) + invalidateVirtualModule(server)
+  const dropped =
+    invalidateFile(server, file) +
+    invalidateVirtualModule(server) +
+    invalidateDocsModule(server, normalizedPath)
 
   // The tree is memoized per module instance, so a hot update alone would leave the
   // shelf showing the previous structure.
   server.ws.send({ type: 'full-reload' })
 
   return { change, reloaded: true, dropped }
+}
+
+/**
+ * Appends a React Fast Refresh registration for each preview's `render` to a
+ * transformed preview module.
+ *
+ * The refresh transform registers a function passed straight to a call on a
+ * capitalized export, so a bare-form preview's render already has a refresh
+ * family and keeps its state across a patch. One written in the options form
+ * only gets a hook signature: on a patch React sees a new component type for it
+ * and remounts it, state and all. This registers it under the export's name, the
+ * same id on every evaluation, so the runtime treats the new function as an
+ * update of the old one.
+ *
+ * `$RefreshReg$` is declared by the wrapper that `@vitejs/plugin-react` applies
+ * after this runs, gated on the code containing a call to it, so these lines
+ * also give a file whose previews are all options-form the refresh boundary it
+ * otherwise never gets. The `typeof` guard covers `server.hmr: false`, where the
+ * wrapper is skipped and the name is undeclared. Appended after the transform's
+ * own registrations, so for a bare-form preview the first registration, the
+ * transform's, keeps its id and this one is a no-op on the same function.
+ */
+export function appendRenderRegistrations(
+  code: string,
+  previews: ParsedPreview[]
+): string {
+  if (previews.length === 0) return code
+
+  const lines = previews.map(
+    ({ exportName }) =>
+      `if (typeof $RefreshReg$ === 'function') $RefreshReg$(${exportName}.render, ${JSON.stringify(`${exportName}$render`)});`
+  )
+  return `${code}\n${lines.join('\n')}\n`
 }
 
 export function createVirtualModulePlugin(
@@ -427,15 +508,73 @@ export function createVirtualModulePlugin(
   // What each file looked like at the last load, so a change can be described.
   const fileMeta = new Map<string, PreviewMeta>()
 
+  // Whether Fast Refresh is on at all. Mirrors the condition `@vitejs/plugin-react`
+  // skips its wrapper on, so a registration is never appended where nothing would
+  // declare `$RefreshReg$` or act on the call.
+  let refresh = false
+
+  // Built on first use, since it loads the consumer's TypeScript and a project
+  // without one has no docs to read. Fed the files the last load found, so the
+  // program covers every preview and reuses what it has checked between requests.
+  let propDocs: PropDocsService | null | undefined
+  const docsService = () => {
+    if (propDocs === undefined) {
+      propDocs = createPropDocsService(userRoot, () => [...fileMeta.keys()])
+    }
+    return propDocs
+  }
+
+  // How a file's docs reach the browser: fetched from the dev server, or imported
+  // as a module from the static build. Set once the config is resolved.
+  let docsSource: DocsSource = { kind: 'import' }
+
   return {
     name: 'react-foundry:virtual-previews',
     resolveId(id) {
       if (id === VIRTUAL_MODULE_ID) {
         return RESOLVED_VIRTUAL_MODULE_ID
       }
+      if (id.startsWith(DOCS_MODULE_PREFIX)) {
+        return `\0${id}`
+      }
+    },
+
+    configResolved(config) {
+      refresh = config.command === 'serve' && config.server.hmr !== false
+      docsSource =
+        config.command === 'serve'
+          ? { kind: 'fetch', base: config.base ?? '/' }
+          : { kind: 'import' }
+    },
+
+    // A component edit hot-patches the canvas without touching any preview file,
+    // so nothing here reloads. The docs the panel shows may have changed, though,
+    // and the service will read the new file on its next request, so tell the
+    // panel to ask again. Preview files reload on their own path.
+    hotUpdate({ file, server }) {
+      if (!isSourceFile(file)) return
+      server.ws.send({ type: 'custom', event: DOCS_CHANGED_EVENT, data: { file } })
+    },
+
+    // Runs after Vite's own transform and before the react plugin's refresh
+    // wrapper: this plugin sits ahead of `react()` in the plugin list and both
+    // hooks are normal order. Only files the virtual module has already parsed are
+    // touched, which is every preview file, since the route loader reaches them
+    // through that module. Append-only, so no source map is needed to keep the
+    // existing positions right.
+    transform(code, id) {
+      if (!refresh) return
+
+      const file = id.split('?')[0].split('\\').join('/')
+      const meta = fileMeta.get(file)
+      if (!meta || meta.previews.length === 0) return
+
+      return { code: appendRenderRegistrations(code, meta.previews), map: null }
     },
 
     configureServer(server) {
+      server.middlewares.use(docsMiddleware(docsService))
+
       const watchDir = globBaseDir(searchPattern)
       if (!existsSync(watchDir)) return
 
@@ -473,6 +612,12 @@ export function createVirtualModulePlugin(
     },
 
     async load(id) {
+      const docsFile = docsModuleFile(id)
+      if (docsFile !== null) {
+        const docs = docsService()?.docsFor(docsFile) ?? {}
+        return `export default ${JSON.stringify(docs)};\n`
+      }
+
       if (id !== RESOLVED_VIRTUAL_MODULE_ID) return
 
       const files = await glob(searchPattern, { absolute: true })
@@ -518,7 +663,7 @@ export function createVirtualModulePlugin(
         return [{ normalizedPath, nav, previews }]
       })
 
-      return generateModuleSource(entries)
+      return generateModuleSource(entries, docsSource)
     },
   }
 }
@@ -527,6 +672,29 @@ export interface ModuleEntry {
   normalizedPath: string
   nav: string | null
   previews: ParsedPreview[]
+}
+
+/** How the generated module gets a file's docs. See {@link DOCS_ENDPOINT}. */
+export type DocsSource = { kind: 'import' } | { kind: 'fetch'; base: string }
+
+/**
+ * Answers the docs endpoint with a file's docs as JSON. Any other request passes
+ * through. `docsService` is called per request, so the service is built on the
+ * first request rather than at server start.
+ */
+export function docsMiddleware(
+  docsService: () => PropDocsService | null
+): (req: IncomingMessage, res: ServerResponse, next: () => void) => void {
+  return (req, res, next) => {
+    const url = req.url ?? ''
+    if (!url.includes(`${DOCS_ENDPOINT}?`)) return next()
+
+    const file = new URL(url, 'http://localhost').searchParams.get('file')
+    const docs = file ? (docsService()?.docsFor(file) ?? {}) : {}
+
+    res.setHeader('Content-Type', 'application/json')
+    res.end(JSON.stringify(docs))
+  }
 }
 
 /**
@@ -546,12 +714,19 @@ export interface ModuleEntry {
  * change detection on the server and would otherwise ship a copy of every control
  * schema to the browser for nothing.
  */
-export function generateModuleSource(entries: ModuleEntry[]): string {
+export function generateModuleSource(
+  entries: ModuleEntry[],
+  docsSource: DocsSource = { kind: 'import' }
+): string {
   const moduleObject = entries
     .map(({ normalizedPath, nav, previews }) => {
       const leaves = previews.map(({ exportName, label }) => ({ exportName, label }))
+      const docs =
+        docsSource.kind === 'fetch'
+          ? `fetch(${JSON.stringify(docsUrl(docsSource.base, normalizedPath))}).then((r) => r.json())`
+          : `import(${JSON.stringify(docsModuleId(normalizedPath))}).then((m) => m.default)`
 
-      return `  ${JSON.stringify(normalizedPath)}: { nav: ${JSON.stringify(nav)}, previews: ${JSON.stringify(leaves)}, load: () => import(${JSON.stringify(normalizedPath)}) },`
+      return `  ${JSON.stringify(normalizedPath)}: { nav: ${JSON.stringify(nav)}, previews: ${JSON.stringify(leaves)}, load: () => import(${JSON.stringify(normalizedPath)}), docs: () => ${docs} },`
     })
     .join('\n')
 
@@ -616,6 +791,26 @@ export function invalidateVirtualModule(server: ViteDevServer): number {
   const mod =
     server.moduleGraph.getModuleById(RESOLVED_VIRTUAL_MODULE_ID) ??
     server.moduleGraph.getModuleById(VIRTUAL_MODULE_ID)
+
+  if (!mod) return 0
+
+  const seen = new Set<string>()
+  invalidateWithImporters(server, mod as unknown as GraphModule, seen)
+
+  return seen.size
+}
+
+/**
+ * Drops a preview file's docs module, if it was ever loaded, so the next open
+ * reads the prop types again. Returns how many modules went, zero or one.
+ */
+export function invalidateDocsModule(
+  server: ViteDevServer,
+  normalizedPath: string
+): number {
+  const id = docsModuleId(normalizedPath)
+  const mod =
+    server.moduleGraph.getModuleById(`\0${id}`) ?? server.moduleGraph.getModuleById(id)
 
   if (!mod) return 0
 

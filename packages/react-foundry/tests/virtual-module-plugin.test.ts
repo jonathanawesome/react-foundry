@@ -1,16 +1,23 @@
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
-import type { ViteDevServer } from 'vite'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import type { ResolvedConfig, ViteDevServer } from 'vite'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  appendRenderRegistrations,
   applyPreviewChange,
   classifyChange,
+  createVirtualModulePlugin,
+  docsMiddleware,
+  docsModuleId,
+  docsUrl,
   generateModuleSource,
   globBaseDir,
+  invalidateDocsModule,
   invalidateFile,
   invalidateVirtualModule,
+  isSourceFile,
   isStructuralChange,
   type ModuleEntry,
   type ParsedPreview,
@@ -768,8 +775,32 @@ describe('generateModuleSource', () => {
     ])
 
     expect(source).toContain(
-      '"/p/a.preview.tsx": { nav: "Forms/Button", previews: [{"exportName":"Primary","label":"Primary"},{"exportName":"Danger","label":null}], load: () => import("/p/a.preview.tsx") }'
+      '"/p/a.preview.tsx": { nav: "Forms/Button", previews: [{"exportName":"Primary","label":"Primary"},{"exportName":"Danger","label":null}], load: () => import("/p/a.preview.tsx"), docs: () => import("virtual:react-foundry-docs:%2Fp%2Fa.preview.tsx").then((m) => m.default) }'
     )
+  })
+
+  // Its own dynamic import, so reading prop types with the checker is paid when a
+  // preview is opened and never on the first load of the shell.
+  it('points each file at its own lazily imported docs module', () => {
+    const source = generateModuleSource([entry('/p/a.preview.tsx', null, [])])
+
+    expect(source).toContain(
+      'docs: () => import("virtual:react-foundry-docs:%2Fp%2Fa.preview.tsx")'
+    )
+  })
+
+  // In dev the docs are fetched, not imported: a module is cached by the browser
+  // by URL, so a re-import after a component edit would be the stale copy.
+  it('fetches the docs from the dev server instead when serving', () => {
+    const source = generateModuleSource([entry('/p/a.preview.tsx', null, [])], {
+      kind: 'fetch',
+      base: '/app/',
+    })
+
+    expect(source).toContain(
+      'docs: () => fetch("/app/@react-foundry-docs?file=%2Fp%2Fa.preview.tsx").then((r) => r.json())'
+    )
+    expect(source).not.toContain('virtual:react-foundry-docs')
   })
 
   it('emits a missing nav as the literal null', () => {
@@ -844,5 +875,336 @@ describe('globBaseDir', () => {
 
   it('drops the filename when the pattern has no wildcard at all', () => {
     expect(globBaseDir('/proj/src/button.preview.tsx')).toBe('/proj/src')
+  })
+})
+
+// A bare-form render is registered by the refresh transform itself; an options-form
+// one is not, and without a family of its own a hot patch remounts it. These lines
+// give it one under the export's name.
+describe('appendRenderRegistrations', () => {
+  const code = 'export const Playground = createPreview({ render: () => null })'
+
+  it('appends one guarded registration per preview, after the code', () => {
+    const out = appendRenderRegistrations(
+      code,
+      parsed([{ exportName: 'Playground' }, { exportName: 'Sizes' }])
+    )
+
+    expect(out.startsWith(code)).toBe(true)
+    expect(out).toContain(
+      `if (typeof $RefreshReg$ === 'function') $RefreshReg$(Playground.render, "Playground$render");`
+    )
+    expect(out).toContain(
+      `if (typeof $RefreshReg$ === 'function') $RefreshReg$(Sizes.render, "Sizes$render");`
+    )
+  })
+
+  it('returns the code untouched for a file with no previews', () => {
+    expect(appendRenderRegistrations(code, [])).toBe(code)
+  })
+
+  // The refresh wrapper adds its header and footer only to code that calls
+  // `$RefreshReg$(`, which a file of options-form previews otherwise never does.
+  it('contains the call the refresh wrapper gates on', () => {
+    expect(appendRenderRegistrations(code, parsed([{ exportName: 'A' }]))).toMatch(
+      /\$RefreshReg\$\(/
+    )
+  })
+})
+
+describe('the transform hook', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'foundry-preview-refresh-'))
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+    vi.restoreAllMocks()
+  })
+
+  /** Unwraps a hook declared as a function or as `{ handler }`. */
+  function hook<T>(value: T | { handler: T } | undefined): T {
+    if (!value) throw new Error('hook not defined')
+    return typeof value === 'function' ? value : (value as { handler: T }).handler
+  }
+
+  async function setUp(config: { command: 'serve' | 'build'; hmr?: boolean }) {
+    const file = resolve(dir, 'a.preview.tsx')
+    writeFileSync(
+      file,
+      [
+        "export const nav = 'Forms'",
+        'export const Playground = createPreview({ render: () => null })',
+        'export const Primary = createPreview(() => null)',
+      ].join('\n'),
+      'utf-8'
+    )
+
+    const plugin = createVirtualModulePlugin('*.preview.tsx', dir)
+    hook(plugin.configResolved).call(
+      {} as never,
+      {
+        command: config.command,
+        server: { hmr: config.hmr ?? true },
+      } as unknown as ResolvedConfig
+    )
+    await hook(plugin.load).call({} as never, '\0virtual:react-foundry-previews')
+
+    const transform = (id: string) =>
+      hook(plugin.transform).call({} as never, 'const code = 1', id) as
+        | { code: string }
+        | undefined
+
+    return { file, transform }
+  }
+
+  it('appends a registration for every preview in a file the module has parsed', async () => {
+    const { file, transform } = await setUp({ command: 'serve' })
+
+    const out = transform(file)
+
+    expect(out?.code).toContain('$RefreshReg$(Playground.render, "Playground$render")')
+    expect(out?.code).toContain('$RefreshReg$(Primary.render, "Primary$render")')
+  })
+
+  it('matches the file through a query suffix', async () => {
+    const { file, transform } = await setUp({ command: 'serve' })
+
+    expect(transform(`${file}?t=1`)?.code).toContain('Playground$render')
+  })
+
+  it('leaves a file the module does not know alone', async () => {
+    const { transform } = await setUp({ command: 'serve' })
+
+    expect(transform(resolve(dir, 'button.tsx'))).toBeUndefined()
+  })
+
+  it('does nothing in a build', async () => {
+    const { file, transform } = await setUp({ command: 'build' })
+
+    expect(transform(file)).toBeUndefined()
+  })
+
+  // Nothing declares `$RefreshReg$` with HMR off; the guard in the appended line
+  // covers a stray call, but there is no reason to append one at all.
+  it('does nothing with HMR off', async () => {
+    const { file, transform } = await setUp({ command: 'serve', hmr: false })
+
+    expect(transform(file)).toBeUndefined()
+  })
+})
+
+// The docs module is generated on demand from the previews the module already
+// parsed, through the checker, and dropped with the file so a reload rereads it.
+describe('the docs module', () => {
+  let dir: string
+
+  beforeEach(() => {
+    dir = mkdtempSync(join(tmpdir(), 'foundry-docs-module-'))
+    vi.spyOn(console, 'log').mockImplementation(() => {})
+  })
+
+  afterEach(() => {
+    rmSync(dir, { recursive: true, force: true })
+    vi.restoreAllMocks()
+  })
+
+  function hook<T>(value: T | { handler: T } | undefined): T {
+    if (!value) throw new Error('hook not defined')
+    return typeof value === 'function' ? value : (value as { handler: T }).handler
+  }
+
+  it('resolves its id to a virtual one and loads the file docs as JSON', async () => {
+    writeFileSync(
+      resolve(dir, 'tsconfig.json'),
+      JSON.stringify({ compilerOptions: { strict: true, moduleResolution: 'bundler' } })
+    )
+    writeFileSync(
+      resolve(dir, 'button.tsx'),
+      'export const Button = (_props: { variant?: "a" | "b" }) => null\n'
+    )
+    const file = resolve(dir, 'a.preview.tsx')
+    writeFileSync(
+      file,
+      [
+        "import { controlsFor, createPreview } from 'react-foundry'",
+        "import { Button } from './button'",
+        'export const Playground = createPreview({ controls: controlsFor(Button, { variant: { type: "text" } }), render: () => null })',
+      ].join('\n'),
+      'utf-8'
+    )
+
+    const plugin = createVirtualModulePlugin('*.preview.tsx', dir)
+    await hook(plugin.load).call({} as never, '\0virtual:react-foundry-previews')
+
+    const id = docsModuleId(file)
+    const resolved = hook(plugin.resolveId).call({} as never, id, undefined, {} as never)
+    expect(resolved).toBe(`\0${id}`)
+
+    const source = await hook(plugin.load).call({} as never, `\0${id}`)
+    expect(source).toContain('export default ')
+    expect(
+      JSON.parse(
+        String(source)
+          .replace(/^export default /, '')
+          .replace(/;\s*$/, '')
+      )
+    ).toEqual({
+      Playground: { variant: { name: 'variant', type: '"a" | "b"', optional: true } },
+    })
+  })
+
+  it('drops the docs module for a file, and reports nothing for one never loaded', () => {
+    const invalidated: string[] = []
+    const id = `\0${docsModuleId('/p/a.preview.tsx')}`
+    const mod = { id, importers: new Set() }
+    const server = {
+      moduleGraph: {
+        getModuleById: (wanted: string) => (wanted === id ? mod : undefined),
+        getModulesByFile: () => undefined,
+        invalidateModule: (m: { id: string }) => invalidated.push(m.id),
+      },
+      ws: { send: () => {} },
+    } as unknown as ViteDevServer
+
+    expect(invalidateDocsModule(server, '/p/a.preview.tsx')).toBe(1)
+    expect(invalidated).toEqual([id])
+    expect(invalidateDocsModule(server, '/p/b.preview.tsx')).toBe(0)
+  })
+})
+
+describe('docsUrl', () => {
+  it('sits under the base without doubling the slash', () => {
+    expect(docsUrl('/', '/p/a.preview.tsx')).toBe(
+      '/@react-foundry-docs?file=%2Fp%2Fa.preview.tsx'
+    )
+    expect(docsUrl('/app/', '/p/a.preview.tsx')).toBe(
+      '/app/@react-foundry-docs?file=%2Fp%2Fa.preview.tsx'
+    )
+  })
+})
+
+describe('isSourceFile', () => {
+  it.each([
+    '/p/button.tsx',
+    '/p/button.ts',
+    '/p/util.js',
+    '/p/x.mts',
+  ])('is true for %s, whose edit may change a prop', (file) => {
+    expect(isSourceFile(file)).toBe(true)
+  })
+
+  // A preview file reloads on its own path, and a stylesheet declares no props.
+  it.each([
+    '/p/a.preview.tsx',
+    '/p/a.css.ts.map',
+    '/p/a.css',
+    '/p/a.md',
+  ])('is false for %s', (file) => {
+    expect(isSourceFile(file)).toBe(false)
+  })
+})
+
+describe('docsMiddleware', () => {
+  function request(url: string) {
+    const headers: Record<string, string> = {}
+    let body = ''
+    let passed = false
+    const req = { url } as never
+    const res = {
+      setHeader: (name: string, value: string) => {
+        headers[name] = value
+      },
+      end: (chunk: string) => {
+        body = chunk
+      },
+    } as never
+    const next = () => {
+      passed = true
+    }
+    return {
+      req,
+      res,
+      next,
+      headers: () => headers,
+      body: () => body,
+      passed: () => passed,
+    }
+  }
+
+  it('answers a docs request with the file docs as JSON', () => {
+    const service = { docsFor: (file: string) => ({ [file]: {} }) }
+    const middleware = docsMiddleware(() => service)
+    const r = request('/@react-foundry-docs?file=%2Fp%2Fa.preview.tsx')
+
+    middleware(r.req, r.res, r.next)
+
+    expect(r.passed()).toBe(false)
+    expect(r.headers()['Content-Type']).toBe('application/json')
+    expect(JSON.parse(r.body())).toEqual({ '/p/a.preview.tsx': {} })
+  })
+
+  it('answers with nothing when the project has no TypeScript', () => {
+    const middleware = docsMiddleware(() => null)
+    const r = request('/@react-foundry-docs?file=%2Fp%2Fa.preview.tsx')
+
+    middleware(r.req, r.res, r.next)
+
+    expect(JSON.parse(r.body())).toEqual({})
+  })
+
+  it('passes every other request through', () => {
+    const middleware = docsMiddleware(() => null)
+    const r = request('/src/main.tsx')
+
+    middleware(r.req, r.res, r.next)
+
+    expect(r.passed()).toBe(true)
+    expect(r.body()).toBe('')
+  })
+})
+
+describe('the hot update hook', () => {
+  function hook<T>(value: T | { handler: T } | undefined): T {
+    if (!value) throw new Error('hook not defined')
+    return typeof value === 'function' ? value : (value as { handler: T }).handler
+  }
+
+  function serverSpy() {
+    const sent: unknown[] = []
+    return {
+      server: { ws: { send: (payload: unknown) => sent.push(payload) } } as never,
+      sent,
+    }
+  }
+
+  it('tells the browser the docs may have changed when a source file changes', () => {
+    const plugin = createVirtualModulePlugin('*.preview.tsx', '/p')
+    const { server, sent } = serverSpy()
+
+    hook(plugin.hotUpdate).call({} as never, { file: '/p/button.tsx', server } as never)
+
+    expect(sent).toEqual([
+      {
+        type: 'custom',
+        event: 'react-foundry:docs-changed',
+        data: { file: '/p/button.tsx' },
+      },
+    ])
+  })
+
+  it('stays quiet for a preview file, which reloads on its own path', () => {
+    const plugin = createVirtualModulePlugin('*.preview.tsx', '/p')
+    const { server, sent } = serverSpy()
+
+    hook(plugin.hotUpdate).call(
+      {} as never,
+      { file: '/p/a.preview.tsx', server } as never
+    )
+
+    expect(sent).toEqual([])
   })
 })

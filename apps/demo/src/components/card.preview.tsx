@@ -7,7 +7,7 @@ export const nav: NavPath = 'Demo/Surfaces/Card'
 // Every control here is one of Card's three props, and controlsFor is what says so:
 // CardProps is hand-written and narrow, so the schema below is the whole component.
 // `children` is a ReactNode, which takes a text control because a string is a valid
-// ReactNode — as far as a props panel can go, since it cannot author JSX.
+// ReactNode. That is as far as an input can go; a derive goes further, see Derived.
 export const Playground = createPreview({
   controls: controlsFor(Card, {
     children: { type: 'text', default: 'This is a card' },
@@ -19,6 +19,31 @@ export const Playground = createPreview({
       {v.children}
     </Card>
   ),
+})
+
+// A panel cannot author JSX, but a derive can: the range hands its number to a
+// function that builds the paragraphs, and `v.children` arrives as the nodes. The
+// key is still checked against Card, only the input type is freed, and the return
+// type is checked against the prop, so a derive returning something that is not a
+// ReactNode would not compile.
+export const Derived = createPreview({
+  label: 'Derived Children',
+  controls: controlsFor(Card, {
+    children: {
+      type: 'range',
+      min: 1,
+      max: 5,
+      default: 2,
+      derive: (n) =>
+        Array.from({ length: n }, (_, i) => (
+          <p key={i} style={{ margin: i === 0 ? 0 : '8px 0 0' }}>
+            Paragraph {i + 1} of {n}
+          </p>
+        )),
+    },
+    elevated: { type: 'boolean', default: false },
+  }),
+  render: (v) => <Card elevated={v.elevated}>{v.children}</Card>,
 })
 
 export const Default = createPreview(() => (
