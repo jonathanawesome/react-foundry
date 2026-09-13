@@ -11,6 +11,7 @@ import { chromeSurfaceProps } from '@react-foundry/style'
 import { useNavigate, useParams, useSearch } from '@tanstack/react-router'
 import { useEffect, useRef, useState } from 'react'
 
+import { onHotEvent } from '../../hot'
 import { useUIStore } from '../../state'
 import { CollapsibleSection } from '../collapsible-section/collapsible-section'
 import { ControlField, labelFor } from '../control-field/control-field'
@@ -80,10 +81,15 @@ interface PanelControlsProps {
   splat: string
 }
 
+/** The event the dev server sends when a source file other than a preview changes. */
+const DOCS_CHANGED_EVENT = 'react-foundry:docs-changed'
+
 /**
- * The docs for the active preview, fetched once it is on screen. Undefined until
- * they arrive and where there are none, and the info marks show the control's
- * own definition in the meantime, so nothing waits on the checker.
+ * The docs for the active preview, fetched once it is on screen and again
+ * whenever the dev server reports a source edit, since that may have been to
+ * the component's props. Undefined until they arrive and where there are none,
+ * and the info marks show the control's own definition in the meantime, so
+ * nothing waits on the checker.
  */
 function useControlDocs(load: DocsLoader | undefined): ControlDocs | undefined {
   const [docs, setDocs] = useState<ControlDocs>()
@@ -91,13 +97,19 @@ function useControlDocs(load: DocsLoader | undefined): ControlDocs | undefined {
   useEffect(() => {
     if (!load) return
     let current = true
-    load()
-      .then((loaded) => {
-        if (current) setDocs(loaded)
-      })
-      .catch(() => {})
+    const fetchDocs = () => {
+      load()
+        .then((loaded) => {
+          if (current) setDocs(loaded)
+        })
+        .catch(() => {})
+    }
+
+    fetchDocs()
+    const unsubscribe = onHotEvent(DOCS_CHANGED_EVENT, fetchDocs)
     return () => {
       current = false
+      unsubscribe()
     }
   }, [load])
 

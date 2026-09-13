@@ -67,17 +67,22 @@ function RuleGroup({ rule, targetRef, onPin, onHover, pinnedTarget }: RuleGroupP
                     <code>{node.target.join(' > ')}</code>
                   </span>
                   {target && onPin && (
-                    <IconButton
-                      icon="Crosshair"
-                      className={accessibilityCheckerStyles.locateButton}
-                      title={isPinned ? 'Clear highlight' : 'Highlight in the preview'}
-                      active={isPinned}
-                      onClick={() => onPin(isPinned ? null : target)}
-                      onPointerEnter={() => onHover?.(target)}
-                      onPointerLeave={() => onHover?.(null)}
-                      onFocus={() => onHover?.(target)}
-                      onBlur={() => onHover?.(null)}
-                    />
+                    <Tooltip
+                      label={isPinned ? 'Clear highlight' : 'Highlight in the preview'}
+                    >
+                      <IconButton
+                        icon="Crosshair"
+                        className={accessibilityCheckerStyles.locateButton}
+                        title={isPinned ? 'Clear highlight' : 'Highlight in the preview'}
+                        nativeTooltip={false}
+                        active={isPinned}
+                        onClick={() => onPin(isPinned ? null : target)}
+                        onPointerEnter={() => onHover?.(target)}
+                        onPointerLeave={() => onHover?.(null)}
+                        onFocus={() => onHover?.(target)}
+                        onBlur={() => onHover?.(null)}
+                      />
+                    </Tooltip>
                   )}
                 </div>
                 <div className={accessibilityCheckerStyles.nodeMessage}>

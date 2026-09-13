@@ -9,12 +9,15 @@ import {
   applyPreviewChange,
   classifyChange,
   createVirtualModulePlugin,
+  docsMiddleware,
   docsModuleId,
+  docsUrl,
   generateModuleSource,
   globBaseDir,
   invalidateDocsModule,
   invalidateFile,
   invalidateVirtualModule,
+  isSourceFile,
   isStructuralChange,
   type ModuleEntry,
   type ParsedPreview,
@@ -786,6 +789,20 @@ describe('generateModuleSource', () => {
     )
   })
 
+  // In dev the docs are fetched, not imported: a module is cached by the browser
+  // by URL, so a re-import after a component edit would be the stale copy.
+  it('fetches the docs from the dev server instead when serving', () => {
+    const source = generateModuleSource([entry('/p/a.preview.tsx', null, [])], {
+      kind: 'fetch',
+      base: '/app/',
+    })
+
+    expect(source).toContain(
+      'docs: () => fetch("/app/@react-foundry-docs?file=%2Fp%2Fa.preview.tsx").then((r) => r.json())'
+    )
+    expect(source).not.toContain('virtual:react-foundry-docs')
+  })
+
   it('emits a missing nav as the literal null', () => {
     const source = generateModuleSource([entry('/p/a.preview.tsx', null, [])])
 
@@ -1056,5 +1073,138 @@ describe('the docs module', () => {
     expect(invalidateDocsModule(server, '/p/a.preview.tsx')).toBe(1)
     expect(invalidated).toEqual([id])
     expect(invalidateDocsModule(server, '/p/b.preview.tsx')).toBe(0)
+  })
+})
+
+describe('docsUrl', () => {
+  it('sits under the base without doubling the slash', () => {
+    expect(docsUrl('/', '/p/a.preview.tsx')).toBe(
+      '/@react-foundry-docs?file=%2Fp%2Fa.preview.tsx'
+    )
+    expect(docsUrl('/app/', '/p/a.preview.tsx')).toBe(
+      '/app/@react-foundry-docs?file=%2Fp%2Fa.preview.tsx'
+    )
+  })
+})
+
+describe('isSourceFile', () => {
+  it.each([
+    '/p/button.tsx',
+    '/p/button.ts',
+    '/p/util.js',
+    '/p/x.mts',
+  ])('is true for %s, whose edit may change a prop', (file) => {
+    expect(isSourceFile(file)).toBe(true)
+  })
+
+  // A preview file reloads on its own path, and a stylesheet declares no props.
+  it.each([
+    '/p/a.preview.tsx',
+    '/p/a.css.ts.map',
+    '/p/a.css',
+    '/p/a.md',
+  ])('is false for %s', (file) => {
+    expect(isSourceFile(file)).toBe(false)
+  })
+})
+
+describe('docsMiddleware', () => {
+  function request(url: string) {
+    const headers: Record<string, string> = {}
+    let body = ''
+    let passed = false
+    const req = { url } as never
+    const res = {
+      setHeader: (name: string, value: string) => {
+        headers[name] = value
+      },
+      end: (chunk: string) => {
+        body = chunk
+      },
+    } as never
+    const next = () => {
+      passed = true
+    }
+    return {
+      req,
+      res,
+      next,
+      headers: () => headers,
+      body: () => body,
+      passed: () => passed,
+    }
+  }
+
+  it('answers a docs request with the file docs as JSON', () => {
+    const service = { docsFor: (file: string) => ({ [file]: {} }) }
+    const middleware = docsMiddleware(() => service)
+    const r = request('/@react-foundry-docs?file=%2Fp%2Fa.preview.tsx')
+
+    middleware(r.req, r.res, r.next)
+
+    expect(r.passed()).toBe(false)
+    expect(r.headers()['Content-Type']).toBe('application/json')
+    expect(JSON.parse(r.body())).toEqual({ '/p/a.preview.tsx': {} })
+  })
+
+  it('answers with nothing when the project has no TypeScript', () => {
+    const middleware = docsMiddleware(() => null)
+    const r = request('/@react-foundry-docs?file=%2Fp%2Fa.preview.tsx')
+
+    middleware(r.req, r.res, r.next)
+
+    expect(JSON.parse(r.body())).toEqual({})
+  })
+
+  it('passes every other request through', () => {
+    const middleware = docsMiddleware(() => null)
+    const r = request('/src/main.tsx')
+
+    middleware(r.req, r.res, r.next)
+
+    expect(r.passed()).toBe(true)
+    expect(r.body()).toBe('')
+  })
+})
+
+describe('the hot update hook', () => {
+  function hook<T>(value: T | { handler: T } | undefined): T {
+    if (!value) throw new Error('hook not defined')
+    return typeof value === 'function' ? value : (value as { handler: T }).handler
+  }
+
+  function serverSpy() {
+    const sent: unknown[] = []
+    return {
+      server: { ws: { send: (payload: unknown) => sent.push(payload) } } as never,
+      sent,
+    }
+  }
+
+  it('tells the browser the docs may have changed when a source file changes', () => {
+    const plugin = createVirtualModulePlugin('*.preview.tsx', '/p')
+    const { server, sent } = serverSpy()
+
+    hook(plugin.hotUpdate).call({} as never, { file: '/p/button.tsx', server } as never)
+
+    expect(sent).toEqual([
+      {
+        type: 'custom',
+        event: 'react-foundry:docs-changed',
+        data: { file: '/p/button.tsx' },
+      },
+    ])
+  })
+
+  it('stays quiet for a preview file, which reloads on its own path', () => {
+    const plugin = createVirtualModulePlugin('*.preview.tsx', '/p')
+    const { server, sent } = serverSpy()
+
+    hook(plugin.hotUpdate).call(
+      {} as never,
+      { file: '/p/a.preview.tsx', server } as never
+    )
+
+    expect(sent).toEqual([])
   })
 })

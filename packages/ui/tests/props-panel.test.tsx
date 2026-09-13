@@ -1,11 +1,21 @@
 import type { ControlDocs, ControlSchema } from '@react-foundry/core'
-import { screen, waitFor, within } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PropsPanel } from '../src/components/props-panel/props-panel'
 import { useUIStore } from '../src/state'
 import { renderWithRouter } from './test-utils'
+
+// The dev server's HMR channel, which does not exist under vitest: capture the
+// subscription so a test can fire the event itself.
+const hotListeners = new Map<string, () => void>()
+vi.mock('../src/hot', () => ({
+  onHotEvent: (event: string, listener: () => void) => {
+    hotListeners.set(event, listener)
+    return () => hotListeners.delete(event)
+  },
+}))
 
 const controls: ControlSchema = {
   variant: { type: 'select', options: ['primary', 'danger'], default: 'primary' },
@@ -303,6 +313,38 @@ describe('PropsPanel info marks', () => {
     expect(
       screen.getByRole('button', { name: 'disabled: boolean = false' })
     ).toBeInTheDocument()
+  })
+
+  // A component edit hot-patches the canvas without a reload; the dev server says
+  // so, and the marks pick up the prop as it now reads.
+  it('fetches the docs again when the dev server reports a source edit', async () => {
+    let current: ControlDocs = docs
+    await renderWithRouter(
+      <PropsPanel controls={controls} docs={async () => current} />,
+      '/Forms/Button'
+    )
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: "variant?: 'primary' | 'danger'. Look." })
+      ).toBeInTheDocument()
+    )
+
+    current = {
+      variant: {
+        name: 'variant',
+        type: "'primary' | 'danger' | 'ghost'",
+        optional: true,
+      },
+    }
+    await act(async () => {
+      hotListeners.get('react-foundry:docs-changed')?.()
+    })
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: "variant?: 'primary' | 'danger' | 'ghost'" })
+      ).toBeInTheDocument()
+    )
   })
 
   it('describes each control from its definition when there are no docs', async () => {
