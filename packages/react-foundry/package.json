@@ -31,7 +31,7 @@
     "README.md"
   ],
   "engines": {
-    "node": ">=22"
+    "node": "v26.11.1"
   },
   "publishConfig": {
     "access": "public",
