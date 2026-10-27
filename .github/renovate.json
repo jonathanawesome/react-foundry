@@ -22,8 +22,8 @@
 
   "packageRules": [
     {
-      "description": "Peer ranges are deliberately wide so consumers can bring their own version.",
-      "matchDepTypes": ["peerDependencies"],
+      "description": "Peer ranges are deliberately wide so consumers can bring their own version. The second depType is the `peers` catalog in pnpm-workspace.yaml, which is where the ranges actually live; matching only peerDependencies left it under rangeStrategy: pin, and 0.0.17 shipped with react pinned to 19.2.1.",
+      "matchDepTypes": ["peerDependencies", "pnpm.catalog.peers"],
       "enabled": false
     },
     {
