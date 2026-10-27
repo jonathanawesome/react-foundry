@@ -88,9 +88,30 @@ export default defineConfig({
 TS
 
 echo "==> installing the tarball with npm (flat layout)"
-npm install --no-audit --no-fund react react-dom "$TARBALL" >/dev/null 2>&1 \
+# vite is installed by name, as a consumer that owns its Vite would. npm 7+ would install
+# it as a peer anyway, which is exactly why leaving it off proves nothing.
+npm install --no-audit --no-fund react react-dom vite "$TARBALL" >/dev/null 2>&1 \
   || fail "npm install of the tarball failed"
-pass "installed react-foundry + react + react-dom"
+pass "installed react-foundry + react + react-dom + vite"
+
+# Vite is a peer, so the copy foundry's CLI imports must be the consumer's. Resolved from
+# the realpath of dist/cli.js, as Node does at runtime, and compared to what the consumer
+# resolves from their own package.json. A nested copy under node_modules/react-foundry, or
+# a second copy in a pnpm store, shows up here as two different paths.
+VITE_RESOLUTION="$(node --input-type=module -e '
+import { createRequire } from "node:module"
+import { realpathSync } from "node:fs"
+const fromFoundry = createRequire(realpathSync("node_modules/react-foundry/dist/cli.js"))
+const fromConsumer = createRequire(realpathSync("package.json"))
+const foundry = realpathSync(fromFoundry.resolve("vite/package.json"))
+const consumer = realpathSync(fromConsumer.resolve("vite/package.json"))
+if (foundry !== consumer) {
+  console.error(`foundry: ${foundry}\nconsumer: ${consumer}`)
+  process.exit(1)
+}
+console.log(consumer)
+' 2>&1)" || fail "foundry resolves a different vite than the consumer: $VITE_RESOLUTION"
+pass "foundry runs on the consumer's vite ($VITE_RESOLUTION)"
 
 # The cleanest single proof that foundry's shell is not the consumer's problem. Foundry is
 # built on TanStack Router, and a consumer who uses it themselves must get their own copy

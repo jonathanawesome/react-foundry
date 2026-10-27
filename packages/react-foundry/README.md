@@ -19,7 +19,10 @@ config of your own.
 npm install --save-dev react-foundry
 ```
 
-`react` and `react-dom` are peer dependencies you already have (React 18 or 19).
+`react`, `react-dom` and `vite` are peer dependencies: React 18 or 19, and Vite 8. Foundry
+runs on your project's Vite rather than shipping its own, so the plugins you build in
+`foundry.config.ts` and the server they run in share one copy. pnpm and npm 7+ install
+peers for you; on yarn classic, add `vite` yourself.
 
 ## Quick start
 
@@ -704,7 +707,7 @@ export default defineConfig({
 Provide a single React plugin instance only through `viteConfig` if you need to configure it;
 foundry already includes `@vitejs/plugin-react`, so don't add a second copy.
 
-Foundry pins Vite 8, which resolves `tsconfig` path aliases natively. If you reach for
+Foundry runs on your project's Vite 8, which resolves `tsconfig` path aliases natively. If you reach for
 `vite-tsconfig-paths` out of habit, Vite prints a deprecation notice on every start. Use the
 built-in instead:
 
