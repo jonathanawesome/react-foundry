@@ -56,11 +56,11 @@ catalogs:
       version: 4.1.10
   peers:
     react:
-      specifier: 19.2.1
-      version: 19.2.1
+      specifier: ^18.0.0 || ^19.0.0
+      version: 19.3.0
     react-dom:
-      specifier: 19.2.1
-      version: 19.2.1
+      specifier: ^18.0.0 || ^19.0.0
+      version: 19.3.0
 
 importers:
 
@@ -207,7 +207,7 @@ importers:
     dependencies:
       react:
         specifier: catalog:peers
-        version: 19.2.1
+        version: 19.3.0
     devDependencies:
       '@types/react':
         specifier: 'catalog:'
@@ -238,13 +238,13 @@ importers:
         version: 1.1.1
       react:
         specifier: catalog:peers
-        version: 19.2.1
+        version: 19.3.0
       react-dom:
         specifier: catalog:peers
-        version: 19.2.1(react@19.2.1)
+        version: 19.3.0(react@19.3.0)
       use-sync-external-store:
         specifier: 1.6.0
-        version: 1.6.0(react@19.2.1)
+        version: 1.6.0(react@19.3.0)
     devDependencies:
       '@arethetypeswrong/cli':
         specifier: 0.18.5
@@ -260,7 +260,7 @@ importers:
         version: link:../ui
       '@tanstack/react-router':
         specifier: 'catalog:'
-        version: 1.170.18(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        version: 1.170.18(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@vanilla-extract/css':
         specifier: 'catalog:'
         version: 1.21.1
@@ -336,7 +336,7 @@ importers:
     dependencies:
       '@phosphor-icons/react':
         specifier: 2.1.10
-        version: 2.1.10(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        version: 2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@react-foundry/core':
         specifier: workspace:*
         version: link:../core
@@ -345,7 +345,7 @@ importers:
         version: link:../style
       '@tanstack/react-router':
         specifier: 'catalog:'
-        version: 1.170.18(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        version: 1.170.18(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@vanilla-extract/css':
         specifier: 'catalog:'
         version: 1.21.1
@@ -357,13 +357,13 @@ importers:
         version: 4.11.0
       react:
         specifier: catalog:peers
-        version: 19.2.1
+        version: 19.3.0
       react-dom:
         specifier: catalog:peers
-        version: 19.2.1(react@19.2.1)
+        version: 19.3.0(react@19.3.0)
       zustand:
         specifier: 5.0.9
-        version: 5.0.9(@types/react@19.3.0)(react@19.2.1)(use-sync-external-store@1.6.0(react@19.2.1))
+        version: 5.0.9(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.6.0(react@19.3.0))
     devDependencies:
       '@testing-library/dom':
         specifier: 'catalog:'
@@ -373,7 +373,7 @@ importers:
         version: 6.9.1
       '@testing-library/react':
         specifier: 'catalog:'
-        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+        version: 16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@testing-library/user-event':
         specifier: 'catalog:'
         version: 14.6.1(@testing-library/dom@10.4.1)
@@ -2647,11 +2647,6 @@ packages:
   queue-microtask@1.2.3:
     resolution: {integrity: sha512-NuaNSa6flKT5JaSYQzJok04JzTL1CA6aGhv5rfLW3PgqA+M2ChpZQnAC8h8i4ZFkBS8X5RqkDBHA7r4hej3K9A==}
 
-  react-dom@19.2.1:
-    resolution: {integrity: sha512-ibrK8llX2a4eOskq1mXKu/TGZj9qzomO+sNfO98M6d9zIPOEhlBkMkBUBLd1vgS0gQsLDBzA+8jJBVXDnfHmJg==}
-    peerDependencies:
-      react: ^19.2.1
-
   react-dom@19.3.0:
     resolution: {integrity: sha512-JDk8dgif51OjFoDE70+OT9ICyYr+69HlmihNwp1+Nsfbna3t5sIiCa9ZJktDmQ4/1b/rn26hIAR2uYXDMr5r0Q==}
     peerDependencies:
@@ -2659,10 +2654,6 @@ packages:
 
   react-is@17.0.2:
     resolution: {integrity: sha512-w2GsyukL62IJnlaff/nRegPQR94C/XXamvMWmSHRJ4y7Ts/4ocGRmTHvOs8PSE6pB3dWOrD/nueuU5sduBsQ4w==}
-
-  react@19.2.1:
-    resolution: {integrity: sha512-DGrYcCWK7tvYMnWh79yrPHt+vdx9tY+1gPZa7nJQtO/p8bLTDaHp4dzwEhQB7pZ4Xe3ok4XKuEPrVuc+wlpkmw==}
-    engines: {node: '>=0.10.0'}
 
   react@19.3.0:
     resolution: {integrity: sha512-E8LUcbtBWt20bbl2YoHfx4ZDBdxVTfOKtCZn9cDSJ4l6/nuoApcpIBcj47t2wZoVX8g2ZHuMHbiShgCR1T5Sog==}
@@ -2748,9 +2739,6 @@ packages:
   saxes@6.0.0:
     resolution: {integrity: sha512-xAg7SOnEhrm5zI3puOOKyy1OMcMlIJZYNJY7xLBwSze0UjhPLnWfj2GF2EpT0jmzaJKIWKHLsaSSajf35bcYnA==}
     engines: {node: '>=v12.22.7'}
-
-  scheduler@0.27.0:
-    resolution: {integrity: sha512-eNv+WrVbKu1f3vbYJT/xtiF5syA5HPIMtf9IgY/nKg0sWqzAUEvqY/xm7OcZc/qafLx/iO9FgOmeSAp4v5ti/Q==}
 
   scheduler@0.28.0:
     resolution: {integrity: sha512-juorfCmIkIw8tT+p5BXSm6PJjQF/ycEYmKyzURCIt/RaZIhL+PulbQ9Yu2z1HdOJDdqDTlxA1+xKBmHXJsczAw==}
@@ -3961,10 +3949,10 @@ snapshots:
 
   '@oxc-project/types@0.155.0': {}
 
-  '@phosphor-icons/react@2.1.10(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
+  '@phosphor-icons/react@2.1.10(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
-      react: 19.2.1
-      react-dom: 19.2.1(react@19.2.1)
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
 
   '@publint/pack@0.1.5':
     dependencies:
@@ -4142,21 +4130,21 @@ snapshots:
 
   '@tanstack/history@1.162.0': {}
 
-  '@tanstack/react-router@1.170.18(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
+  '@tanstack/react-router@1.170.18(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@tanstack/history': 1.162.0
-      '@tanstack/react-store': 0.9.3(react-dom@19.2.1(react@19.2.1))(react@19.2.1)
+      '@tanstack/react-store': 0.9.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@tanstack/router-core': 1.171.15
       isbot: 5.1.32
-      react: 19.2.1
-      react-dom: 19.2.1(react@19.2.1)
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
 
-  '@tanstack/react-store@0.9.3(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
+  '@tanstack/react-store@0.9.3(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
       '@tanstack/store': 0.9.3
-      react: 19.2.1
-      react-dom: 19.2.1(react@19.2.1)
-      use-sync-external-store: 1.6.0(react@19.2.1)
+      react: 19.3.0
+      react-dom: 19.3.0(react@19.3.0)
+      use-sync-external-store: 1.6.0(react@19.3.0)
 
   '@tanstack/router-core@1.171.15':
     dependencies:
@@ -4186,16 +4174,6 @@ snapshots:
       dom-accessibility-api: 0.6.3
       picocolors: 1.1.1
       redent: 3.0.0
-
-  '@testing-library/react@16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.2.1(react@19.2.1))(react@19.2.1)':
-    dependencies:
-      '@babel/runtime': 7.29.7
-      '@testing-library/dom': 10.4.1
-      react: 19.2.1
-      react-dom: 19.2.1(react@19.2.1)
-    optionalDependencies:
-      '@types/react': 19.3.0
-      '@types/react-dom': 19.3.0(@types/react@19.3.0)
 
   '@testing-library/react@16.3.2(@testing-library/dom@10.4.1)(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)':
     dependencies:
@@ -5178,19 +5156,12 @@ snapshots:
 
   queue-microtask@1.2.3: {}
 
-  react-dom@19.2.1(react@19.2.1):
-    dependencies:
-      react: 19.2.1
-      scheduler: 0.27.0
-
   react-dom@19.3.0(react@19.3.0):
     dependencies:
       react: 19.3.0
       scheduler: 0.28.0
 
   react-is@17.0.2: {}
-
-  react@19.2.1: {}
 
   react@19.3.0: {}
 
@@ -5317,8 +5288,6 @@ snapshots:
   saxes@6.0.0:
     dependencies:
       xmlchars: 2.2.0
-
-  scheduler@0.27.0: {}
 
   scheduler@0.28.0: {}
 
@@ -5521,10 +5490,6 @@ snapshots:
       escalade: 3.2.0
       picocolors: 1.1.1
 
-  use-sync-external-store@1.6.0(react@19.2.1):
-    dependencies:
-      react: 19.2.1
-
   use-sync-external-store@1.6.0(react@19.3.0):
     dependencies:
       react: 19.3.0
@@ -5701,8 +5666,8 @@ snapshots:
       '@yuku-parser/binding-win32-arm64': 0.7.0
       '@yuku-parser/binding-win32-x64': 0.7.0
 
-  zustand@5.0.9(@types/react@19.3.0)(react@19.2.1)(use-sync-external-store@1.6.0(react@19.2.1)):
+  zustand@5.0.9(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.6.0(react@19.3.0)):
     optionalDependencies:
       '@types/react': 19.3.0
-      react: 19.2.1
-      use-sync-external-store: 1.6.0(react@19.2.1)
+      react: 19.3.0
+      use-sync-external-store: 1.6.0(react@19.3.0)
