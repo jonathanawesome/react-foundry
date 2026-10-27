@@ -34,6 +34,19 @@ TARBALL="$(cd "$REPO_ROOT/packages/react-foundry" && pnpm pack --pack-destinatio
 [ -f "$TARBALL" ] || fail "pack did not produce a tarball ($TARBALL)"
 pass "packed $(basename "$TARBALL")"
 
+# Peers must publish as ranges. The package declares them as `catalog:peers`, which pnpm
+# swaps for the catalog's value at pack time, so the tarball is the only place the real
+# specifier can be read. Renovate pinned that catalog to an exact version once and 0.0.17
+# shipped demanding react@19.2.1 of every consumer; an exact version in a peer is always
+# that mistake, since a peer exists to accept what the consumer already has.
+PINNED_PEERS="$(tar -xOzf "$TARBALL" package/package.json | node -e '
+const { peerDependencies = {} } = JSON.parse(require("node:fs").readFileSync(0, "utf8"))
+const pinned = Object.entries(peerDependencies).filter(([, range]) => /^\d/.test(range))
+for (const [name, range] of pinned) console.log(`${name}@${range}`)
+')"
+[ -z "$PINNED_PEERS" ] || fail "a peer is published as an exact version, not a range: $PINNED_PEERS"
+pass "every peer is published as a range"
+
 # The app tree is compiled by the consumer's Vite and the client bundle is imported by it,
 # so a bare specifier in either is one their resolver has to satisfy. The router is bundled
 # into dist/client precisely so it never becomes their problem. main.tsx's `declare module`
