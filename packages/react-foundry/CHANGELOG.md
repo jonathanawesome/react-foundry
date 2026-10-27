@@ -1,5 +1,11 @@
 # react-foundry
 
+## 0.0.17
+
+### Patch Changes
+
+- 4422378: Vite is now a peer dependency (`^8.0.0`). Foundry runs on your project's Vite instead of shipping its own, so the plugins in your `foundry.config.ts` and the server they run in share one copy.
+
 ## 0.0.16
 
 ### Patch Changes
