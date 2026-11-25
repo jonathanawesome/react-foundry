@@ -39,6 +39,14 @@ export const shelfStyles = {
     },
   }),
 
+  // Sits in the strip the shelf leaves clear for the floating toolbar, level
+  // with the toolbar's own buttons: its top edge plus its border and padding.
+  collapse: style({
+    position: 'absolute',
+    top: 21,
+    right: themeContract.px[20],
+  }),
+
   // Rendered by the Scrollable component, which supplies overflow + scrollbar styling.
   content: style({
     flex: 1,

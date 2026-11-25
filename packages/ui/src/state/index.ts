@@ -21,6 +21,8 @@ type UIStore = {
   expandedNodes: string[]
   toggleNode: (path: string) => void
   expandNodes: (paths: string[]) => void
+  /** Leaves exactly these paths open, closing every other node. */
+  collapseNodesTo: (paths: string[]) => void
   /** Drops expanded paths that no longer name a node, e.g. a renamed folder. */
   pruneNodes: (validPaths: string[]) => void
 }
@@ -67,6 +69,19 @@ const uiStore = create<UIStore>()(
         if (missing.length === 0) return
 
         return set({ expandedNodes: [...expandedNodes, ...missing] })
+      },
+
+      collapseNodesTo: (paths) => {
+        const expandedNodes = get().expandedNodes
+        const isSame =
+          paths.length === expandedNodes.length &&
+          paths.every((path) => expandedNodes.includes(path))
+
+        // Same contract as expandNodes: a click that changes nothing must not
+        // re-render the shelf or rewrite storage.
+        if (isSame) return
+
+        return set({ expandedNodes: paths })
       },
 
       pruneNodes: (validPaths) => {

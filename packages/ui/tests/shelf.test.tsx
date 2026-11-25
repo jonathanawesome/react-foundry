@@ -213,6 +213,33 @@ describe('Shelf', () => {
     expect(shelf).toHaveAttribute('data-open', 'false')
   })
 
+  describe('collapse others', () => {
+    const tree = [
+      node('Forms', { leaves: [leaf('Forms/Primary')] }),
+      node('Layout', { leaves: [leaf('Layout/Stack')] }),
+    ]
+
+    it('closes every node off the path to the active leaf', async () => {
+      await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
+      await userEvent.click(screen.getByRole('button', { name: /Layout/ }))
+      expect(screen.getByRole('link', { name: 'Stack' })).toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Collapse Others' }))
+
+      expect(screen.queryByRole('link', { name: 'Stack' })).not.toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Primary' })).toBeInTheDocument()
+    })
+
+    it('closes everything when no preview is open', async () => {
+      await renderWithRouter(<Shelf nav={tree} />)
+      await userEvent.click(screen.getByRole('button', { name: /Forms/ }))
+
+      await userEvent.click(screen.getByRole('button', { name: 'Collapse Others' }))
+
+      expect(screen.queryByRole('link', { name: 'Primary' })).not.toBeInTheDocument()
+    })
+  })
+
   // Expansion outlives the tree it describes, so a consumer renaming a nav
   // folder would otherwise leave its old paths in storage forever.
   describe('pruning stale expansion', () => {

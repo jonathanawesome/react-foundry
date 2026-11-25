@@ -4,7 +4,9 @@ import { Link, useParams } from '@tanstack/react-router'
 import { useEffect } from 'react'
 import { useUIStore } from '../../state'
 import { Icon } from '../icon/icon'
+import { IconButton } from '../icon-button/icon-button'
 import { Scrollable } from '../scrollable/scrollable'
+import { Tooltip } from '../tooltip/tooltip'
 
 import { shelfStyles } from './shelf.css'
 
@@ -33,6 +35,7 @@ function useExpandState(nav: NavNode[], activeLeafId: string | null) {
   const toggle = useUIStore.use.toggleNode()
   const expandNodes = useUIStore.use.expandNodes()
   const prune = useUIStore.use.pruneNodes()
+  const collapseTo = useUIStore.use.collapseNodesTo()
 
   useEffect(() => {
     // Paths are persisted, so renaming or deleting a folder strands an entry
@@ -53,7 +56,14 @@ function useExpandState(nav: NavNode[], activeLeafId: string | null) {
     expandNodes(ancestorPaths(activeLeafId))
   }, [activeLeafId, expandNodes])
 
-  return { isExpanded: (path: string) => expandedNodes.includes(path), toggle }
+  return {
+    isExpanded: (path: string) => expandedNodes.includes(path),
+    toggle,
+    // Nothing else ever closes a node, so a long session leaves the tree too
+    // tall to find anything in. This folds it back to the path to the active
+    // item, or to nothing at all when no preview is open.
+    collapseOthers: () => collapseTo(activeLeafId ? ancestorPaths(activeLeafId) : []),
+  }
 }
 
 interface NavTreeProps {
@@ -129,10 +139,24 @@ export const Shelf = ({ nav }: ShelfProps) => {
   const params = useParams({ strict: false })
   const activeLeafId = '_splat' in params ? ((params._splat as string) ?? null) : null
 
-  const { isExpanded, toggle } = useExpandState(nav, activeLeafId)
+  const { isExpanded, toggle, collapseOthers } = useExpandState(nav, activeLeafId)
 
   return (
     <aside {...chromeSurfaceProps(shelfStyles.shelf)} data-open={isShelfOpen}>
+      {/* An empty tree has nothing to fold. */}
+      {nav.length > 0 && (
+        <div className={shelfStyles.collapse}>
+          <Tooltip label="Collapse Others">
+            <IconButton
+              icon="ArrowsInLineVertical"
+              onClick={collapseOthers}
+              title="Collapse Others"
+              nativeTooltip={false}
+            />
+          </Tooltip>
+        </div>
+      )}
+
       <Scrollable className={shelfStyles.content}>
         <nav className={shelfStyles.sidebar}>
           <NavTree
