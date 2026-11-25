@@ -29,7 +29,9 @@ pass() { echo "  ok: $*"; }
 
 # --- 1. Build + pack -----------------------------------------------------------
 echo "==> building and packing react-foundry"
-pnpm --filter react-foundry build >/dev/null
+# By directory rather than `--filter react-foundry`: the workspace root shares that
+# name, so a name filter also runs the root's build, which is the whole monorepo.
+pnpm -C "$REPO_ROOT/packages/react-foundry" build >/dev/null
 TARBALL="$(cd "$REPO_ROOT/packages/react-foundry" && pnpm pack --pack-destination "$WORK" 2>/dev/null | tail -1)"
 [ -f "$TARBALL" ] || fail "pack did not produce a tarball ($TARBALL)"
 pass "packed $(basename "$TARBALL")"

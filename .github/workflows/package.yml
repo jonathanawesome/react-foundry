@@ -40,8 +40,10 @@ jobs:
       - run: bash scripts/verify-tarball.sh
 
       # Lint the package's published shape (exports, types, files). Uses the dist the
-      # tarball script just built.
-      - run: pnpm --filter react-foundry exec publint
+      # tarball script just built. Filtered by path because the workspace root is
+      # also named `react-foundry`, and a name filter runs this there too, where
+      # there is no publint.
+      - run: pnpm --filter ./packages/react-foundry exec publint
 
       # Verify the emitted .d.ts resolve for consumers (node16-ESM + bundler), gating
       # declaration drift that publint (structure only) and the runtime tarball test
