@@ -1,5 +1,6 @@
 import {
   ArrowsClockwiseIcon as ArrowsClockwise,
+  ArrowsInLineVerticalIcon as ArrowsInLineVertical,
   CaretRightIcon as CaretRight,
   CircleIcon as Circle,
   CrosshairIcon as Crosshair,
@@ -16,6 +17,7 @@ import {
 
 export const IconMap = {
   ArrowsClockwise,
+  ArrowsInLineVertical,
   CaretRight,
   Circle,
   Crosshair,

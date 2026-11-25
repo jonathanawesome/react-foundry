@@ -39,10 +39,27 @@ export const shelfStyles = {
     },
   }),
 
+  // Sits in the strip the shelf leaves clear for the floating toolbar, level
+  // with the toolbar's own buttons: its top edge plus its border and padding.
+  collapse: style({
+    position: 'absolute',
+    top: 21,
+    right: themeContract.px[20],
+  }),
+
   // Rendered by the Scrollable component, which supplies overflow + scrollbar styling.
   content: style({
     flex: 1,
     padding: themeContract.px[20],
+
+    // Animates the jump to the active item, the only scroll set from code here.
+    // Wheel and keyboard scrolling are unaffected. The first jump after a load
+    // opts out of this from the hook that makes it.
+    '@media': {
+      '(prefers-reduced-motion: no-preference)': {
+        scrollBehavior: 'smooth',
+      },
+    },
   }),
 
   sidebar: style({}),
@@ -68,7 +85,14 @@ export const shelfStyles = {
   nodeHeader: style({
     display: 'flex',
     alignItems: 'center',
-    width: '100%',
+    gap: themeContract.px[6],
+    // Padding gives the hover fill room past the caret and the label. The
+    // negative margin takes it back, so the caret stays on the tree's indent
+    // grid and only the fill grows.
+    padding: `0 ${themeContract.px[6]}`,
+    margin: `0 calc(-1 * ${themeContract.px[6]})`,
+    width: `calc(100% + 2 * ${themeContract.px[6]})`,
+    borderRadius: themeContract.radii.small,
     // Labels wrap, so the row grows past this floor rather than overflowing it.
     minHeight: themeContract.px[24],
     textAlign: 'left',
@@ -97,7 +121,9 @@ export const shelfStyles = {
     listStyle: 'none',
     margin: 0,
     padding: 0,
-    marginLeft: themeContract.px[16],
+    // The caret's 12 plus the header's gap, so a leaf lines up under its
+    // folder's label.
+    marginLeft: themeContract.px[18],
   }),
 
   leafLink: style({

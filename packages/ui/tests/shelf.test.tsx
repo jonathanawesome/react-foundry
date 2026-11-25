@@ -1,7 +1,7 @@
 import type { NavNode, PreviewLeaf } from '@react-foundry/core'
-import { screen } from '@testing-library/react'
+import { act, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ancestorPaths, Shelf } from '../src/components/shelf/shelf'
 import { useUIStore } from '../src/state'
@@ -211,6 +211,122 @@ describe('Shelf', () => {
     const shelf = container.querySelector('aside')
 
     expect(shelf).toHaveAttribute('data-open', 'false')
+  })
+
+  describe('collapse others', () => {
+    const tree = [
+      node('Forms', { leaves: [leaf('Forms/Primary')] }),
+      node('Layout', { leaves: [leaf('Layout/Stack')] }),
+    ]
+
+    it('closes every node off the path to the active leaf', async () => {
+      await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
+      await userEvent.click(screen.getByRole('button', { name: /Layout/ }))
+      expect(screen.getByRole('link', { name: 'Stack' })).toBeInTheDocument()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Collapse Others' }))
+
+      expect(screen.queryByRole('link', { name: 'Stack' })).not.toBeInTheDocument()
+      expect(screen.getByRole('link', { name: 'Primary' })).toBeInTheDocument()
+    })
+
+    it('closes everything when no preview is open', async () => {
+      await renderWithRouter(<Shelf nav={tree} />)
+      await userEvent.click(screen.getByRole('button', { name: /Forms/ }))
+
+      await userEvent.click(screen.getByRole('button', { name: 'Collapse Others' }))
+
+      expect(screen.queryByRole('link', { name: 'Primary' })).not.toBeInTheDocument()
+    })
+  })
+
+  // jsdom lays nothing out, so the geometry is supplied: a 600px tall scroll
+  // region starting at 48, and an active link wherever the test puts it.
+  describe('scrolling to the active leaf', () => {
+    const tree = [
+      node('Forms', { leaves: [leaf('Forms/Primary')] }),
+      node('Layout', { leaves: [leaf('Layout/Stack')] }),
+    ]
+
+    // 852 below the region's top, less the 288 that centers 24 in 600.
+    const CENTERED = 564
+
+    function placeActiveLinkAt(top: number) {
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
+        this: Element
+      ) {
+        const isLink = this.getAttribute('data-active') === 'true'
+        return isLink ? new DOMRect(0, top, 200, 24) : new DOMRect(0, 48, 320, 600)
+      })
+    }
+
+    const spyOnScroll = () => vi.spyOn(Element.prototype, 'scrollTo')
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    // Instant, because a save reloads the page and this runs on every one.
+    it('centers an active leaf that is below the fold, without animating', async () => {
+      placeActiveLinkAt(900)
+      const scrollTo = spyOnScroll()
+
+      const { container } = await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
+
+      expect(scrollTo).toHaveBeenCalledExactlyOnceWith({
+        top: CENTERED,
+        behavior: 'instant',
+      })
+      expect(scrollTo.mock.contexts[0]).toBe(
+        container.querySelector('nav')?.parentElement
+      )
+    })
+
+    it('leaves the scroll alone when the active leaf is already visible', async () => {
+      placeActiveLinkAt(100)
+      const scrollTo = spyOnScroll()
+
+      await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
+
+      expect(scrollTo).not.toHaveBeenCalled()
+    })
+
+    // Once per navigation: scrolling again on a toggle would pull the tree
+    // away from the folder that was just clicked.
+    it('does not scroll again when another node is toggled', async () => {
+      placeActiveLinkAt(900)
+      const scrollTo = spyOnScroll()
+
+      await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
+      await userEvent.click(screen.getByRole('button', { name: /Layout/ }))
+
+      expect(scrollTo).toHaveBeenCalledOnce()
+    })
+
+    // `auto` hands the choice to the stylesheet: smooth, or instant under
+    // reduced motion.
+    it('lets the stylesheet animate a later navigation', async () => {
+      placeActiveLinkAt(900)
+      const scrollTo = spyOnScroll()
+
+      const { router } = await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
+      await act(() => router.navigate({ to: '/$', params: { _splat: 'Layout/Stack' } }))
+
+      expect(scrollTo).toHaveBeenLastCalledWith({ top: CENTERED, behavior: 'auto' })
+    })
+
+    it('animates the first navigation when nothing was open at load', async () => {
+      placeActiveLinkAt(900)
+      const scrollTo = spyOnScroll()
+
+      const { router } = await renderWithRouter(<Shelf nav={tree} />)
+      await act(() => router.navigate({ to: '/$', params: { _splat: 'Layout/Stack' } }))
+
+      expect(scrollTo).toHaveBeenCalledExactlyOnceWith({
+        top: CENTERED,
+        behavior: 'auto',
+      })
+    })
   })
 
   // Expansion outlives the tree it describes, so a consumer renaming a nav
