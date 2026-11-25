@@ -99,6 +99,43 @@ describe('useUIStore', () => {
       expect(useUIStore.getState().expandedNodes).toBe(before)
     })
 
+    describe('collapsing', () => {
+      it('leaves only the given paths open', () => {
+        useUIStore.getState().expandNodes(['a', 'a/b', 'Forms', 'Layout'])
+
+        useUIStore.getState().collapseNodesTo(['a', 'a/b'])
+
+        expect(useUIStore.getState().expandedNodes).toEqual(['a', 'a/b'])
+      })
+
+      // The button means "show me where I am", so an ancestor closed by hand
+      // comes back.
+      it('opens a given path that was closed', () => {
+        useUIStore.getState().expandNodes(['Forms'])
+
+        useUIStore.getState().collapseNodesTo(['a', 'a/b'])
+
+        expect(useUIStore.getState().expandedNodes).toEqual(['a', 'a/b'])
+      })
+
+      it('closes everything when given no paths', () => {
+        useUIStore.getState().expandNodes(['a', 'Forms'])
+
+        useUIStore.getState().collapseNodesTo([])
+
+        expect(useUIStore.getState().expandedNodes).toEqual([])
+      })
+
+      it('keeps the same array reference when nothing changes', () => {
+        useUIStore.getState().expandNodes(['a', 'a/b'])
+        const before = useUIStore.getState().expandedNodes
+
+        useUIStore.getState().collapseNodesTo(['a/b', 'a'])
+
+        expect(useUIStore.getState().expandedNodes).toBe(before)
+      })
+    })
+
     // Nothing else ever removes a path, so renaming a nav folder would otherwise
     // strand its old paths in storage for good.
     describe('pruning', () => {
