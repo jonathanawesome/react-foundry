@@ -27,6 +27,11 @@
       "enabled": false
     },
     {
+      "description": "engines is the supported range, not a version to pin. Left under rangeStrategy: pin, Renovate rewrote `node: >=22` to one exact Node, which the published package would then demand of every consumer.",
+      "matchDepTypes": ["engines"],
+      "enabled": false
+    },
+    {
       "description": "vanilla-extract packages must move together. A css bump without a matching vite-plugin bump can resolve two copies, and its file-scope keying breaks the build when that happens.",
       "matchPackageNames": ["@vanilla-extract/**"],
       "groupName": "vanilla-extract"
