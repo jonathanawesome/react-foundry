@@ -46,7 +46,9 @@ echo "==> building react-foundry"
 BUILD_LOG="$(mktemp "${TMPDIR:-/tmp}/rf-dist-build.XXXXXX")"
 trap 'rm -f "$BUILD_LOG"' EXIT
 
-if ! pnpm --filter react-foundry build >"$BUILD_LOG" 2>&1; then
+# By directory rather than `--filter react-foundry`: the workspace root shares that
+# name, so a name filter also runs the root's build, which is the whole monorepo.
+if ! pnpm -C "$REPO_ROOT/packages/react-foundry" build >"$BUILD_LOG" 2>&1; then
   cat "$BUILD_LOG" >&2
   echo "FAIL: react-foundry build failed" >&2
   exit 1
