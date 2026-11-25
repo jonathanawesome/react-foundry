@@ -34,8 +34,8 @@
   ],
   "packageManager": "pnpm@10.34.9",
   "engines": {
-    "node": "v26.13.1",
-    "pnpm": "10.34.9"
+    "node": ">=22",
+    "pnpm": "10.x"
   },
   "dependencies": {
     "@types/node": "24.10.1",
