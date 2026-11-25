@@ -51,6 +51,14 @@ export const shelfStyles = {
   content: style({
     flex: 1,
     padding: themeContract.px[20],
+
+    // Animates the jump to the active item, the only scroll set from code here.
+    // Wheel and keyboard scrolling are unaffected.
+    '@media': {
+      '(prefers-reduced-motion: no-preference)': {
+        scrollBehavior: 'smooth',
+      },
+    },
   }),
 
   sidebar: style({}),

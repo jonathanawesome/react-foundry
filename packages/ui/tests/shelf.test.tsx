@@ -1,7 +1,7 @@
 import type { NavNode, PreviewLeaf } from '@react-foundry/core'
-import { screen } from '@testing-library/react'
+import { act, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ancestorPaths, Shelf } from '../src/components/shelf/shelf'
 import { useUIStore } from '../src/state'
@@ -237,6 +237,75 @@ describe('Shelf', () => {
       await userEvent.click(screen.getByRole('button', { name: 'Collapse Others' }))
 
       expect(screen.queryByRole('link', { name: 'Primary' })).not.toBeInTheDocument()
+    })
+  })
+
+  // jsdom lays nothing out, so the geometry is supplied: a 600px tall scroll
+  // region starting at 48, and an active link wherever the test puts it.
+  describe('scrolling to the active leaf', () => {
+    const tree = [
+      node('Forms', { leaves: [leaf('Forms/Primary')] }),
+      node('Layout', { leaves: [leaf('Layout/Stack')] }),
+    ]
+
+    function placeActiveLinkAt(top: number) {
+      vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
+        this: Element
+      ) {
+        const isLink = this.getAttribute('data-active') === 'true'
+        return isLink ? new DOMRect(0, top, 200, 24) : new DOMRect(0, 48, 320, 600)
+      })
+    }
+
+    const scroller = (container: HTMLElement) =>
+      container.querySelector('nav')?.parentElement as HTMLElement
+
+    afterEach(() => {
+      vi.restoreAllMocks()
+    })
+
+    it('centers an active leaf that is below the fold', async () => {
+      placeActiveLinkAt(900)
+
+      const { container } = await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
+
+      // 852 below the region's top, less the 288 that centers 24 in 600.
+      expect(scroller(container).scrollTop).toBe(564)
+    })
+
+    it('leaves the scroll alone when the active leaf is already visible', async () => {
+      placeActiveLinkAt(100)
+
+      const { container } = await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
+
+      expect(scroller(container).scrollTop).toBe(0)
+    })
+
+    // Once per navigation: scrolling again on a toggle would pull the tree
+    // away from the folder that was just clicked.
+    it('does not scroll again when another node is toggled', async () => {
+      placeActiveLinkAt(900)
+
+      const { container } = await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
+      scroller(container).scrollTop = 0
+
+      await userEvent.click(screen.getByRole('button', { name: /Layout/ }))
+
+      expect(scroller(container).scrollTop).toBe(0)
+    })
+
+    it('scrolls again after navigating to another leaf', async () => {
+      placeActiveLinkAt(900)
+
+      const { container, router } = await renderWithRouter(
+        <Shelf nav={tree} />,
+        '/Forms/Primary'
+      )
+      scroller(container).scrollTop = 0
+
+      await act(() => router.navigate({ to: '/$', params: { _splat: 'Layout/Stack' } }))
+
+      expect(scroller(container).scrollTop).toBe(564)
     })
   })
 
