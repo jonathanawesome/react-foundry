@@ -53,7 +53,8 @@ export const shelfStyles = {
     padding: themeContract.px[20],
 
     // Animates the jump to the active item, the only scroll set from code here.
-    // Wheel and keyboard scrolling are unaffected.
+    // Wheel and keyboard scrolling are unaffected. The first jump after a load
+    // opts out of this from the hook that makes it.
     '@media': {
       '(prefers-reduced-motion: no-preference)': {
         scrollBehavior: 'smooth',
@@ -84,7 +85,14 @@ export const shelfStyles = {
   nodeHeader: style({
     display: 'flex',
     alignItems: 'center',
-    width: '100%',
+    gap: themeContract.px[6],
+    // Padding gives the hover fill room past the caret and the label. The
+    // negative margin takes it back, so the caret stays on the tree's indent
+    // grid and only the fill grows.
+    padding: `0 ${themeContract.px[6]}`,
+    margin: `0 calc(-1 * ${themeContract.px[6]})`,
+    width: `calc(100% + 2 * ${themeContract.px[6]})`,
+    borderRadius: themeContract.radii.small,
     // Labels wrap, so the row grows past this floor rather than overflowing it.
     minHeight: themeContract.px[24],
     textAlign: 'left',
@@ -113,7 +121,9 @@ export const shelfStyles = {
     listStyle: 'none',
     margin: 0,
     padding: 0,
-    marginLeft: themeContract.px[16],
+    // The caret's 12 plus the header's gap, so a leaf lines up under its
+    // folder's label.
+    marginLeft: themeContract.px[18],
   }),
 
   leafLink: style({

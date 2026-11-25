@@ -248,6 +248,9 @@ describe('Shelf', () => {
       node('Layout', { leaves: [leaf('Layout/Stack')] }),
     ]
 
+    // 852 below the region's top, less the 288 that centers 24 in 600.
+    const CENTERED = 564
+
     function placeActiveLinkAt(top: number) {
       vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(function (
         this: Element
@@ -257,55 +260,72 @@ describe('Shelf', () => {
       })
     }
 
-    const scroller = (container: HTMLElement) =>
-      container.querySelector('nav')?.parentElement as HTMLElement
+    const spyOnScroll = () => vi.spyOn(Element.prototype, 'scrollTo')
 
     afterEach(() => {
       vi.restoreAllMocks()
     })
 
-    it('centers an active leaf that is below the fold', async () => {
+    // Instant, because a save reloads the page and this runs on every one.
+    it('centers an active leaf that is below the fold, without animating', async () => {
       placeActiveLinkAt(900)
+      const scrollTo = spyOnScroll()
 
       const { container } = await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
 
-      // 852 below the region's top, less the 288 that centers 24 in 600.
-      expect(scroller(container).scrollTop).toBe(564)
+      expect(scrollTo).toHaveBeenCalledExactlyOnceWith({
+        top: CENTERED,
+        behavior: 'instant',
+      })
+      expect(scrollTo.mock.contexts[0]).toBe(
+        container.querySelector('nav')?.parentElement
+      )
     })
 
     it('leaves the scroll alone when the active leaf is already visible', async () => {
       placeActiveLinkAt(100)
+      const scrollTo = spyOnScroll()
 
-      const { container } = await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
+      await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
 
-      expect(scroller(container).scrollTop).toBe(0)
+      expect(scrollTo).not.toHaveBeenCalled()
     })
 
     // Once per navigation: scrolling again on a toggle would pull the tree
     // away from the folder that was just clicked.
     it('does not scroll again when another node is toggled', async () => {
       placeActiveLinkAt(900)
+      const scrollTo = spyOnScroll()
 
-      const { container } = await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
-      scroller(container).scrollTop = 0
-
+      await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
       await userEvent.click(screen.getByRole('button', { name: /Layout/ }))
 
-      expect(scroller(container).scrollTop).toBe(0)
+      expect(scrollTo).toHaveBeenCalledOnce()
     })
 
-    it('scrolls again after navigating to another leaf', async () => {
+    // `auto` hands the choice to the stylesheet: smooth, or instant under
+    // reduced motion.
+    it('lets the stylesheet animate a later navigation', async () => {
       placeActiveLinkAt(900)
+      const scrollTo = spyOnScroll()
 
-      const { container, router } = await renderWithRouter(
-        <Shelf nav={tree} />,
-        '/Forms/Primary'
-      )
-      scroller(container).scrollTop = 0
-
+      const { router } = await renderWithRouter(<Shelf nav={tree} />, '/Forms/Primary')
       await act(() => router.navigate({ to: '/$', params: { _splat: 'Layout/Stack' } }))
 
-      expect(scroller(container).scrollTop).toBe(564)
+      expect(scrollTo).toHaveBeenLastCalledWith({ top: CENTERED, behavior: 'auto' })
+    })
+
+    it('animates the first navigation when nothing was open at load', async () => {
+      placeActiveLinkAt(900)
+      const scrollTo = spyOnScroll()
+
+      const { router } = await renderWithRouter(<Shelf nav={tree} />)
+      await act(() => router.navigate({ to: '/$', params: { _splat: 'Layout/Stack' } }))
+
+      expect(scrollTo).toHaveBeenCalledExactlyOnceWith({
+        top: CENTERED,
+        behavior: 'auto',
+      })
     })
   })
 

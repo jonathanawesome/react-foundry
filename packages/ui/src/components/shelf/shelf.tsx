@@ -76,7 +76,9 @@ function useExpandState(nav: NavNode[], activeLeafId: string | null) {
  *
  * The scroll position is set directly instead of through `scrollIntoView`,
  * which would also scroll every other scrollable ancestor it can find. The
- * shelf's stylesheet is what makes the move smooth.
+ * shelf's stylesheet is what makes the move smooth, except for the first one
+ * after a load: editing a preview file reloads the page, and watching the tree
+ * glide back into place on every save gets old.
  */
 function useScrollToActive(
   navRef: RefObject<HTMLElement | null>,
@@ -85,6 +87,7 @@ function useScrollToActive(
   expandedNodes: string[]
 ) {
   const scrolledFor = useRef<string | null>(null)
+  const isFirstPass = useRef(true)
 
   // `nav` and `expandedNodes` are here because the link may not exist on the
   // first pass: the tree can arrive late, and its ancestors open in an effect.
@@ -92,6 +95,8 @@ function useScrollToActive(
   // which would yank the tree away from whatever folder was just clicked.
   useEffect(() => {
     if (!activeLeafId) {
+      // Loaded with no preview open, so whatever comes next is a navigation.
+      isFirstPass.current = false
       scrolledFor.current = null
       return
     }
@@ -105,13 +110,20 @@ function useScrollToActive(
 
     scrolledFor.current = activeLeafId
 
+    // `auto` defers to the stylesheet, which is smooth unless the user has
+    // asked for reduced motion.
+    const behavior = isFirstPass.current ? 'instant' : 'auto'
+    isFirstPass.current = false
+
     const view = container.getBoundingClientRect()
     const target = link.getBoundingClientRect()
 
     // Already on screen, as when the leaf was just clicked: leave it be.
     if (target.top >= view.top && target.bottom <= view.bottom) return
 
-    container.scrollTop += target.top - view.top - (view.height - target.height) / 2
+    const offset = target.top - view.top - (view.height - target.height) / 2
+
+    container.scrollTo({ top: container.scrollTop + offset, behavior })
   }, [navRef, nav, activeLeafId, expandedNodes])
 }
 
