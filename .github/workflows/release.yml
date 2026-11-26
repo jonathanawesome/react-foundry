@@ -15,7 +15,7 @@ jobs:
       pull-requests: write # open/update the "Version Packages" PR
       id-token: write # OIDC trusted publishing; without it, OIDC cannot work
     steps:
-      - uses: actions/checkout@v4.4.0
+      - uses: actions/checkout@v7.0.1
 
       - uses: pnpm/action-setup@v4.4.0
 
