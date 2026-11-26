@@ -12,7 +12,7 @@ jobs:
       - uses: actions/checkout@v4.4.0
 
       # Must precede setup-node: `cache: pnpm` needs pnpm already on PATH.
-      - uses: pnpm/action-setup@v4.4.0
+      - uses: pnpm/action-setup@v6.1.1
 
       - uses: actions/setup-node@v4.4.0
         with:
