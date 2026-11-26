@@ -1,5 +1,11 @@
 # react-foundry
 
+## 0.0.19
+
+### Patch Changes
+
+- 394793d: The shelf gains a Collapse Others button that folds the nav tree down to the current preview, and it scrolls the active item into view on load and on navigation. Folder rows get more space between the chevron and the label, and a padded hover fill.
+
 ## 0.0.18
 
 ### Patch Changes
